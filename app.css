@@ -1,0 +1,20 @@
+:root {
+  --bg:#f6f1eb;--card:#fff;--accent:#e85d26;--accent-soft:#fef0e8;--accent-dark:#c94a1a;
+  --green:#1a9d6c;--green-soft:#e6f7f0;--blue:#2563eb;--blue-soft:#eff4ff;
+  --text:#1a1a1a;--text-mid:#555;--text-light:#999;--border:#e8e2da;
+  --danger:#dc2626;--danger-soft:#fef2f2;--warm1:#fdf8f3;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-tap-highlight-color:transparent}
+input,button,select{font-family:'Nunito',sans-serif}
+input[type="time"]::-webkit-calendar-picker-indicator{filter:invert(0.4)}
+*::-webkit-scrollbar{height:4px}
+*::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+
+@keyframes springIn{0%{opacity:0;transform:translateY(20px) scale(.96)}60%{transform:translateY(-4px) scale(1.01)}100%{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes slideUp{from{opacity:0;transform:translateY(100%)}to{opacity:1;transform:translateY(0)}}
+@keyframes popIn{0%{transform:scale(.8);opacity:0}50%{transform:scale(1.05)}100%{transform:scale(1);opacity:1}}
+@keyframes checkDraw{to{stroke-dashoffset:0}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+@keyframes spin{to{transform:rotate(360deg)}}
