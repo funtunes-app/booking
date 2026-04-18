@@ -1,13 +1,19 @@
 // =============================================================================
-// FunTunes Shared Components
+// FunTunes Shared Components — Purple Theme
 // =============================================================================
 
 const C = {
-  bg:"#f6f1eb",card:"#fff",accent:"#e85d26",accentSoft:"#fef0e8",accentDark:"#c94a1a",
-  green:"#1a9d6c",greenSoft:"#e6f7f0",blue:"#2563eb",blueSoft:"#eff4ff",
-  text:"#1a1a1a",textMid:"#555",textLight:"#999",border:"#e8e2da",borderFocus:"#e85d26",
-  danger:"#dc2626",dangerSoft:"#fef2f2",warm1:"#fdf8f3",
-  shadowLift:"0 8px 32px rgba(0,0,0,.12)",
+  bg:"#faf5ff", card:"#ffffff",
+  accent:"#7B2D8E", accentSoft:"#f3e8f9", accentDark:"#5a1d6b", accentLight:"#a855f7",
+  green:"#4CAF50", greenSoft:"#e8f5e9",
+  blue:"#2E86DE", blueSoft:"#e8f1fc",
+  pink:"#E84393", pinkSoft:"#fde8f3",
+  orange:"#F39C12", orangeSoft:"#fef5e0",
+  text:"#1a1a2e", textMid:"#4a4a6a", textLight:"#9090b0",
+  border:"#e8e0f0", borderFocus:"#7B2D8E",
+  danger:"#e74c3c", dangerSoft:"#fdecea",
+  warm1:"#f8f2fd",
+  shadowLift:"0 8px 32px rgba(123,45,142,.15)",
 };
 
 const Spinner = ({size=18,color=C.accent}) => (
@@ -18,7 +24,7 @@ const inputStyle = (focused,error) => ({
   width:"100%",boxSizing:"border-box",padding:"14px 16px",fontSize:16,fontFamily:"'Nunito',sans-serif",fontWeight:500,
   border:`2px solid ${error?C.danger:focused?C.borderFocus:C.border}`,borderRadius:14,
   background:error?C.dangerSoft:focused?C.accentSoft:C.card,color:C.text,outline:"none",
-  transition:"all .25s ease",boxShadow:focused?`0 0 0 4px ${C.accent}18`:"none",
+  transition:"all .25s ease",boxShadow:focused?`0 0 0 4px ${C.accent}15`:"none",
 });
 
 const InputField = ({label,icon,error,children}) => (
@@ -72,10 +78,12 @@ const EntryList = ({entries,onEdit,onDelete,loading}) => {
         const mop=e.mop||e["MOP"]||"";
         const kids=e.numKids||e["No of kids"]||1;
         const timing=e.timing||e["Timing"]||"";
+        const typeColors = {"funzone":C.accentSoft,"birthday":C.pinkSoft,"event":C.blueSoft,"daycare":C.orangeSoft};
+        const typeKey = e.entryType||e["Entry Type"]||"funzone";
         return (
           <div key={i} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",background:C.warm1,borderRadius:14,marginBottom:8,border:`1px solid ${C.border}`,animation:"springIn .35s ease both",animationDelay:`${i*.03}s`}}>
-            <div style={{width:40,height:40,borderRadius:12,background:C.accentSoft,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>
-              {CONFIG.ENTRY_TYPES.find(t=>t.key===(e.entryType||e["Entry Type"]||"funzone"))?.icon||"🎪"}
+            <div style={{width:40,height:40,borderRadius:12,background:typeColors[typeKey]||C.accentSoft,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>
+              {CONFIG.ENTRY_TYPES.find(t=>t.key===typeKey)?.icon||"🎪"}
             </div>
             <div style={{flex:1,minWidth:0}}>
               <div style={{fontSize:14,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{name}</div>
