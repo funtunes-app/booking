@@ -1,10 +1,3 @@
-# Netlify redirects — all routes go to index.html (SPA support)
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-  conditions = {Role = ["admin"]}
-
 # Cache static assets
 [[headers]]
   for = "/css/*"
