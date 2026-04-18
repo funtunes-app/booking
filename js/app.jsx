@@ -1,10 +1,47 @@
 // =============================================================================
-// FunTunes Main App
+// FunTunes Main App v2
+// Changes: DD/MM/YYYY dates, 12hr time, per-kid rows, auto-sync on open
 // =============================================================================
 const { useState, useRef, useEffect, useCallback } = React;
 
 const STEP_LABELS = ["Customer","Payment","Session","Review"];
 const STEP_ICONS = ["👤","💳","⏰","✅"];
+
+// ── Date/Time Formatters ──
+function formatDateDDMMYYYY(dateStr) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  const dd = String(d.getDate()).padStart(2,"0");
+  const mm = String(d.getMonth()+1).padStart(2,"0");
+  return `${dd}/${mm}/${d.getFullYear()}`;
+}
+
+function formatTime12(time24) {
+  if (!time24 || time24.indexOf(":") === -1) return time24 || "";
+  const [hStr,mStr] = time24.split(":");
+  let h = parseInt(hStr);
+  const ampm = h >= 12 ? "PM" : "AM";
+  h = h % 12;
+  if (h === 0) h = 12;
+  return `${String(h).padStart(2,"0")}:${mStr} ${ampm}`;
+}
+
+function getCurrentDate() {
+  const n = new Date();
+  return `${String(n.getDate()).padStart(2,"0")}/${String(n.getMonth()+1).padStart(2,"0")}/${n.getFullYear()}`;
+}
+
+function getCurrentTime12() {
+  const n = new Date();
+  let h = n.getHours();
+  const m = String(n.getMinutes()).padStart(2,"0");
+  const ampm = h >= 12 ? "PM" : "AM";
+  h = h % 12;
+  if (h === 0) h = 12;
+  return `${String(h).padStart(2,"0")}:${m} ${ampm}`;
+}
+
+// ── Main App ──
 
 function App() {
   const [screen,setScreen] = useState("home");
@@ -72,11 +109,16 @@ function App() {
   const prev = () => setStep(s=>Math.max(s-1,0));
 
   async function submitEntry() {
-    const entry={...form,entryType,timeOut:computeTimeOut(form.timeIn,form.hours),timing:`${form.timeIn} to ${computeTimeOut(form.timeIn,form.hours)}`,amount:parseInt(form.amount)||0};
+    const timeOut = computeTimeOut(form.timeIn,form.hours);
+    const entry={...form,entryType,timeIn:form.timeIn,timeOut:timeOut,amount:parseInt(form.amount)||0};
     setSaving(true);
     try {
       const res=await api.addEntry(entry);
-      if(res.success){showToastMsg("Saved to Google Sheet!","success");setShowSuccess(true);fetchToday();}
+      if(res.success){
+        const rowCount = form.numKids > 1 ? `${form.numKids} entries` : "Entry";
+        showToastMsg(`${rowCount} saved to Google Sheet!`,"success");
+        setShowSuccess(true);fetchToday();
+      }
       else showToastMsg("Sheet error: "+(res.error||"unknown"),"error");
     } catch(e){console.error("Save:",e);showToastMsg("Could not save — check internet","error");}
     finally{setSaving(false);}
@@ -84,13 +126,28 @@ function App() {
 
   function handleEdit(entry) {
     setEditTarget(entry);
+    const timing = entry.timing||entry["Timing"]||"";
+    let timeIn = "";
+    if (timing) {
+      const parts = timing.split(" to ");
+      timeIn = parts[0]?.trim() || "";
+      if (timeIn.includes("AM") || timeIn.includes("PM")) {
+        const match = timeIn.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+        if (match) {
+          let h = parseInt(match[1]);
+          if (match[3].toUpperCase() === "PM" && h !== 12) h += 12;
+          if (match[3].toUpperCase() === "AM" && h === 12) h = 0;
+          timeIn = `${String(h).padStart(2,"0")}:${match[2]}`;
+        }
+      }
+    }
     setFormState({
       customerName:entry.customerName||entry["Customer name"]||"",
       amount:String(entry.amount||entry["Amount"]||300),
       mop:entry.mop||entry["MOP"]||CONFIG.DEFAULT_MOP,
       numKids:parseInt(entry.numKids||entry["No of kids"]||1),
       hours:entry.hours||entry["Hours"]||"1",
-      timeIn:(entry.timing||entry["Timing"]||"").split(" to ")[0]||"",
+      timeIn:timeIn,
       socks:parseInt(entry.socks||entry["Socks"]||0)||0,
       socksMop:entry.socksMop||entry["MOP - Socks"]||"",
       phone:String(entry.phone||entry["Phone number"]||""),
@@ -102,7 +159,8 @@ function App() {
   }
 
   async function handleUpdateSubmit() {
-    const entry={...form,entryType,timeOut:computeTimeOut(form.timeIn,form.hours),timing:`${form.timeIn} to ${computeTimeOut(form.timeIn,form.hours)}`,amount:parseInt(form.amount)||0,slNo:editTarget?.["Sl.no"]||editTarget?.["SI. No"]||editTarget?.["S.no"]||""};
+    const timeOut = computeTimeOut(form.timeIn,form.hours);
+    const entry={...form,entryType,timeIn:form.timeIn,timeOut:timeOut,amount:parseInt(form.amount)||0,slNo:editTarget?.["Sl.no"]||editTarget?.["SI. No"]||editTarget?.["S.no"]||""};
     if(!editTarget?._rowIndex){showToastMsg("Cannot identify row","error");resetForm();return;}
     setSaving(true);
     try {
@@ -114,9 +172,11 @@ function App() {
 
   async function handleDelete(entry) {
     if(!entry._rowIndex){showToastMsg("Cannot identify row","error");return;}
-    const months=["January","February","March","April","May","June","July","August","September","October","November","December"];
-    const d=new Date();
-    const tab=entry._tab||`Funzone - ${months[d.getMonth()]} ${d.getFullYear()}`;
+    const tab = entry._tab || (() => {
+      const months=["January","February","March","April","May","June","July","August","September","October","November","December"];
+      const d=new Date();
+      return `Funzone - ${months[d.getMonth()]} ${d.getFullYear()}`;
+    })();
     setSaving(true);
     try {
       const res=await api.deleteEntry(tab,entry._rowIndex);
@@ -130,11 +190,9 @@ function App() {
     setEditTarget(null); setScreen("home"); setEntryType("funzone");
   }
 
-  const dateStr = new Date().toLocaleDateString("en-IN",{weekday:"short",day:"2-digit",month:"short",year:"numeric"});
+  const dateDisplay = getCurrentDate();
+  const timeDisplay = getCurrentTime12();
 
-  // =========================================================================
-  // RENDER
-  // =========================================================================
   return (
     <div style={{maxWidth:420,margin:"0 auto",background:C.bg,minHeight:"100vh",fontFamily:"'Nunito',sans-serif",position:"relative"}}>
 
@@ -151,7 +209,7 @@ function App() {
             <svg width="40" height="40" viewBox="0 0 40 40" fill="none"><path d="M10 20 L17 27 L30 14" stroke={C.green} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="40" strokeDashoffset="40" style={{animation:"checkDraw .6s ease .3s forwards"}} /></svg>
           </div>
           <h2 style={{margin:"0 0 8px",fontSize:22,fontWeight:800}}>Entry Saved!</h2>
-          <p style={{margin:"0 0 4px",fontSize:14,color:C.textMid}}><strong>{form.customerName}</strong></p>
+          <p style={{margin:"0 0 4px",fontSize:14,color:C.textMid}}><strong>{form.customerName}</strong>{form.numKids>1?` × ${form.numKids} kids`:""}</p>
           <p style={{margin:"0 0 24px",fontSize:28,fontWeight:800,color:C.green}}>₹{totalAmount.toLocaleString("en-IN")}</p>
           <button onClick={()=>{setFormState(getDefaultForm());setStep(0);setShowSuccess(false);setEntryType("funzone");}} style={{width:"100%",padding:14,borderRadius:14,border:"none",background:C.accent,color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer",marginBottom:10}}>+ Add Another</button>
           <button onClick={resetForm} style={{width:"100%",padding:14,borderRadius:14,border:`2px solid ${C.border}`,background:"transparent",color:C.textMid,fontSize:14,fontWeight:600,cursor:"pointer"}}>Back to Home</button>
@@ -162,7 +220,7 @@ function App() {
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20,paddingTop:4}}>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
             <div style={{width:40,height:40,borderRadius:12,background:`linear-gradient(135deg,${C.accent},${C.accentDark})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>🎪</div>
-            <div><div style={{fontSize:18,fontWeight:800}}>{CONFIG.APP_NAME}</div><div style={{fontSize:11,color:C.textLight}}>{dateStr}</div></div>
+            <div><div style={{fontSize:18,fontWeight:800}}>{CONFIG.APP_NAME}</div><div style={{fontSize:11,color:C.textLight}}>{dateDisplay} · {timeDisplay}</div></div>
           </div>
           <div style={{display:"flex",alignItems:"center",gap:6,background:C.greenSoft,border:`1.5px solid ${C.green}40`,borderRadius:20,padding:"5px 12px",fontSize:11,fontWeight:700,color:C.green}}>
             <div style={{width:7,height:7,borderRadius:"50%",background:C.green}} />Online
@@ -219,9 +277,12 @@ function App() {
                 </div>
               </div>
               <InputField label="Customer Name" icon="👤" error={errors.customerName}>
-                <input value={form.customerName} onChange={e=>set("customerName",e.target.value)} placeholder="e.g. Priya - Kid 1" onFocus={()=>setFocusedField("name")} onBlur={()=>setFocusedField(null)} style={inputStyle(focusedField==="name",errors.customerName)} />
+                <input value={form.customerName} onChange={e=>set("customerName",e.target.value)} placeholder="e.g. Priya" onFocus={()=>setFocusedField("name")} onBlur={()=>setFocusedField(null)} style={inputStyle(focusedField==="name",errors.customerName)} />
               </InputField>
               <InputField label="Number of Kids" icon="👶"><NumberStepper value={form.numKids} onChange={v=>set("numKids",v)} min={1} max={10} label="kids" /></InputField>
+              {form.numKids>1&&<div style={{background:C.blueSoft,borderRadius:12,padding:"10px 14px",marginBottom:18,border:`1.5px solid ${C.blue}30`,fontSize:12,color:C.blue,fontWeight:600}}>
+                ℹ️ {form.numKids} separate rows will be created: {form.customerName||"Name"} - Kid 1, Kid 2{form.numKids>2?`, ... Kid ${form.numKids}`:""}
+              </div>}
               <InputField label="Phone Number" icon="📱">
                 <input value={form.phone} onChange={e=>set("phone",e.target.value.replace(/\D/g,"").slice(0,10))} placeholder="10-digit mobile" type="tel" inputMode="numeric" onFocus={()=>setFocusedField("phone")} onBlur={()=>setFocusedField(null)} style={inputStyle(focusedField==="phone")} />
               </InputField>
@@ -259,8 +320,8 @@ function App() {
                 <input value={form.timeIn} onChange={e=>set("timeIn",e.target.value)} type="time" onFocus={()=>setFocusedField("timein")} onBlur={()=>setFocusedField(null)} style={{...inputStyle(focusedField==="timein"),fontSize:20,fontWeight:700,textAlign:"center"}} />
               </InputField>
               {form.timeIn&&<div style={{background:C.blueSoft,borderRadius:14,padding:"14px 18px",border:`1.5px solid ${C.blue}30`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <div><div style={{fontSize:11,color:C.blue,fontWeight:600,textTransform:"uppercase"}}>Expected Time Out</div><div style={{fontSize:10,color:C.textLight}}>{form.hours} hr session</div></div>
-                <div style={{fontSize:22,fontWeight:800,color:C.blue}}>{computeTimeOut(form.timeIn,form.hours)}</div>
+                <div><div style={{fontSize:11,color:C.blue,fontWeight:600,textTransform:"uppercase"}}>Session</div><div style={{fontSize:10,color:C.textLight}}>{form.hours} hr</div></div>
+                <div style={{fontSize:15,fontWeight:700,color:C.blue}}>{formatTime12(form.timeIn)} → {formatTime12(computeTimeOut(form.timeIn,form.hours))}</div>
               </div>}
             </>}
 
@@ -268,11 +329,13 @@ function App() {
               <div style={{fontSize:14,fontWeight:700,color:C.textMid,marginBottom:14,textTransform:"uppercase",letterSpacing:.8}}>Review Entry</div>
               {[
                 {l:"Type",v:CONFIG.ENTRY_TYPES.find(t=>t.key===entryType)?.label,i:CONFIG.ENTRY_TYPES.find(t=>t.key===entryType)?.icon},
-                {l:"Customer",v:form.customerName,i:"👤"},{l:"Kids",v:form.numKids,i:"👶"},
+                {l:"Customer",v:form.customerName,i:"👤"},
+                {l:"Kids",v:`${form.numKids}${form.numKids>1?" (separate rows)":""}`,i:"👶"},
                 {l:"Amount/Kid",v:`₹${form.amount}`,i:"💰"},
                 ...(form.socks>0?[{l:"Socks",v:`₹${form.socks} (${form.socksMop})`,i:"🧦"}]:[]),
                 {l:"Payment",v:form.mop,i:"💳"},{l:"Duration",v:`${form.hours} hr`,i:"⏱️"},
-                {l:"Timing",v:`${form.timeIn} → ${computeTimeOut(form.timeIn,form.hours)}`,i:"🕐"},
+                {l:"Timing",v:`${formatTime12(form.timeIn)} → ${formatTime12(computeTimeOut(form.timeIn,form.hours))}`,i:"🕐"},
+                {l:"Date",v:formatDateDDMMYYYY(form.date),i:"📅"},
                 ...(form.phone?[{l:"Phone",v:form.phone,i:"📱"}]:[]),
                 ...(form.dob?[{l:"DOB",v:form.dob,i:"🎂"}]:[]),
               ].map((r,i)=><div key={i} style={{display:"flex",alignItems:"center",padding:"12px 0",borderBottom:`1px solid ${C.border}`}}>
