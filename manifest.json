@@ -4,8 +4,8 @@
   "description": "FunTunes customer entry and management app",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f6f1eb",
-  "theme_color": "#e85d26",
+  "background_color": "#faf5ff",
+  "theme_color": "#7B2D8E",
   "orientation": "portrait",
   "icons": [
     {
