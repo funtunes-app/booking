@@ -2,7 +2,7 @@
 
 Customer entry and management app for FunTunes play zone.
 
-## Project Structure
+## Project Structure 
 
 ```
 funtunes-app/
