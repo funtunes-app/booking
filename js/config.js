@@ -8,7 +8,7 @@ var CONFIG = {
   API_URL: "https://script.google.com/macros/s/AKfycbwiSFzLWJjcKXVrPXnBMNBXD-WNbBCskWVhU0_EWYJOJmniyiofF6luofvgejlVQwq7/exec",
 
   // App info
-  APP_NAME: "FunTunes",
+  APP_NAME: "FunTunes-dev",
   VERSION: "1.0.0",
 
   // Entry types available in the form
