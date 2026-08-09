@@ -64,36 +64,117 @@ const NumberStepper = ({value,onChange,min=1,max=10,label}) => (
 
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
-const BirthdayList = ({birthdays,loading}) => {
+const WEEK_LABELS = ["Week 1","Week 2","Week 3","Week 4","Week 5"];
+
+const BirthdayCard = ({b, isToday, onSave}) => {
+  const [expanded, setExpanded] = React.useState(false);
+  const [parentName, setParentName] = React.useState(b.parentName || "");
+  const [phone, setPhone] = React.useState(b.phone || "");
+  const [notes, setNotes] = React.useState(b.notes || "");
+  const [contacted, setContacted] = React.useState(!!b.contacted);
+  const [saving, setSaving] = React.useState(false);
+
+  React.useEffect(() => {
+    setParentName(b.parentName || ""); setPhone(b.phone || "");
+    setNotes(b.notes || ""); setContacted(!!b.contacted);
+  }, [b.key]);
+
+  const dirty = parentName !== (b.parentName||"") || phone !== (b.phone||"") || notes !== (b.notes||"") || contacted !== !!b.contacted;
+
+  const save = async () => {
+    setSaving(true);
+    await onSave({ ...b, parentName, phone, notes, contacted });
+    setSaving(false);
+  };
+
+  const toggleContacted = async (val) => {
+    setContacted(val);
+    setSaving(true);
+    await onSave({ ...b, parentName, phone, notes, contacted: val });
+    setSaving(false);
+  };
+
+  return (
+    <div style={{
+      background: contacted ? C.greenSoft : (isToday ? C.pinkSoft : C.warm1),
+      borderRadius: 14, marginBottom: 8,
+      border: `1.5px solid ${contacted ? C.green+"40" : isToday ? C.pink+"50" : C.border}`,
+      overflow: "hidden", animation: "springIn .35s ease both",
+    }}>
+      <div onClick={() => setExpanded(x=>!x)} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",cursor:"pointer"}}>
+        <div style={{width:44,height:44,borderRadius:12,background:contacted?C.green:isToday?C.pink:C.accentSoft,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+          <div style={{fontSize:16,fontWeight:900,color:(contacted||isToday)?"#fff":C.accent,lineHeight:1}}>{b.day}</div>
+          <div style={{fontSize:8,fontWeight:700,color:(contacted||isToday)?"#fff":C.accent,textTransform:"uppercase"}}>{MONTH_NAMES[b.month-1]?.slice(0,3)}</div>
+        </div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:14,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{b.kidName}</div>
+          <div style={{fontSize:11,color:C.textLight}}>{b.turningAge?`Turning ${b.turningAge}`:""}{b.phone?` · ${b.phone}`:" · No phone"}</div>
+        </div>
+        {contacted && <span style={{fontSize:11,fontWeight:700,color:C.green,background:"#fff",padding:"3px 8px",borderRadius:8,flexShrink:0}}>✓ Called</span>}
+        {isToday && !contacted && <div style={{fontSize:20,flexShrink:0}}>🎉</div>}
+        <span style={{fontSize:12,color:C.textLight,flexShrink:0,transform:expanded?"rotate(180deg)":"none",transition:"transform .2s"}}>▾</span>
+      </div>
+
+      {expanded && (
+        <div style={{padding:"0 14px 14px",display:"flex",flexDirection:"column",gap:10}} onClick={e=>e.stopPropagation()}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+            <div>
+              <div style={{fontSize:10,fontWeight:700,color:C.textLight,textTransform:"uppercase",marginBottom:4}}>Parent Name</div>
+              <input value={parentName} onChange={e=>setParentName(e.target.value)} placeholder="Add parent name"
+                style={{width:"100%",boxSizing:"border-box",padding:"9px 10px",fontSize:13,border:`1.5px solid ${C.border}`,borderRadius:9,fontFamily:"'Nunito',sans-serif"}} />
+            </div>
+            <div>
+              <div style={{fontSize:10,fontWeight:700,color:C.textLight,textTransform:"uppercase",marginBottom:4}}>Phone</div>
+              <input value={phone} onChange={e=>setPhone(e.target.value.replace(/\D/g,"").slice(0,10))} placeholder="Mobile number" type="tel" inputMode="numeric"
+                style={{width:"100%",boxSizing:"border-box",padding:"9px 10px",fontSize:13,border:`1.5px solid ${C.border}`,borderRadius:9,fontFamily:"'Nunito',sans-serif"}} />
+            </div>
+          </div>
+
+          <div>
+            <div style={{fontSize:10,fontWeight:700,color:C.textLight,textTransform:"uppercase",marginBottom:4}}>Call Notes</div>
+            <textarea value={notes} onChange={e=>setNotes(e.target.value)} placeholder="e.g. Spoke to mom, interested, will confirm by Friday..." rows={2}
+              style={{width:"100%",boxSizing:"border-box",padding:"9px 10px",fontSize:13,border:`1.5px solid ${C.border}`,borderRadius:9,fontFamily:"'Nunito',sans-serif",resize:"vertical"}} />
+          </div>
+
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+            <button onClick={()=>toggleContacted(!contacted)} style={{
+              display:"flex",alignItems:"center",gap:8,padding:"8px 14px",borderRadius:10,border:"none",cursor:"pointer",
+              background:contacted?C.green:C.card,color:contacted?"#fff":C.textMid,fontSize:13,fontWeight:700,
+              border:`1.5px solid ${contacted?C.green:C.border}`,
+            }}>
+              <span style={{width:16,height:16,borderRadius:4,border:`2px solid ${contacted?"#fff":C.textLight}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,background:contacted?"transparent":C.card}}>{contacted?"✓":""}</span>
+              {contacted ? "Contacted" : "Mark as Contacted"}
+            </button>
+            {phone && <a href={`tel:${phone}`} onClick={e=>e.stopPropagation()} style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",borderRadius:10,background:C.blueSoft,color:C.blue,fontSize:13,fontWeight:700,textDecoration:"none"}}>📞 Call</a>}
+          </div>
+
+          {dirty && (
+            <button onClick={save} disabled={saving} style={{
+              padding:"10px",borderRadius:10,border:"none",cursor:saving?"wait":"pointer",
+              background:`linear-gradient(135deg,${C.accent},${C.pink})`,color:"#fff",fontSize:13,fontWeight:700,opacity:saving?0.7:1,
+            }}>{saving?"Saving...":"💾 Save Changes"}</button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const BirthdayList = ({birthdays,loading,weekFilter,onSave}) => {
   if (loading) return <div style={{textAlign:"center",padding:30}}><Spinner size={28} /><div style={{marginTop:10,fontSize:13,color:C.textLight}}>Loading birthdays...</div></div>;
   if (!birthdays.length) return <div style={{textAlign:"center",padding:"30px 20px",color:C.textLight,fontSize:14}}>🎈 No birthdays found for this month.</div>;
 
-  const today = new Date();
-  const todayDay = today.getDate();
+  const filtered = weekFilter === "all" ? birthdays : birthdays.filter(b => b.week === weekFilter);
+  if (!filtered.length) return <div style={{textAlign:"center",padding:"30px 20px",color:C.textLight,fontSize:14}}>No birthdays in this week.</div>;
+
+  const now = new Date();
+  const isCurrentPeriod = true; // "today" highlight only meaningful if viewing current month/year — handled by caller passing correct data
 
   return (
     <div>
-      {birthdays.map((b,i) => {
-        const isToday = b.day === todayDay;
-        return (
-          <div key={i} style={{
-            display:"flex",alignItems:"center",gap:12,padding:"12px 14px",
-            background:isToday?C.pinkSoft:C.warm1,borderRadius:14,marginBottom:8,
-            border:`1.5px solid ${isToday?C.pink+"50":C.border}`,
-            animation:"springIn .35s ease both",animationDelay:`${i*.03}s`,
-          }}>
-            <div style={{width:44,height:44,borderRadius:12,background:isToday?C.pink:C.accentSoft,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-              <div style={{fontSize:16,fontWeight:900,color:isToday?"#fff":C.accent,lineHeight:1}}>{b.day}</div>
-              <div style={{fontSize:8,fontWeight:700,color:isToday?"#fff":C.accent,textTransform:"uppercase"}}>{MONTH_NAMES[b.month-1]?.slice(0,3)}</div>
-            </div>
-            <div style={{flex:1,minWidth:0}}>
-              <div style={{fontSize:14,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{b.name}</div>
-              <div style={{fontSize:11,color:C.textLight}}>{b.turningAge?`Turning ${b.turningAge}`:""}{b.phone?` · ${b.phone}`:""}</div>
-            </div>
-            {isToday && <div style={{fontSize:22,flexShrink:0}}>🎉</div>}
-          </div>
-        );
-      })}
+      {filtered.map((b,i) => (
+        <BirthdayCard key={b.key || i} b={b} isToday={b.day === now.getDate()} onSave={onSave} />
+      ))}
     </div>
   );
 };

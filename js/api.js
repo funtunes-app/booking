@@ -44,7 +44,14 @@ var api = {
     return this.call("tabs");
   },
 
-  getBirthdays: function() {
-    return this.call("birthdays");
+  getBirthdays: function(month, year) {
+    var params = {};
+    if (month) params.month = month;
+    if (year) params.year = year;
+    return this.call("birthdays", "GET", null, params);
+  },
+
+  updateBirthdayCall: function(record) {
+    return this.call("updateBirthdayCall", "POST", record);
   },
 };

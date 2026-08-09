@@ -53,6 +53,9 @@ function App() {
   const [toast,setToast] = useState(null);
   const [birthdays,setBirthdays] = useState([]);
   const [birthdaysLoading,setBirthdaysLoading] = useState(false);
+  const [birthdayMonth,setBirthdayMonth] = useState(new Date().getMonth()+1);
+  const [birthdayYear,setBirthdayYear] = useState(new Date().getFullYear());
+  const [weekFilter,setWeekFilter] = useState("all");
   const containerRef = useRef(null);
 
   function getDefaultForm() {
@@ -71,35 +74,58 @@ function App() {
 
   useEffect(()=>{ fetchToday(); checkBirthdaysCache(); },[]);
 
-  // Birthdays: cache in localStorage, only refetch once per day (morning check)
+  // Birthdays: cache in localStorage for the CURRENT month/year only, refetch once per day.
+  // Any other month/year selection always fetches fresh (not cached).
   const BIRTHDAY_CACHE_KEY = "funtunes_birthdays_cache";
 
   function checkBirthdaysCache() {
+    const nowMonth = new Date().getMonth()+1, nowYear = new Date().getFullYear();
     try {
       const raw = localStorage.getItem(BIRTHDAY_CACHE_KEY);
       const todayStr = new Date().toISOString().slice(0,10);
       if (raw) {
         const cached = JSON.parse(raw);
-        if (cached.date === todayStr && cached.month === (new Date().getMonth()+1)) {
+        if (cached.date === todayStr && cached.month === nowMonth && cached.year === nowYear) {
           setBirthdays(cached.data || []);
           return; // Already fetched today — skip API call
         }
       }
     } catch(e) { console.error("Birthday cache read error:", e); }
-    fetchBirthdays();
+    fetchBirthdays(nowMonth, nowYear);
   }
 
-  async function fetchBirthdays() {
+  async function fetchBirthdays(month, year) {
+    const m = month || birthdayMonth, y = year || birthdayYear;
     setBirthdaysLoading(true);
     try {
-      const res = await api.getBirthdays();
+      const res = await api.getBirthdays(m, y);
       if (res.success) {
         setBirthdays(res.data || []);
-        const todayStr = new Date().toISOString().slice(0,10);
-        localStorage.setItem(BIRTHDAY_CACHE_KEY, JSON.stringify({date:todayStr, month:res.month, data:res.data||[]}));
+        const nowMonth = new Date().getMonth()+1, nowYear = new Date().getFullYear();
+        if (m === nowMonth && y === nowYear) {
+          const todayStr = new Date().toISOString().slice(0,10);
+          localStorage.setItem(BIRTHDAY_CACHE_KEY, JSON.stringify({date:todayStr, month:m, year:y, data:res.data||[]}));
+        }
       } else showToastMsg("Sheet error: "+(res.error||"unknown"),"error");
     } catch(e) { console.error("Birthdays fetch:",e); showToastMsg("Could not load birthdays","error"); }
     finally { setBirthdaysLoading(false); }
+  }
+
+  function changeMonth(m) { setBirthdayMonth(m); fetchBirthdays(m, birthdayYear); }
+  function changeYear(y) { setBirthdayYear(y); fetchBirthdays(birthdayMonth, y); }
+
+  async function saveBirthdayCall(record) {
+    try {
+      const res = await api.updateBirthdayCall({
+        key: record.key, year: record.year, month: record.month, day: record.day,
+        kidName: record.kidName, parentName: record.parentName, phone: record.phone,
+        contacted: record.contacted, notes: record.notes,
+      });
+      if (res.success) {
+        setBirthdays(prev => prev.map(b => b.key === record.key ? {...b, ...record} : b));
+        showToastMsg("Saved!","success");
+      } else showToastMsg("Save failed: "+(res.error||"unknown"),"error");
+    } catch(e) { console.error("Save call:",e); showToastMsg("Could not save — check internet","error"); }
   }
 
   async function fetchToday() {
@@ -298,22 +324,49 @@ function App() {
 
       {/* ══════════ BIRTHDAYS ══════════ */}
       {screen==="birthdays" && <div style={{padding:"16px 20px 40px"}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,paddingTop:4}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14,paddingTop:4}}>
           <button onClick={()=>setScreen("home")} style={{background:"transparent",border:"none",color:C.accent,fontSize:14,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>← Back</button>
-          <div style={{fontSize:15,fontWeight:800,color:C.text}}>🎂 Birthdays — {MONTH_NAMES[new Date().getMonth()]}</div>
-          <button onClick={fetchBirthdays} disabled={birthdaysLoading} style={{padding:"5px 12px",borderRadius:8,border:`1px solid ${C.border}`,background:C.warm1,fontSize:12,fontWeight:600,color:C.textMid,cursor:"pointer"}}>↻</button>
+          <div style={{fontSize:15,fontWeight:800,color:C.text}}>🎂 Birthdays</div>
+          <button onClick={()=>fetchBirthdays()} disabled={birthdaysLoading} style={{padding:"5px 12px",borderRadius:8,border:`1px solid ${C.border}`,background:C.warm1,fontSize:12,fontWeight:600,color:C.textMid,cursor:"pointer"}}>↻</button>
         </div>
 
-        <div style={{background:`linear-gradient(135deg,${C.pinkSoft},${C.accentSoft})`,borderRadius:16,padding:"14px 16px",marginBottom:16,border:`1.5px solid ${C.pink}20`,display:"flex",alignItems:"center",gap:10}}>
-          <span style={{fontSize:22}}>🎉</span>
-          <div>
-            <div style={{fontSize:13,fontWeight:700,color:C.text}}>{birthdays.length} birthday{birthdays.length!==1?"s":""} this month</div>
-            <div style={{fontSize:11,color:C.textLight}}>Synced once daily · Tap ↻ to refresh manually</div>
+        {/* Month / Year selectors */}
+        <div style={{display:"flex",gap:8,marginBottom:14}}>
+          <select value={birthdayMonth} onChange={e=>changeMonth(parseInt(e.target.value))} style={{
+            flex:1.4,padding:"10px 12px",borderRadius:12,border:`2px solid ${C.border}`,background:C.card,
+            fontSize:14,fontWeight:700,color:C.text,fontFamily:"'Nunito',sans-serif",
+          }}>
+            {MONTH_NAMES.map((m,i)=><option key={m} value={i+1}>{m}</option>)}
+          </select>
+          <select value={birthdayYear} onChange={e=>changeYear(parseInt(e.target.value))} style={{
+            flex:1,padding:"10px 12px",borderRadius:12,border:`2px solid ${C.border}`,background:C.card,
+            fontSize:14,fontWeight:700,color:C.text,fontFamily:"'Nunito',sans-serif",
+          }}>
+            {[new Date().getFullYear()-1, new Date().getFullYear(), new Date().getFullYear()+1].map(y=><option key={y} value={y}>{y}</option>)}
+          </select>
+        </div>
+
+        {/* Week filter chips */}
+        <div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap"}}>
+          <button onClick={()=>setWeekFilter("all")} style={{padding:"7px 14px",borderRadius:10,border:`1.5px solid ${weekFilter==="all"?C.accent:C.border}`,background:weekFilter==="all"?C.accentSoft:C.card,color:weekFilter==="all"?C.accent:C.textMid,fontSize:12,fontWeight:700,cursor:"pointer"}}>All</button>
+          {[1,2,3,4,5].map(w=>(
+            <button key={w} onClick={()=>setWeekFilter(w)} style={{padding:"7px 14px",borderRadius:10,border:`1.5px solid ${weekFilter===w?C.accent:C.border}`,background:weekFilter===w?C.accentSoft:C.card,color:weekFilter===w?C.accent:C.textMid,fontSize:12,fontWeight:700,cursor:"pointer"}}>W{w}</button>
+          ))}
+        </div>
+
+        {/* Summary */}
+        <div style={{background:`linear-gradient(135deg,${C.pinkSoft},${C.accentSoft})`,borderRadius:16,padding:"14px 16px",marginBottom:16,border:`1.5px solid ${C.pink}20`,display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <span style={{fontSize:22}}>🎉</span>
+            <div>
+              <div style={{fontSize:13,fontWeight:700,color:C.text}}>{birthdays.length} birthday{birthdays.length!==1?"s":""} in {MONTH_NAMES[birthdayMonth-1]} {birthdayYear}</div>
+              <div style={{fontSize:11,color:C.textLight}}>{birthdays.filter(b=>b.contacted).length} contacted so far</div>
+            </div>
           </div>
         </div>
 
         <div style={{background:C.card,borderRadius:18,padding:"16px 18px",border:`1px solid ${C.border}`,boxShadow:"0 2px 12px rgba(123,45,142,.05)"}}>
-          <BirthdayList birthdays={birthdays} loading={birthdaysLoading} />
+          <BirthdayList birthdays={birthdays} loading={birthdaysLoading} weekFilter={weekFilter} onSave={saveBirthdayCall} />
         </div>
       </div>}
 
