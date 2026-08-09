@@ -62,7 +62,7 @@ function App() {
     const n=new Date();
     return {customerName:"",amount:CONFIG.DEFAULT_AMOUNT,mop:CONFIG.DEFAULT_MOP,numKids:1,hours:"1",
       timeIn:`${String(n.getHours()).padStart(2,"0")}:${String(n.getMinutes()).padStart(2,"0")}`,
-      socks:0,socksMop:"",phone:"",dob:"",date:n.toISOString().slice(0,10)};
+      socks:0,sockCount:0,socksMop:"",phone:"",dob:"",date:n.toISOString().slice(0,10)};
   }
 
   const set = useCallback((key,val) => {
@@ -146,7 +146,7 @@ function App() {
     return `${String(Math.floor(t/60)%24).padStart(2,"0")}:${String(Math.round(t%60)).padStart(2,"0")}`;
   };
 
-  const totalAmount = (parseInt(form.amount)||0)*form.numKids + form.socks*form.numKids;
+  const totalAmount = (parseInt(form.amount)||0)*form.numKids + form.socks;
 
   const validate = (s) => {
     const errs={};
@@ -202,6 +202,7 @@ function App() {
       hours:entry.hours||entry["Hours"]||"1",
       timeIn:timeIn,
       socks:parseInt(entry.socks||entry["Socks"]||0)||0,
+      sockCount:parseInt(entry.socks||entry["Socks"]||0)>0?Math.max(1,Math.round((parseInt(entry.socks||entry["Socks"]||0))/CONFIG.SOCKS_RATE)):0,
       socksMop:entry.socksMop||entry["MOP - Socks"]||"",
       phone:String(entry.phone||entry["Phone number"]||""),
       dob:entry.dob||entry["DOB"]||"",
@@ -424,17 +425,22 @@ function App() {
                 {CONFIG.AMOUNT_PRESETS.map(a=><button key={a} onClick={()=>set("amount",String(a))} style={{padding:"8px 14px",borderRadius:10,border:`1.5px solid ${form.amount===String(a)?C.accent:C.border}`,background:form.amount===String(a)?C.accentSoft:"transparent",color:form.amount===String(a)?C.accent:C.textMid,fontSize:13,fontWeight:700,cursor:"pointer",transition:"all .15s ease"}}>₹{a}</button>)}
               </div>
               <InputField label="Payment Mode" icon="💳" error={errors.mop}><ChipSelect options={CONFIG.MOP_OPTIONS} value={form.mop} onChange={v=>set("mop",v)} /></InputField>
-              <InputField label="Socks (₹ per pair)" icon="🧦">
-                <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
-                  {CONFIG.SOCKS_PRICES.map(p=><button key={p} onClick={()=>{set("socks",p);if(p>0&&!form.socksMop)set("socksMop",form.mop);}} style={{padding:"10px 18px",borderRadius:12,border:`2px solid ${form.socks===p?C.accent:C.border}`,background:form.socks===p?C.accentSoft:C.card,color:form.socks===p?C.accent:C.textMid,fontSize:14,fontWeight:700,cursor:"pointer",transition:"all .15s ease"}}>{p===0?"None":`₹${p}`}</button>)}
-                  <input value={CONFIG.SOCKS_PRICES.includes(form.socks)?"":(form.socks||"")}
-                    onChange={e=>{
-                      const v=e.target.value.replace(/\D/g,"");
-                      set("socks",v===""?0:parseInt(v));
-                      if(v&&!form.socksMop)set("socksMop",form.mop);
-                    }}
-                    placeholder="Other ₹" type="tel" inputMode="numeric"
-                    style={{width:76,boxSizing:"border-box",padding:"10px 12px",borderRadius:12,border:`2px solid ${!CONFIG.SOCKS_PRICES.includes(form.socks)&&form.socks>0?C.accent:C.border}`,background:!CONFIG.SOCKS_PRICES.includes(form.socks)&&form.socks>0?C.accentSoft:C.card,color:C.text,fontSize:14,fontWeight:700,textAlign:"center",fontFamily:"'Nunito',sans-serif",outline:"none"}} />
+              <InputField label={`Socks (₹${CONFIG.SOCKS_RATE} per pair)`} icon="🧦">
+                <div style={{display:"flex",alignItems:"center",gap:14}}>
+                  <div style={{display:"flex",alignItems:"center",background:C.warm1,borderRadius:14,border:`2px solid ${C.border}`,overflow:"hidden"}}>
+                    <button onClick={()=>{
+                      const c=Math.max(0,(form.sockCount||0)-1);
+                      set("sockCount",c); set("socks",c*CONFIG.SOCKS_RATE);
+                      if(c===0) set("socksMop","");
+                    }} style={{width:44,height:44,border:"none",background:"transparent",fontSize:20,fontWeight:700,color:(form.sockCount||0)<=0?C.textLight:C.accent,cursor:(form.sockCount||0)<=0?"default":"pointer"}}>−</button>
+                    <div style={{width:36,textAlign:"center",fontSize:18,fontWeight:800,color:C.text}}>{form.sockCount||0}</div>
+                    <button onClick={()=>{
+                      const c=(form.sockCount||0)+1;
+                      set("sockCount",c); set("socks",c*CONFIG.SOCKS_RATE);
+                      if(!form.socksMop) set("socksMop",form.mop);
+                    }} style={{width:44,height:44,border:"none",background:"transparent",fontSize:20,fontWeight:700,color:C.accent,cursor:"pointer"}}>+</button>
+                  </div>
+                  {(form.sockCount||0)>0 && <div style={{fontSize:13,fontWeight:700,color:C.accent}}>{form.sockCount} × ₹{CONFIG.SOCKS_RATE} = ₹{form.socks}</div>}
                 </div>
               </InputField>
               {form.socks>0&&<InputField label="Socks Payment Mode" icon="🔄"><ChipSelect options={CONFIG.MOP_OPTIONS} value={form.socksMop} onChange={v=>set("socksMop",v)} /></InputField>}
@@ -464,7 +470,7 @@ function App() {
                 {l:"Customer",v:form.customerName,i:"👤"},
                 {l:"Kids",v:`${form.numKids}${form.numKids>1?" (separate rows)":""}`,i:"👶"},
                 {l:"Amount/Kid",v:`₹${form.amount}`,i:"💰"},
-                ...(form.socks>0?[{l:"Socks",v:`₹${form.socks} (${form.socksMop})`,i:"🧦"}]:[]),
+                ...(form.socks>0?[{l:"Socks",v:`${form.sockCount} pair${form.sockCount>1?"s":""} · ₹${form.socks} (${form.socksMop})`,i:"🧦"}]:[]),
                 {l:"Payment",v:form.mop,i:"💳"},{l:"Duration",v:`${form.hours} hr`,i:"⏱️"},
                 {l:"Timing",v:`${formatTime12(form.timeIn)} → ${formatTime12(computeTimeOut(form.timeIn,form.hours))}`,i:"🕐"},
                 {l:"Date",v:formatDateDDMMYYYY(form.date),i:"📅"},

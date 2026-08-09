@@ -36,8 +36,8 @@ var CONFIG = {
     { label: "3h", value: "3" },
   ],
 
-  // Socks pricing options
-  SOCKS_PRICES: [0, 15, 20, 30, 50],
+  // Socks rate (₹ per pair)
+  SOCKS_RATE: 15,
 
   // Quick amount chips
   AMOUNT_PRESETS: [150, 200, 250, 300, 400, 500, 600],
