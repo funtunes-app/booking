@@ -279,7 +279,7 @@ function App() {
         {/* Header */}
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20,paddingTop:4}}>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
-            <img src="/icons/logo-header.png" alt="FunTunes" style={{width:42,height:42,borderRadius:10}} />
+            <img src="icons/logo-header.png" alt="FunTunes" style={{width:42,height:42,borderRadius:10}} />
             <div>
               <div style={{fontSize:18,fontWeight:800,color:C.accent}}>{CONFIG.APP_NAME}</div>
               <div style={{fontSize:11,color:C.textLight}}>{dateDisplay} · {timeDisplay}</div>

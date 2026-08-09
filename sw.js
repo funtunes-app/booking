@@ -1,13 +1,13 @@
 // FunTunes Service Worker — enables PWA install
 var CACHE_NAME = "funtunes-v2";
 var urlsToCache = [
-  "/",
-  "/css/app.css",
-  "/js/config.js",
-  "/js/api.js",
-  "/js/components.jsx",
-  "/js/app.jsx",
-  "/manifest.json"
+  "./",
+  "css/app.css",
+  "js/config.js",
+  "js/api.js",
+  "js/components.jsx",
+  "js/app.jsx",
+  "manifest.json"
 ];
 
 self.addEventListener("install", function(event) {
