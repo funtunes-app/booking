@@ -207,12 +207,13 @@ const BirthdayCard = ({b, isToday, onSave}) => {
 };
 
 const weekRangeLabel = (w) => `days ${(w-1)*7+1}–${Math.min(31,w*7)}`;
+const weekOfDay = (day) => Math.min(5, Math.ceil(Number(day)/7));
 
 const BirthdayList = ({birthdays,loading,weekFilter,onSave,onShowAll}) => {
   if (loading) return <div style={{textAlign:"center",padding:30}}><Spinner size={28} /><div style={{marginTop:10,fontSize:13,color:C.textLight}}>Loading birthdays...</div></div>;
   if (!birthdays.length) return <div style={{textAlign:"center",padding:"30px 20px",color:C.textLight,fontSize:14}}>🎈 No birthdays found for this month.</div>;
 
-  const filtered = weekFilter === "all" ? birthdays : birthdays.filter(b => b.week === weekFilter);
+  const filtered = weekFilter === "all" ? birthdays : birthdays.filter(b => weekOfDay(b.day) === weekFilter);
   if (!filtered.length) return (
     <div style={{textAlign:"center",padding:"30px 20px"}}>
       <div style={{fontSize:14,color:C.textLight,marginBottom:6}}>🎈 No birthdays in {weekRangeLabel(weekFilter)}.</div>
