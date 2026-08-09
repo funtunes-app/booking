@@ -370,8 +370,9 @@ function handleDelete(body) {
 var BIRTHDAY_CALLS_TAB = "Birthday Calls";
 var BIRTHDAY_CALL_HEADERS = [
   "Key", "Year", "Month", "Day", "Kid Name", "Parent Name",
-  "Phone", "Contacted", "Notes", "Last Updated"
+  "Phone", "Status", "Notes", "Last Updated"
 ];
+// Status is one of: not_contacted, warm, rejected, booking
 
 function getBirthdayCallsSheet() {
   var ss = getSpreadsheet();
@@ -466,13 +467,13 @@ function handleBirthdays(params) {
         turningAge: turningAge,
         week: week,
         phone: phoneCol !== -1 ? String(rows[i][phoneCol] || "") : "",
-        contacted: false,
+        status: "not_contacted",
         notes: ""
       });
     }
   }
 
-  // Merge with Birthday Calls tab for contacted/notes/parentName overrides
+  // Merge with Birthday Calls tab for status/notes/parentName overrides
   var callsSheet = getBirthdayCallsSheet();
   var callsLastRow = callsSheet.getLastRow();
   if (callsLastRow > 1) {
@@ -482,7 +483,7 @@ function handleBirthdays(params) {
       callMap[String(callRows[c][0])] = {
         parentName: callRows[c][5] || "",
         phone: callRows[c][6] || "",
-        contacted: callRows[c][7] === true || callRows[c][7] === "TRUE" || callRows[c][7] === "true",
+        status: callRows[c][7] || "not_contacted",
         notes: callRows[c][8] || ""
       };
     }
@@ -491,7 +492,7 @@ function handleBirthdays(params) {
       if (match) {
         results[r].parentName = match.parentName || "";
         results[r].phone = match.phone || results[r].phone;
-        results[r].contacted = match.contacted;
+        results[r].status = match.status;
         results[r].notes = match.notes || "";
       }
     }
@@ -502,7 +503,7 @@ function handleBirthdays(params) {
   return { success: true, month: targetMonth, year: targetYear, data: results, count: results.length };
 }
 
-// Upsert a birthday call record (contacted status, notes, parent name, phone override)
+// Upsert a birthday call record (status, notes, parent name, phone override)
 function handleUpdateBirthdayCall(body) {
   var key = body.key;
   if (!key) return { success: false, error: "key required" };
@@ -526,7 +527,7 @@ function handleUpdateBirthdayCall(body) {
     body.kidName || "",
     body.parentName || "",
     body.phone || "",
-    body.contacted ? true : false,
+    body.status || "not_contacted",
     body.notes || "",
     new Date().toISOString()
   ];

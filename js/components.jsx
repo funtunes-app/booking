@@ -9,6 +9,7 @@ const C = {
   blue:"#2E86DE", blueSoft:"#e8f1fc",
   pink:"#E84393", pinkSoft:"#fde8f3",
   orange:"#F39C12", orangeSoft:"#fef5e0",
+  yellow:"#F4B400", yellowSoft:"#fef8e6",
   text:"#1a1a2e", textMid:"#4a4a6a", textLight:"#9090b0",
   border:"#e8e0f0", borderFocus:"#7B2D8E",
   danger:"#e74c3c", dangerSoft:"#fdecea",
@@ -66,6 +67,14 @@ const MONTH_NAMES = ["January","February","March","April","May","June","July","A
 
 const WEEK_LABELS = ["Week 1","Week 2","Week 3","Week 4","Week 5"];
 
+const STATUS_ORDER = ["not_contacted","warm","rejected","booking"];
+const STATUS_META = {
+  not_contacted: {label:"Not Contacted", dot:C.textLight, bg:`${C.textLight}18`, fg:C.textLight},
+  warm:          {label:"Warm",          dot:C.yellow,    bg:C.yellowSoft,       fg:"#8a6d00"},
+  rejected:      {label:"Rejected",      dot:C.danger,    bg:C.dangerSoft,       fg:C.danger},
+  booking:       {label:"Booking",       dot:C.green,     bg:C.greenSoft,        fg:C.green},
+};
+
 const Dropdown = ({value,options,onChange,flex}) => {
   const [open,setOpen] = React.useState(false);
   const ref = React.useRef(null);
@@ -112,51 +121,55 @@ const Dropdown = ({value,options,onChange,flex}) => {
   );
 };
 
+const initialStatus = (b) => b.status || (b.contacted ? "warm" : "not_contacted");
+
 const BirthdayCard = ({b, isToday, onSave}) => {
   const [expanded, setExpanded] = React.useState(false);
   const [parentName, setParentName] = React.useState(b.parentName || "");
   const [phone, setPhone] = React.useState(b.phone || "");
   const [notes, setNotes] = React.useState(b.notes || "");
-  const [contacted, setContacted] = React.useState(!!b.contacted);
+  const [status, setStatus] = React.useState(initialStatus(b));
   const [saving, setSaving] = React.useState(false);
 
   React.useEffect(() => {
     setParentName(b.parentName || ""); setPhone(b.phone || "");
-    setNotes(b.notes || ""); setContacted(!!b.contacted);
+    setNotes(b.notes || ""); setStatus(initialStatus(b));
   }, [b.key]);
 
-  const dirty = parentName !== (b.parentName||"") || phone !== (b.phone||"") || notes !== (b.notes||"") || contacted !== !!b.contacted;
+  const kidName = b.kidName || b.name || "—";
+  const meta = STATUS_META[status] || STATUS_META.not_contacted;
+  const dirty = parentName !== (b.parentName||"") || phone !== (b.phone||"") || notes !== (b.notes||"") || status !== initialStatus(b);
 
   const save = async () => {
     setSaving(true);
-    await onSave({ ...b, parentName, phone, notes, contacted });
+    await onSave({ ...b, parentName, phone, notes, status });
     setSaving(false);
   };
 
-  const toggleContacted = async (val) => {
-    setContacted(val);
+  const setStatusAndSave = async (s) => {
+    setStatus(s);
     setSaving(true);
-    await onSave({ ...b, parentName, phone, notes, contacted: val });
+    await onSave({ ...b, parentName, phone, notes, status: s });
     setSaving(false);
   };
 
   return (
     <div style={{
-      background: contacted ? C.greenSoft : (isToday ? C.pinkSoft : C.warm1),
+      background: status==="not_contacted" ? (isToday?C.pinkSoft:C.warm1) : meta.bg,
       borderRadius: 14, marginBottom: 8,
-      border: `1.5px solid ${contacted ? C.green+"40" : isToday ? C.pink+"50" : C.border}`,
+      border: `1.5px solid ${status==="not_contacted" ? (isToday?C.pink+"50":C.border) : meta.dot+"40"}`,
       overflow: "hidden", animation: "springIn .35s ease both",
     }}>
       <div onClick={() => setExpanded(x=>!x)} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",cursor:"pointer"}}>
-        <div style={{width:44,height:44,borderRadius:12,background:contacted?C.green:isToday?C.pink:C.accentSoft,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-          <div style={{fontSize:16,fontWeight:900,color:(contacted||isToday)?"#fff":C.accent,lineHeight:1}}>{b.day}</div>
-          <div style={{fontSize:8,fontWeight:700,color:(contacted||isToday)?"#fff":C.accent,textTransform:"uppercase"}}>{MONTH_NAMES[b.month-1]?.slice(0,3)}</div>
+        <div style={{width:44,height:44,borderRadius:12,background:isToday?C.pink:C.accentSoft,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+          <div style={{fontSize:16,fontWeight:900,color:isToday?"#fff":C.accent,lineHeight:1}}>{b.day}</div>
+          <div style={{fontSize:8,fontWeight:700,color:isToday?"#fff":C.accent,textTransform:"uppercase"}}>{MONTH_NAMES[b.month-1]?.slice(0,3)}</div>
         </div>
         <div style={{flex:1,minWidth:0}}>
-          <div style={{fontSize:14,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{b.kidName}</div>
+          <div style={{fontSize:14,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{kidName}</div>
           <div style={{fontSize:11,color:C.textLight}}>{b.phone||"No phone"}</div>
         </div>
-        <div title={contacted?"Contacted":"Not contacted"} style={{width:26,height:26,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:13,fontWeight:900,background:contacted?C.green:`${C.textLight}20`,color:contacted?"#fff":C.textLight}}>{contacted?"✓":"✕"}</div>
+        <div title={meta.label} style={{width:16,height:16,borderRadius:"50%",flexShrink:0,background:meta.dot,border:"2px solid #fff",boxShadow:"0 0 0 1px "+meta.dot+"50"}} />
         {isToday && <div style={{fontSize:20,flexShrink:0}}>🎉</div>}
         <span style={{fontSize:12,color:C.textLight,flexShrink:0,transform:expanded?"rotate(180deg)":"none",transition:"transform .2s"}}>▾</span>
       </div>
@@ -182,15 +195,24 @@ const BirthdayCard = ({b, isToday, onSave}) => {
               style={{width:"100%",boxSizing:"border-box",padding:"9px 10px",fontSize:13,border:`1.5px solid ${C.border}`,borderRadius:9,fontFamily:"'Nunito',sans-serif",resize:"vertical"}} />
           </div>
 
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-            <button onClick={()=>toggleContacted(!contacted)} style={{
-              display:"flex",alignItems:"center",gap:8,padding:"8px 14px",borderRadius:10,border:"none",cursor:"pointer",
-              background:contacted?C.green:C.card,color:contacted?"#fff":C.textMid,fontSize:13,fontWeight:700,
-              border:`1.5px solid ${contacted?C.green:C.border}`,
-            }}>
-              <span style={{width:16,height:16,borderRadius:4,border:`2px solid ${contacted?"#fff":C.textLight}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,background:contacted?"transparent":C.card}}>{contacted?"✓":""}</span>
-              {contacted ? "Contacted" : "Mark as Contacted"}
-            </button>
+          <div>
+            <div style={{fontSize:10,fontWeight:700,color:C.textLight,textTransform:"uppercase",marginBottom:6}}>Status</div>
+            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+              {STATUS_ORDER.map(s => <button key={s} onClick={()=>setStatusAndSave(s)} style={{
+                display:"flex",alignItems:"center",gap:6,padding:"7px 12px",borderRadius:10,cursor:"pointer",
+                border:`1.5px solid ${status===s?STATUS_META[s].dot:C.border}`,
+                background:status===s?STATUS_META[s].bg:C.card,
+                color:status===s?STATUS_META[s].fg:C.textMid,
+                fontSize:12,fontWeight:700,
+              }}>
+                <span style={{width:8,height:8,borderRadius:"50%",background:STATUS_META[s].dot,flexShrink:0}} />
+                {STATUS_META[s].label}
+              </button>)}
+            </div>
+            {status==="booking" && <div style={{fontSize:11,color:C.green,fontWeight:600,marginTop:6}}>📋 Follow up: Sindhu</div>}
+          </div>
+
+          <div style={{display:"flex",alignItems:"center",justifyContent:"flex-end"}}>
             {phone && <a href={`tel:${phone}`} onClick={e=>e.stopPropagation()} style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",borderRadius:10,background:C.blueSoft,color:C.blue,fontSize:13,fontWeight:700,textDecoration:"none"}}>📞 Call</a>}
           </div>
 

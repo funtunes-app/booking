@@ -119,7 +119,7 @@ function App() {
       const res = await api.updateBirthdayCall({
         key: record.key, year: record.year, month: record.month, day: record.day,
         kidName: record.kidName, parentName: record.parentName, phone: record.phone,
-        contacted: record.contacted, notes: record.notes,
+        status: record.status, notes: record.notes,
       });
       if (res.success) {
         setBirthdays(prev => prev.map(b => b.key === record.key ? {...b, ...record} : b));
