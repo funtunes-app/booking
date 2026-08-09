@@ -425,8 +425,16 @@ function App() {
               </div>
               <InputField label="Payment Mode" icon="💳" error={errors.mop}><ChipSelect options={CONFIG.MOP_OPTIONS} value={form.mop} onChange={v=>set("mop",v)} /></InputField>
               <InputField label="Socks (₹ per pair)" icon="🧦">
-                <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
                   {CONFIG.SOCKS_PRICES.map(p=><button key={p} onClick={()=>{set("socks",p);if(p>0&&!form.socksMop)set("socksMop",form.mop);}} style={{padding:"10px 18px",borderRadius:12,border:`2px solid ${form.socks===p?C.accent:C.border}`,background:form.socks===p?C.accentSoft:C.card,color:form.socks===p?C.accent:C.textMid,fontSize:14,fontWeight:700,cursor:"pointer",transition:"all .15s ease"}}>{p===0?"None":`₹${p}`}</button>)}
+                  <input value={CONFIG.SOCKS_PRICES.includes(form.socks)?"":(form.socks||"")}
+                    onChange={e=>{
+                      const v=e.target.value.replace(/\D/g,"");
+                      set("socks",v===""?0:parseInt(v));
+                      if(v&&!form.socksMop)set("socksMop",form.mop);
+                    }}
+                    placeholder="Other ₹" type="tel" inputMode="numeric"
+                    style={{width:76,boxSizing:"border-box",padding:"10px 12px",borderRadius:12,border:`2px solid ${!CONFIG.SOCKS_PRICES.includes(form.socks)&&form.socks>0?C.accent:C.border}`,background:!CONFIG.SOCKS_PRICES.includes(form.socks)&&form.socks>0?C.accentSoft:C.card,color:C.text,fontSize:14,fontWeight:700,textAlign:"center",fontFamily:"'Nunito',sans-serif",outline:"none"}} />
                 </div>
               </InputField>
               {form.socks>0&&<InputField label="Socks Payment Mode" icon="🔄"><ChipSelect options={CONFIG.MOP_OPTIONS} value={form.socksMop} onChange={v=>set("socksMop",v)} /></InputField>}

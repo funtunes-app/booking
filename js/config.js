@@ -37,7 +37,7 @@ var CONFIG = {
   ],
 
   // Socks pricing options
-  SOCKS_PRICES: [0, 10, 20, 30, 50],
+  SOCKS_PRICES: [0, 15, 20, 30, 50],
 
   // Quick amount chips
   AMOUNT_PRESETS: [150, 200, 250, 300, 400, 500, 600],
