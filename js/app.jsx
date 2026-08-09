@@ -358,7 +358,7 @@ function App() {
         </div>
 
         <div style={{background:C.card,borderRadius:18,padding:"16px 18px",border:`1px solid ${C.border}`,boxShadow:"0 2px 12px rgba(123,45,142,.05)"}}>
-          <BirthdayList birthdays={birthdays} loading={birthdaysLoading} weekFilter={weekFilter} onSave={saveBirthdayCall} />
+          <BirthdayList birthdays={birthdays} loading={birthdaysLoading} weekFilter={weekFilter} onSave={saveBirthdayCall} onShowAll={()=>setWeekFilter("all")} />
         </div>
       </div>}
 

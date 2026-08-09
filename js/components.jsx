@@ -206,15 +206,22 @@ const BirthdayCard = ({b, isToday, onSave}) => {
   );
 };
 
-const BirthdayList = ({birthdays,loading,weekFilter,onSave}) => {
+const weekRangeLabel = (w) => `days ${(w-1)*7+1}–${Math.min(31,w*7)}`;
+
+const BirthdayList = ({birthdays,loading,weekFilter,onSave,onShowAll}) => {
   if (loading) return <div style={{textAlign:"center",padding:30}}><Spinner size={28} /><div style={{marginTop:10,fontSize:13,color:C.textLight}}>Loading birthdays...</div></div>;
   if (!birthdays.length) return <div style={{textAlign:"center",padding:"30px 20px",color:C.textLight,fontSize:14}}>🎈 No birthdays found for this month.</div>;
 
   const filtered = weekFilter === "all" ? birthdays : birthdays.filter(b => b.week === weekFilter);
-  if (!filtered.length) return <div style={{textAlign:"center",padding:"30px 20px",color:C.textLight,fontSize:14}}>No birthdays in this week.</div>;
+  if (!filtered.length) return (
+    <div style={{textAlign:"center",padding:"30px 20px"}}>
+      <div style={{fontSize:14,color:C.textLight,marginBottom:6}}>🎈 No birthdays in {weekRangeLabel(weekFilter)}.</div>
+      <div style={{fontSize:12,color:C.textLight,marginBottom:14}}>{birthdays.length} birthday{birthdays.length!==1?"s":""} this month overall.</div>
+      {onShowAll && <button onClick={onShowAll} style={{padding:"8px 16px",borderRadius:10,border:`1.5px solid ${C.accent}`,background:C.accentSoft,color:C.accent,fontSize:13,fontWeight:700,cursor:"pointer"}}>Show All This Month</button>}
+    </div>
+  );
 
   const now = new Date();
-  const isCurrentPeriod = true; // "today" highlight only meaningful if viewing current month/year — handled by caller passing correct data
 
   return (
     <div>
