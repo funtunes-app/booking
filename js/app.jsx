@@ -56,7 +56,9 @@ function App() {
   const [birthdayMonth,setBirthdayMonth] = useState(new Date().getMonth()+1);
   const [birthdayYear,setBirthdayYear] = useState(new Date().getFullYear());
   const [weekFilter,setWeekFilter] = useState(()=>Math.min(5,Math.ceil(new Date().getDate()/7)));
+  const [phoneLookupLoading,setPhoneLookupLoading] = useState(false);
   const containerRef = useRef(null);
+  const lastLookedUpPhone = useRef("");
 
   function getDefaultForm() {
     const n=new Date();
@@ -138,6 +140,24 @@ function App() {
     finally { setLoading(false); }
   }
 
+  async function lookupByPhone(phone) {
+    if (phone.length !== 10 || phone === lastLookedUpPhone.current) return;
+    lastLookedUpPhone.current = phone;
+    setPhoneLookupLoading(true);
+    try {
+      const res = await api.lookupPhone(phone);
+      if (res.success && res.found) {
+        setFormState(f => ({
+          ...f,
+          customerName: f.customerName || res.customerName || f.customerName,
+          dob: f.dob || res.dob || f.dob,
+        }));
+        if (res.customerName || res.dob) showToastMsg("Found previous entry — autofilled","success");
+      }
+    } catch(e) { console.error("Phone lookup:",e); }
+    finally { setPhoneLookupLoading(false); }
+  }
+
   const computeTimeOut = (timeIn,hours) => {
     if(!timeIn) return "";
     const [h,m]=timeIn.split(":").map(Number);
@@ -179,6 +199,7 @@ function App() {
 
   function handleEdit(entry) {
     setEditTarget(entry);
+    lastLookedUpPhone.current = String(entry.phone||entry["Phone number"]||"");
     const timing = entry.timing||entry["Timing"]||"";
     let timeIn = "";
     if (timing) {
@@ -242,6 +263,7 @@ function App() {
   function resetForm() {
     setFormState(getDefaultForm()); setStep(0); setErrors({}); setShowSuccess(false);
     setEditTarget(null); setScreen("home"); setEntryType("funzone");
+    lastLookedUpPhone.current = "";
   }
 
   const dateDisplay = getCurrentDate();
@@ -319,7 +341,7 @@ function App() {
 
         {/* New Entry Button */}
         <div style={{position:"fixed",bottom:24,left:"50%",transform:"translateX(-50%)",width:"calc(100% - 40px)",maxWidth:380,zIndex:50}}>
-          <button onClick={()=>{setFormState(getDefaultForm());setEditTarget(null);setScreen("form");setStep(0);}} style={{width:"100%",padding:16,borderRadius:18,border:"none",background:`linear-gradient(135deg,${C.accent},${C.pink})`,color:"#fff",fontSize:16,fontWeight:800,cursor:"pointer",boxShadow:`0 6px 24px ${C.accent}40`,animation:"slideUp .4s ease"}}>+ New Entry</button>
+          <button onClick={()=>{setFormState(getDefaultForm());setEditTarget(null);setScreen("form");setStep(0);lastLookedUpPhone.current="";}} style={{width:"100%",padding:16,borderRadius:18,border:"none",background:`linear-gradient(135deg,${C.accent},${C.pink})`,color:"#fff",fontSize:16,fontWeight:800,cursor:"pointer",boxShadow:`0 6px 24px ${C.accent}40`,animation:"slideUp .4s ease"}}>+ New Entry</button>
         </div>
       </div>}
 
@@ -398,6 +420,12 @@ function App() {
                   </button>)}
                 </div>
               </div>
+              <InputField label="Phone Number" icon="📱">
+                <div style={{position:"relative"}}>
+                  <input value={form.phone} onChange={e=>{const v=e.target.value.replace(/\D/g,"").slice(0,10);set("phone",v);if(v.length===10)lookupByPhone(v);}} placeholder="10-digit mobile" type="tel" inputMode="numeric" onFocus={()=>setFocusedField("phone")} onBlur={()=>setFocusedField(null)} style={inputStyle(focusedField==="phone")} />
+                  {phoneLookupLoading && <div style={{position:"absolute",right:16,top:"50%",transform:"translateY(-50%)"}}><Spinner size={18} /></div>}
+                </div>
+              </InputField>
               <InputField label="Customer Name" icon="👤" error={errors.customerName}>
                 <input value={form.customerName} onChange={e=>set("customerName",e.target.value)} placeholder="e.g. Priya" onFocus={()=>setFocusedField("name")} onBlur={()=>setFocusedField(null)} style={inputStyle(focusedField==="name",errors.customerName)} />
               </InputField>
@@ -405,9 +433,6 @@ function App() {
               {form.numKids>1&&<div style={{background:C.blueSoft,borderRadius:12,padding:"10px 14px",marginBottom:18,border:`1.5px solid ${C.blue}25`,fontSize:12,color:C.blue,fontWeight:600}}>
                 ℹ️ {form.numKids} separate rows: {form.customerName||"Name"} - Kid 1, Kid 2{form.numKids>2?`, ... Kid ${form.numKids}`:""}
               </div>}
-              <InputField label="Phone Number" icon="📱">
-                <input value={form.phone} onChange={e=>set("phone",e.target.value.replace(/\D/g,"").slice(0,10))} placeholder="10-digit mobile" type="tel" inputMode="numeric" onFocus={()=>setFocusedField("phone")} onBlur={()=>setFocusedField(null)} style={inputStyle(focusedField==="phone")} />
-              </InputField>
               <InputField label="Date of Birth (Child)" icon="🎂">
                 <input value={form.dob} onChange={e=>set("dob",e.target.value)} type="date" onFocus={()=>setFocusedField("dob")} onBlur={()=>setFocusedField(null)} style={inputStyle(focusedField==="dob")} />
               </InputField>

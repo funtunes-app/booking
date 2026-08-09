@@ -149,6 +149,9 @@ function handleRequest(e) {
         var body4 = JSON.parse(e.postData.contents);
         result = handleUpdateBirthdayCall(body4);
         break;
+      case "lookupPhone":
+        result = handleLookupPhone(params);
+        break;
       default:
         result = { success: false, error: "Unknown action: " + action };
     }
@@ -539,6 +542,64 @@ function handleUpdateBirthdayCall(body) {
   }
 
   return { success: true, message: "Birthday call record saved" };
+}
+
+// ── PHONE LOOKUP ────────────────────────────────────────────────────────────
+// Scans all "Funzone -" tabs for the most recent entry matching a phone
+// number, so the New Entry form can auto-fill customer name and DOB.
+
+function formatDobForInput(val) {
+  var parts = parseDobToParts(val);
+  if (!parts) return "";
+  return parts.year + "-" + ("0" + parts.month).slice(-2) + "-" + ("0" + parts.day).slice(-2);
+}
+
+function handleLookupPhone(params) {
+  var phone = String(params.phone || "").replace(/\D/g, "");
+  if (!phone) return { success: false, error: "phone required" };
+
+  var ss = getSpreadsheet();
+  var sheets = ss.getSheets();
+  var best = null;
+  var bestSortKey = "";
+
+  for (var s = 0; s < sheets.length; s++) {
+    var sheet = sheets[s];
+    var tabName = sheet.getName();
+    if (tabName.indexOf("Funzone -") !== 0) continue;
+
+    var lastRow = sheet.getLastRow();
+    if (lastRow <= 1) continue;
+    var lastCol = sheet.getLastColumn();
+    var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+
+    var nameCol = headers.indexOf("Customer name");
+    var phoneCol = headers.indexOf("Phone number");
+    var dobCol = headers.indexOf("DOB");
+    var dateCol = headers.indexOf("Date");
+    if (phoneCol === -1) continue;
+
+    var rows = sheet.getRange(2, 1, lastRow - 1, lastCol).getValues();
+    for (var i = 0; i < rows.length; i++) {
+      var rowPhone = String(rows[i][phoneCol] || "").replace(/\D/g, "");
+      if (!rowPhone || rowPhone !== phone) continue;
+
+      var dateNorm = dateCol !== -1 ? normalizeDate(rows[i][dateCol]) : "";
+      var dp = dateNorm.split("/");
+      var sortKey = dp.length === 3 ? (dp[2] + dp[1] + dp[0]) : "";
+
+      if (!best || sortKey > bestSortKey) {
+        best = {
+          customerName: cleanKidName(rows[i][nameCol]) || "",
+          dob: dobCol !== -1 ? formatDobForInput(rows[i][dobCol]) : ""
+        };
+        bestSortKey = sortKey;
+      }
+    }
+  }
+
+  if (!best) return { success: true, found: false };
+  return { success: true, found: true, customerName: best.customerName, dob: best.dob };
 }
 
 // ── TABS ────────────────────────────────────────────────────────────────────

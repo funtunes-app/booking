@@ -54,4 +54,8 @@ var api = {
   updateBirthdayCall: function(record) {
     return this.call("updateBirthdayCall", "POST", record);
   },
+
+  lookupPhone: function(phone) {
+    return this.call("lookupPhone", "GET", null, { phone: phone });
+  },
 };
