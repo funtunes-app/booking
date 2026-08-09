@@ -66,6 +66,52 @@ const MONTH_NAMES = ["January","February","March","April","May","June","July","A
 
 const WEEK_LABELS = ["Week 1","Week 2","Week 3","Week 4","Week 5"];
 
+const Dropdown = ({value,options,onChange,flex}) => {
+  const [open,setOpen] = React.useState(false);
+  const ref = React.useRef(null);
+
+  React.useEffect(() => {
+    if (!open) return;
+    const onOutside = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", onOutside);
+    document.addEventListener("touchstart", onOutside);
+    return () => {
+      document.removeEventListener("mousedown", onOutside);
+      document.removeEventListener("touchstart", onOutside);
+    };
+  }, [open]);
+
+  const selected = options.find(o => o.value === value);
+
+  return (
+    <div ref={ref} style={{position:"relative",flex:flex||1}}>
+      <button onClick={()=>setOpen(o=>!o)} style={{
+        width:"100%",boxSizing:"border-box",display:"flex",alignItems:"center",justifyContent:"space-between",
+        padding:"12px 14px",borderRadius:14,border:`2px solid ${open?C.borderFocus:C.border}`,
+        background:open?C.accentSoft:C.card,fontSize:14,fontWeight:700,color:C.text,
+        fontFamily:"'Nunito',sans-serif",cursor:"pointer",transition:"all .2s ease",
+        boxShadow:open?`0 0 0 4px ${C.accent}15`:"none",
+      }}>
+        <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{selected?selected.label:""}</span>
+        <span style={{fontSize:11,color:C.textLight,flexShrink:0,marginLeft:8,transform:open?"rotate(180deg)":"none",transition:"transform .2s ease"}}>▾</span>
+      </button>
+      {open && <div style={{
+        position:"absolute",top:"calc(100% + 6px)",left:0,right:0,zIndex:60,
+        background:C.card,borderRadius:14,border:`1.5px solid ${C.border}`,
+        boxShadow:C.shadowLift,overflow:"hidden auto",maxHeight:260,
+        animation:"popIn .15s ease",
+      }}>
+        {options.map(o => <div key={o.value} onClick={()=>{onChange(o.value);setOpen(false);}} style={{
+          padding:"11px 14px",fontSize:14,cursor:"pointer",
+          fontWeight:o.value===value?800:500,
+          color:o.value===value?C.accent:C.text,
+          background:o.value===value?C.accentSoft:"transparent",
+        }}>{o.label}</div>)}
+      </div>}
+    </div>
+  );
+};
+
 const BirthdayCard = ({b, isToday, onSave}) => {
   const [expanded, setExpanded] = React.useState(false);
   const [parentName, setParentName] = React.useState(b.parentName || "");

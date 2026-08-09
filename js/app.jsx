@@ -55,7 +55,7 @@ function App() {
   const [birthdaysLoading,setBirthdaysLoading] = useState(false);
   const [birthdayMonth,setBirthdayMonth] = useState(new Date().getMonth()+1);
   const [birthdayYear,setBirthdayYear] = useState(new Date().getFullYear());
-  const [weekFilter,setWeekFilter] = useState("all");
+  const [weekFilter,setWeekFilter] = useState(()=>Math.min(5,Math.ceil(new Date().getDate()/7)));
   const containerRef = useRef(null);
 
   function getDefaultForm() {
@@ -76,7 +76,7 @@ function App() {
 
   // Birthdays: cache in localStorage for the CURRENT month/year only, refetch once per day.
   // Any other month/year selection always fetches fresh (not cached).
-  const BIRTHDAY_CACHE_KEY = "funtunes_birthdays_cache";
+  const BIRTHDAY_CACHE_KEY = "funtunes_birthdays_cache_v2";
 
   function checkBirthdaysCache() {
     const nowMonth = new Date().getMonth()+1, nowYear = new Date().getFullYear();
@@ -332,18 +332,10 @@ function App() {
 
         {/* Month / Year selectors */}
         <div style={{display:"flex",gap:8,marginBottom:14}}>
-          <select value={birthdayMonth} onChange={e=>changeMonth(parseInt(e.target.value))} style={{
-            flex:1.4,padding:"10px 12px",borderRadius:12,border:`2px solid ${C.border}`,background:C.card,
-            fontSize:14,fontWeight:700,color:C.text,fontFamily:"'Nunito',sans-serif",
-          }}>
-            {MONTH_NAMES.map((m,i)=><option key={m} value={i+1}>{m}</option>)}
-          </select>
-          <select value={birthdayYear} onChange={e=>changeYear(parseInt(e.target.value))} style={{
-            flex:1,padding:"10px 12px",borderRadius:12,border:`2px solid ${C.border}`,background:C.card,
-            fontSize:14,fontWeight:700,color:C.text,fontFamily:"'Nunito',sans-serif",
-          }}>
-            {[new Date().getFullYear()-1, new Date().getFullYear(), new Date().getFullYear()+1].map(y=><option key={y} value={y}>{y}</option>)}
-          </select>
+          <Dropdown flex={1.4} value={birthdayMonth} onChange={changeMonth}
+            options={MONTH_NAMES.map((m,i)=>({value:i+1,label:m}))} />
+          <Dropdown flex={1} value={birthdayYear} onChange={changeYear}
+            options={[new Date().getFullYear()-1, new Date().getFullYear(), new Date().getFullYear()+1].map(y=>({value:y,label:String(y)}))} />
         </div>
 
         {/* Week filter chips */}
