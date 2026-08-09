@@ -154,10 +154,10 @@ const BirthdayCard = ({b, isToday, onSave}) => {
         </div>
         <div style={{flex:1,minWidth:0}}>
           <div style={{fontSize:14,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{b.kidName}</div>
-          <div style={{fontSize:11,color:C.textLight}}>{b.turningAge?`Turning ${b.turningAge}`:""}{b.phone?` · ${b.phone}`:" · No phone"}</div>
+          <div style={{fontSize:11,color:C.textLight}}>{b.phone?`📱 ${b.phone}`:"No phone"}</div>
         </div>
-        {contacted && <span style={{fontSize:11,fontWeight:700,color:C.green,background:"#fff",padding:"3px 8px",borderRadius:8,flexShrink:0}}>✓ Called</span>}
-        {isToday && !contacted && <div style={{fontSize:20,flexShrink:0}}>🎉</div>}
+        <span style={{fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:8,flexShrink:0,whiteSpace:"nowrap",color:contacted?C.green:C.textLight,background:contacted?"#fff":`${C.textLight}15`}}>{contacted?"✓ Contacted":"Not contacted"}</span>
+        {isToday && <div style={{fontSize:20,flexShrink:0}}>🎉</div>}
         <span style={{fontSize:12,color:C.textLight,flexShrink:0,transform:expanded?"rotate(180deg)":"none",transition:"transform .2s"}}>▾</span>
       </div>
 
