@@ -300,6 +300,12 @@ function App() {
     lastLookedUpPhone.current = "";
   }
 
+  // Leaves the form (clearing any draft) and lands on the birthdays screen.
+  function openBirthdays() {
+    resetForm();
+    setScreen("birthdays");
+  }
+
   function startNewEntry() {
     setFormState(getDefaultForm()); setEditTarget(null); setScreen("form"); setStep(0);
     lastLookedUpPhone.current = "";
@@ -443,7 +449,10 @@ function App() {
                 <img className="appbar-logo" src="icons/logo-header.png" alt="" />
                 <span className="card-title">{editTarget?"Edit entry":"New entry"}</span>
               </div>
-              <button className="btn btn-sm btn-ghost" onClick={resetForm}>📊 Dashboard</button>
+              <div className="appbar-actions">
+                <button className="btn btn-sm btn-icon" onClick={resetForm} title="Dashboard" aria-label="Dashboard">📊</button>
+                <button className="btn btn-sm btn-icon" onClick={openBirthdays} title="Birthdays" aria-label="Birthdays">🎂</button>
+              </div>
             </div>
             <div className="stepbar">
               {STEP_LABELS.map((_,i)=><React.Fragment key={i}>

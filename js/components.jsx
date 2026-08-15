@@ -120,31 +120,31 @@ const initialStatus = (b) => b.status || (b.contacted ? "warm" : "not_contacted"
 
 const BirthdayCard = ({b, isToday, onSave}) => {
   const [expanded, setExpanded] = React.useState(false);
-  const [parentName, setParentName] = React.useState(b.parentName || "");
   const [phone, setPhone] = React.useState(b.phone || "");
   const [notes, setNotes] = React.useState(b.notes || "");
   const [status, setStatus] = React.useState(initialStatus(b));
   const [saving, setSaving] = React.useState(false);
 
   React.useEffect(() => {
-    setParentName(b.parentName || ""); setPhone(b.phone || "");
-    setNotes(b.notes || ""); setStatus(initialStatus(b));
+    setPhone(b.phone || ""); setNotes(b.notes || ""); setStatus(initialStatus(b));
   }, [b.key]);
 
   const kidName = b.kidName || b.name || "—";
   const meta = STATUS_META[status] || STATUS_META.not_contacted;
-  const dirty = parentName !== (b.parentName||"") || phone !== (b.phone||"") || notes !== (b.notes||"") || status !== initialStatus(b);
+  const dirty = phone !== (b.phone||"") || notes !== (b.notes||"") || status !== initialStatus(b);
 
+  // parentName is no longer edited here; `...b` carries the stored value
+  // through unchanged so saving does not blank it out.
   const save = async () => {
     setSaving(true);
-    await onSave({ ...b, parentName, phone, notes, status });
+    await onSave({ ...b, phone, notes, status });
     setSaving(false);
   };
 
   const setStatusAndSave = async (s) => {
     setStatus(s);
     setSaving(true);
-    await onSave({ ...b, parentName, phone, notes, status: s });
+    await onSave({ ...b, phone, notes, status: s });
     setSaving(false);
   };
 
@@ -169,15 +169,9 @@ const BirthdayCard = ({b, isToday, onSave}) => {
 
       {expanded && (
         <div style={{padding:"0 12px 12px",display:"flex",flexDirection:"column",gap:10,borderTop:`1px solid ${C.border}`,paddingTop:12,marginTop:2}} onClick={e=>e.stopPropagation()}>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-            <div>
-              <div className="field-label">Parent Name</div>
-              <input className="fld" value={parentName} onChange={e=>setParentName(e.target.value)} placeholder="Add parent name" />
-            </div>
-            <div>
-              <div className="field-label">Phone</div>
-              <input className="fld" value={phone} onChange={e=>setPhone(e.target.value.replace(/\D/g,"").slice(0,10))} placeholder="Mobile number" type="tel" inputMode="numeric" />
-            </div>
+          <div>
+            <div className="field-label">Phone</div>
+            <input className="fld" value={phone} onChange={e=>setPhone(e.target.value.replace(/\D/g,"").slice(0,10))} placeholder="Mobile number" type="tel" inputMode="numeric" />
           </div>
 
           <div>
