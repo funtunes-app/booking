@@ -72,6 +72,8 @@ function App() {
   const [birthdayYear,setBirthdayYear] = useState(new Date().getFullYear());
   const [weekFilter,setWeekFilter] = useState(()=>Math.min(5,Math.ceil(new Date().getDate()/7)));
   const [phoneLookupLoading,setPhoneLookupLoading] = useState(false);
+  const [enquiry,setEnquiry] = useState(null);   // null = closed
+  const [enquirySaving,setEnquirySaving] = useState(false);
   const containerRef = useRef(null);
   const lastLookedUpPhone = useRef("");
 
@@ -90,10 +92,11 @@ function App() {
     setErrors(e=>({...e,[key]:undefined}));
   },[]);
 
-  // Duration drives the per-kid amount; sock count drives the socks charge.
-  const setHours = useCallback((v) => {
-    setFormState(f=>({...f,hours:v,amount:String(computeAmountForHours(v))}));
-    setErrors(e=>({...e,amount:undefined}));
+  // Duration drives the per-kid amount for the play area only — birthday and
+  // event bookings are quoted manually, so their amount must not be overwritten.
+  const setHours = useCallback((v,autoPrice) => {
+    setFormState(f=>autoPrice ? {...f,hours:v,amount:String(computeAmountForHours(v))} : {...f,hours:v});
+    if (autoPrice) setErrors(e=>({...e,amount:undefined}));
   },[]);
 
   const setSockCount = useCallback((n) => {
@@ -195,7 +198,10 @@ function App() {
     return `${String(Math.floor(t/60)%24).padStart(2,"0")}:${String(Math.round(t%60)).padStart(2,"0")}`;
   };
 
-  const totalAmount = (parseInt(form.amount)||0)*form.numKids + form.socks;
+  // Socks only ever apply to the play area — guard here too so a stale value
+  // can never be billed on a party booking.
+  const socksCharge = entryType === "funzone" ? (form.socks||0) : 0;
+  const totalAmount = (parseInt(form.amount)||0)*form.numKids + socksCharge;
 
   const validate = (s) => {
     const errs={};
@@ -212,7 +218,7 @@ function App() {
 
   async function submitEntry() {
     const timeOut = computeTimeOut(form.timeIn,form.hours);
-    const entry={...form,entryType,timeIn:form.timeIn,timeOut:timeOut,amount:parseInt(form.amount)||0};
+    const entry={...form,entryType,timeIn:form.timeIn,timeOut:timeOut,amount:parseInt(form.amount)||0,socks:socksCharge};
     setSaving(true);
     try {
       const res=await api.addEntry(entry);
@@ -269,7 +275,7 @@ function App() {
 
   async function handleUpdateSubmit() {
     const timeOut = computeTimeOut(form.timeIn,form.hours);
-    const entry={...form,entryType,timeIn:form.timeIn,timeOut:timeOut,amount:parseInt(form.amount)||0,slNo:editTarget?.["Sl.no"]||editTarget?.["SI. No"]||editTarget?.["S.no"]||""};
+    const entry={...form,entryType,timeIn:form.timeIn,timeOut:timeOut,amount:parseInt(form.amount)||0,socks:socksCharge,slNo:editTarget?.["Sl.no"]||editTarget?.["SI. No"]||editTarget?.["S.no"]||""};
     if(!editTarget?._rowIndex){showToastMsg("Cannot identify row","error");resetForm();return;}
     setSaving(true);
     try {
@@ -300,19 +306,55 @@ function App() {
     lastLookedUpPhone.current = "";
   }
 
+  // ── Birthday party enquiries (leads, not paid entries) ──
+  function openEnquiry() {
+    setEnquiry({parentName:"",kidName:"",phone:"",dob:"",preferredDate:"",numKids:"",notes:""});
+  }
+
+  async function saveEnquiry() {
+    if (!enquiry.parentName.trim() && !enquiry.kidName.trim() && !enquiry.phone.trim()) {
+      showToastMsg("Add a name or phone number first","error"); return;
+    }
+    setEnquirySaving(true);
+    try {
+      const res = await api.addEnquiry({...enquiry, date:new Date().toISOString().slice(0,10)});
+      if (res.success) { showToastMsg("Enquiry saved","success"); setEnquiry(null); }
+      else showToastMsg("Save failed: "+(res.error||"unknown"),"error");
+    } catch(e) { console.error("Enquiry:",e); showToastMsg("Could not save — check internet","error"); }
+    finally { setEnquirySaving(false); }
+  }
+
   // Leaves the form (clearing any draft) and lands on the birthdays screen.
   function openBirthdays() {
     resetForm();
     setScreen("birthdays");
   }
 
-  function startNewEntry() {
-    setFormState(getDefaultForm()); setEditTarget(null); setScreen("form"); setStep(0);
+  // Socks are a play-area thing only — a birthday/event booking must not carry
+  // the default pair charge into its total.
+  function setFormType(type) {
+    setEntryType(type);
+    setStep(0);
+    setFormState(f=>{
+      if (type === "funzone") {
+        const n = f.sockCount || CONFIG.DEFAULT_SOCK_COUNT;
+        return {...f, sockCount:n, socks:n*CONFIG.SOCKS_RATE, socksMop:f.socksMop||f.mop};
+      }
+      return {...f, sockCount:0, socks:0, socksMop:""};
+    });
+  }
+
+  function startNewEntry(type) {
+    setFormState(getDefaultForm()); setEditTarget(null); setScreen("form");
+    setFormType(type || "funzone");
     lastLookedUpPhone.current = "";
   }
 
   const dateDisplay = getCurrentDate();
   const timeDisplay = getCurrentTime12();
+  const typeMeta = CONFIG.ENTRY_TYPES.find(t=>t.key===entryType) || CONFIG.ENTRY_TYPES[0];
+  // Only the play area is priced off the duration; parties are quoted manually.
+  const isPlayArea = entryType === "funzone";
 
   // =========================================================================
   // RENDER
@@ -356,7 +398,7 @@ function App() {
             </div>
             <div className="appbar-actions">
               <button className="btn btn-sm" onClick={()=>setScreen("birthdays")} title="Birthdays">🎂 <span style={{marginLeft:2}}>Birthdays</span></button>
-              <button className="btn btn-sm btn-primary new-entry-inline" onClick={startNewEntry}>+ New Entry</button>
+              <button className="btn btn-sm btn-primary new-entry-inline" onClick={()=>startNewEntry("funzone")}>+ New Entry</button>
             </div>
           </div>
         </header>
@@ -396,7 +438,7 @@ function App() {
 
         {/* New Entry (mobile floating action button) */}
         <div className="new-entry-fab">
-          <button className="btn btn-primary btn-block btn-lg" onClick={startNewEntry} style={{boxShadow:`0 6px 22px ${C.accent}45`,animation:"slideUp .35s ease"}}>+ New Entry</button>
+          <button className="btn btn-primary btn-block btn-lg" onClick={()=>startNewEntry("funzone")} style={{boxShadow:`0 6px 22px ${C.accent}45`,animation:"slideUp .35s ease"}}>+ New Entry</button>
         </div>
       </>}
 
@@ -408,7 +450,10 @@ function App() {
               <button className="btn btn-sm btn-ghost" onClick={()=>setScreen("home")}>← Back</button>
               <span className="card-title">🎂 Birthdays</span>
             </div>
-            <button className="btn btn-sm" onClick={()=>fetchBirthdays()} disabled={birthdaysLoading}>↻ Refresh</button>
+            <div className="appbar-actions">
+              <button className="btn btn-sm btn-primary" onClick={openEnquiry} title="New birthday enquiry">+ Enquiry</button>
+              <button className="btn btn-sm btn-icon" onClick={()=>fetchBirthdays()} disabled={birthdaysLoading} title="Refresh" aria-label="Refresh">↻</button>
+            </div>
           </div>
         </header>
 
@@ -440,6 +485,53 @@ function App() {
         </div>
       </>}
 
+      {/* ══════════ BIRTHDAY ENQUIRY ══════════ */}
+      {enquiry && <div className="overlay" onClick={()=>!enquirySaving&&setEnquiry(null)}>
+        <div className="modal" style={{maxWidth:460,textAlign:"left",padding:"20px"}} onClick={e=>e.stopPropagation()}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
+            <span className="card-title">🎂 Birthday enquiry</span>
+            <button className="btn btn-sm btn-icon" onClick={()=>setEnquiry(null)} disabled={enquirySaving} aria-label="Close">✕</button>
+          </div>
+          <div className="form-grid">
+            <InputField label="Parent Name" icon="👤">
+              <input className="fld" value={enquiry.parentName} placeholder="e.g. Priya"
+                onChange={e=>setEnquiry({...enquiry,parentName:e.target.value})} />
+            </InputField>
+            <InputField label="Phone" icon="📱">
+              <input className="fld" value={enquiry.phone} type="tel" inputMode="numeric" placeholder="10-digit mobile"
+                onChange={e=>setEnquiry({...enquiry,phone:e.target.value.replace(/\D/g,"").slice(0,10)})} />
+            </InputField>
+            <InputField label="Kid's Name" icon="🧒">
+              <input className="fld" value={enquiry.kidName} placeholder="e.g. Aarav"
+                onChange={e=>setEnquiry({...enquiry,kidName:e.target.value})} />
+            </InputField>
+            <InputField label="Kid's Date of Birth" icon="🎂">
+              <input className="fld" value={enquiry.dob} type="date"
+                onChange={e=>setEnquiry({...enquiry,dob:e.target.value})} />
+            </InputField>
+            <InputField label="Preferred Party Date" icon="📅">
+              <input className="fld" value={enquiry.preferredDate} type="date"
+                onChange={e=>setEnquiry({...enquiry,preferredDate:e.target.value})} />
+            </InputField>
+            <InputField label="Expected Kids" icon="👶">
+              <input className="fld" value={enquiry.numKids} type="tel" inputMode="numeric" placeholder="e.g. 20"
+                onChange={e=>setEnquiry({...enquiry,numKids:e.target.value.replace(/\D/g,"")})} />
+            </InputField>
+            <InputField label="Notes" icon="📝" className="span-2">
+              <textarea className="fld" rows={2} value={enquiry.notes} style={{resize:"vertical"}}
+                placeholder="e.g. Wants decoration + cake, budget around 8k"
+                onChange={e=>setEnquiry({...enquiry,notes:e.target.value})} />
+            </InputField>
+          </div>
+          <div style={{display:"flex",gap:8,marginTop:4}}>
+            <button className="btn" onClick={()=>setEnquiry(null)} disabled={enquirySaving} style={{flex:"0 0 90px"}}>Cancel</button>
+            <button className="btn btn-primary" onClick={saveEnquiry} disabled={enquirySaving} style={{flex:1}}>
+              {enquirySaving?"Saving…":"Save enquiry"}
+            </button>
+          </div>
+        </div>
+      </div>}
+
       {/* ══════════ FORM ══════════ */}
       {screen==="form" && <>
         <header className="appbar">
@@ -447,13 +539,25 @@ function App() {
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,marginBottom:9}}>
               <div className="appbar-brand">
                 <img className="appbar-logo" src="icons/logo-header.png" alt="" />
-                <span className="card-title">{editTarget?"Edit entry":"New entry"}</span>
+                <span className="card-title">
+                  {editTarget?"Edit entry":`New ${(CONFIG.ENTRY_TYPES.find(t=>t.key===entryType)?.label||"entry").toLowerCase()}`}
+                </span>
               </div>
               <div className="appbar-actions">
                 <button className="btn btn-sm btn-icon" onClick={resetForm} title="Dashboard" aria-label="Dashboard">📊</button>
                 <button className="btn btn-sm btn-icon" onClick={openBirthdays} title="Birthdays" aria-label="Birthdays">🎂</button>
               </div>
             </div>
+
+            {/* Entry type switcher — only when creating (an entry's type is fixed once saved) */}
+            {!editTarget && <div className="segmented" style={{marginBottom:10}}>
+              {CONFIG.ENTRY_TYPES.map(t=>
+                <button key={t.key} type="button" className={`seg${entryType===t.key?" is-on":""}`}
+                  onClick={()=>{ if(t.key!==entryType) setFormType(t.key); }}
+                  style={entryType===t.key?{color:t.color,background:`${t.color}10`}:undefined}>
+                  <span style={{fontSize:15}}>{t.icon}</span>{t.label}
+                </button>)}
+            </div>}
             <div className="stepbar">
               {STEP_LABELS.map((_,i)=><React.Fragment key={i}>
                 <button type="button" onClick={()=>{if(i<step)setStep(i);}}
@@ -473,17 +577,6 @@ function App() {
 
             {/* Step 0 — Customer */}
             {step===0&&<>
-              <div className="section">
-                <SectionHeading label="Entry type" />
-                <div className="segmented">
-                  {CONFIG.ENTRY_TYPES.map(t=><button key={t.key} type="button"
-                    className={`seg${entryType===t.key?" is-on":""}`} onClick={()=>setEntryType(t.key)}
-                    style={entryType===t.key?{color:t.color,background:`${t.color}10`}:undefined}>
-                    <span style={{fontSize:17}}>{t.icon}</span>{t.label}
-                  </button>)}
-                </div>
-              </div>
-
               <div className="section">
                 <SectionHeading label="Customer" />
                 <div className="form-grid">
@@ -514,7 +607,7 @@ function App() {
             {/* Step 1 — Payment */}
             {step===1&&<>
               <div className="section">
-                <SectionHeading icon="🎪" label="Playtime" />
+                <SectionHeading icon={typeMeta.icon} label={isPlayArea?"Playtime":`${typeMeta.label} booking`} />
                 <div className="form-grid">
                   <InputField label="Duration" icon="⏱️">
                     <div style={{display:"flex",gap:8,alignItems:"center"}}>
@@ -523,10 +616,10 @@ function App() {
                         options={[...CONFIG.HOUR_OPTIONS.map(o=>({value:o.value,label:o.label})),{value:"custom",label:"Custom…"}]}
                         onChange={v=>{
                           if(v==="custom"){ set("hoursMode","custom"); }
-                          else { set("hoursMode","preset"); setHours(v); }
+                          else { set("hoursMode","preset"); setHours(v,isPlayArea); }
                         }} />
                       {form.hoursMode==="custom" &&
-                        <input className="fld" value={form.hours} onChange={e=>setHours(e.target.value.replace(/[^\d.]/g,""))}
+                        <input className="fld" value={form.hours} onChange={e=>setHours(e.target.value.replace(/[^\d.]/g,""),isPlayArea)}
                           placeholder="hrs" type="tel" inputMode="decimal" style={{width:74,flexShrink:0,textAlign:"center"}} />}
                     </div>
                     <div style={{display:"flex",alignItems:"center",gap:6,marginTop:7,fontSize:11,color:C.textLight,fontWeight:600}}>
@@ -536,12 +629,13 @@ function App() {
                     </div>
                   </InputField>
 
-                  <InputField label="Playtime (₹ per kid)" icon="💰" error={errors.amount}>
+                  <InputField label={isPlayArea?"Playtime (₹ per kid)":"Amount (₹ per kid)"} icon="💰" error={errors.amount}>
                     <div style={{position:"relative"}}>
                       <span style={{position:"absolute",left:13,top:"50%",transform:"translateY(-50%)",fontSize:16,fontWeight:800,color:C.accent,pointerEvents:"none"}}>₹</span>
                       <input className={`fld fld-lg${errors.amount?" is-error":""}`} value={form.amount} type="tel" inputMode="numeric" placeholder="300"
                         onChange={e=>set("amount",e.target.value.replace(/\D/g,""))} />
                     </div>
+                    {!isPlayArea && <div className="field-hint">Party pricing is set manually.</div>}
                   </InputField>
                 </div>
                 <InputField label="Payment Mode" icon="💳" error={errors.mop}>
@@ -549,7 +643,7 @@ function App() {
                 </InputField>
               </div>
 
-              <div className="section">
+              {isPlayArea && <div className="section">
                 <SectionHeading icon="🧦" label="Socks" />
                 <div className="form-grid">
                   <InputField label={`Pairs (₹${CONFIG.SOCKS_RATE} each)`}>
@@ -571,7 +665,7 @@ function App() {
                     <ChipSelect options={CONFIG.MOP_OPTIONS} value={form.socksMop} onChange={v=>set("socksMop",v)} />
                   </InputField>}
                 </div>
-              </div>
+              </div>}
 
               <div className="card card-pad" style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,background:C.accentSoft,borderColor:`${C.accent}30`}}>
                 <div>

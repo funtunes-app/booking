@@ -58,4 +58,12 @@ var api = {
   lookupPhone: function(phone) {
     return this.call("lookupPhone", "GET", null, { phone: phone });
   },
+
+  addEnquiry: function(enquiry) {
+    return this.call("addEnquiry", "POST", enquiry);
+  },
+
+  listEnquiries: function() {
+    return this.call("enquiries");
+  },
 };

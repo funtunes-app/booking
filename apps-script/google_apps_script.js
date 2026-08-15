@@ -152,6 +152,13 @@ function handleRequest(e) {
       case "lookupPhone":
         result = handleLookupPhone(params);
         break;
+      case "addEnquiry":
+        var body5 = JSON.parse(e.postData.contents);
+        result = handleAddEnquiry(body5);
+        break;
+      case "enquiries":
+        result = handleListEnquiries(params);
+        break;
       default:
         result = { success: false, error: "Unknown action: " + action };
     }
@@ -542,6 +549,67 @@ function handleUpdateBirthdayCall(body) {
   }
 
   return { success: true, message: "Birthday call record saved" };
+}
+
+// ── BIRTHDAY ENQUIRIES ──────────────────────────────────────────────────────
+// Party enquiries live in their own tab — they are leads, not paid entries,
+// so they must not land in the monthly sheets or count towards revenue.
+
+var ENQUIRIES_TAB = "Birthday Enquiries";
+var ENQUIRY_HEADERS = [
+  "Date", "Parent Name", "Kid Name", "Phone", "Kid DOB",
+  "Preferred Date", "No of kids", "Notes", "Status", "Timestamp"
+];
+
+function getEnquiriesSheet() {
+  var ss = getSpreadsheet();
+  var sheet = ss.getSheetByName(ENQUIRIES_TAB);
+  if (!sheet) {
+    sheet = ss.insertSheet(ENQUIRIES_TAB);
+    sheet.getRange(1, 1, 1, ENQUIRY_HEADERS.length).setValues([ENQUIRY_HEADERS]);
+    sheet.getRange(1, 1, 1, ENQUIRY_HEADERS.length).setFontWeight("bold").setBackground("#f0f0f0");
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+function handleAddEnquiry(body) {
+  if (!body || !(body.parentName || body.kidName || body.phone)) {
+    return { success: false, error: "Enter at least a name or phone number" };
+  }
+  var sheet = getEnquiriesSheet();
+  sheet.appendRow([
+    formatDate(body.date || new Date().toISOString().slice(0, 10)),
+    body.parentName || "",
+    body.kidName || "",
+    body.phone || "",
+    body.dob || "",
+    body.preferredDate ? formatDate(body.preferredDate) : "",
+    body.numKids || "",
+    body.notes || "",
+    body.status || "not_contacted",
+    new Date().toISOString()
+  ]);
+  return { success: true, message: "Enquiry saved", tab: ENQUIRIES_TAB };
+}
+
+function handleListEnquiries(params) {
+  var sheet = getEnquiriesSheet();
+  var lastRow = sheet.getLastRow();
+  if (lastRow <= 1) return { success: true, data: [] };
+  var rows = sheet.getRange(2, 1, lastRow - 1, ENQUIRY_HEADERS.length).getValues();
+  var out = [];
+  for (var i = 0; i < rows.length; i++) {
+    out.push({
+      _rowIndex: i + 2,
+      date: normalizeDate(rows[i][0]),
+      parentName: rows[i][1], kidName: rows[i][2], phone: String(rows[i][3] || ""),
+      dob: rows[i][4], preferredDate: normalizeDate(rows[i][5]),
+      numKids: rows[i][6], notes: rows[i][7], status: rows[i][8] || "not_contacted"
+    });
+  }
+  out.reverse(); // newest first
+  return { success: true, data: out, count: out.length };
 }
 
 // ── PHONE LOOKUP ────────────────────────────────────────────────────────────

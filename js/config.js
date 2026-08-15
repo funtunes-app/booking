@@ -11,12 +11,13 @@ var CONFIG = {
   APP_NAME: "FunTunes-dev",
   VERSION: "1.0.0",
 
-  // Entry types available in the form
+  // Entry types — each has its own form, reached from the header.
+  // NOTE: the play area key stays "funzone" so existing sheet rows (and the
+  // "Funzone - <Month>" tab naming) keep matching; only the label changed.
   ENTRY_TYPES: [
-    { key: "funzone", label: "Funzone", icon: "\u{1F3AA}", color: "#e85d26" },
-    { key: "birthday", label: "Birthday", icon: "\u{1F382}", color: "#a855f7" },
-    { key: "event", label: "Event", icon: "\u{1F389}", color: "#0ea5e9" },
-    { key: "daycare", label: "Daycare", icon: "\u{1F9D2}", color: "#f59e0b" },
+    { key: "funzone",  label: "Play Area", icon: "\u{1F3AA}", color: "#7B2D8E" },
+    { key: "birthday", label: "Birthday",  icon: "\u{1F382}", color: "#E84393" },
+    { key: "event",    label: "Event",     icon: "\u{1F389}", color: "#2E86DE" },
   ],
 
   // Payment modes
