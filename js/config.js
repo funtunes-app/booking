@@ -50,9 +50,6 @@ var CONFIG = {
   SOCK_COUNT_OPTIONS: [0, 1, 2, 3, 4],
   DEFAULT_SOCK_COUNT: 1,
 
-  // Quick amount chips (manual override of the calculated amount)
-  AMOUNT_PRESETS: [150, 200, 250, 300, 400, 500, 600],
-
   // Default payment mode
   DEFAULT_MOP: "Bank - HDFC",
 };

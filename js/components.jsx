@@ -38,6 +38,14 @@ const InputField = ({label,icon,error,children}) => (
   </div>
 );
 
+const SectionHeading = ({icon,label}) => (
+  <div style={{display:"flex",alignItems:"center",gap:8,margin:"4px 0 14px"}}>
+    <span style={{fontSize:16}}>{icon}</span>
+    <span style={{fontSize:14,fontWeight:800,color:C.accent}}>{label}</span>
+    <div style={{flex:1,height:1,background:C.border}} />
+  </div>
+);
+
 const ChipSelect = ({options,value,onChange}) => (
   <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
     {options.map(opt => {

@@ -3,8 +3,9 @@
 // =============================================================================
 const { useState, useRef, useEffect, useCallback } = React;
 
-const STEP_LABELS = ["Customer","Payment","Session","Review"];
-const STEP_ICONS = ["👤","💳","⏰","✅"];
+const STEP_LABELS = ["Customer","Payment","Review"];
+const STEP_ICONS = ["👤","💳","✅"];
+const LAST_STEP = STEP_LABELS.length - 1;
 
 // ── Date/Time Formatters ──
 function formatDateDDMMYYYY(dateStr) {
@@ -207,7 +208,7 @@ function App() {
     return !Object.keys(errs).length;
   };
 
-  const next = () => { if(validate(step)){setStep(s=>Math.min(s+1,3));containerRef.current?.scrollTo({top:0,behavior:"smooth"});} };
+  const next = () => { if(validate(step)){setStep(s=>Math.min(s+1,LAST_STEP));containerRef.current?.scrollTo({top:0,behavior:"smooth"});} };
   const prev = () => setStep(s=>Math.max(s-1,0));
 
   async function submitEntry() {
@@ -439,9 +440,9 @@ function App() {
             </div>
             {/* Progress */}
             <div style={{display:"flex",alignItems:"center",gap:4}}>
-              {[0,1,2,3].map(i=><React.Fragment key={i}>
+              {STEP_LABELS.map((_,i)=><React.Fragment key={i}>
                 <button onClick={()=>{if(i<step)setStep(i);}} style={{width:32,height:32,borderRadius:10,border:"none",fontSize:14,background:i<=step?(i===step?C.accent:C.green):C.border,color:i<=step?"#fff":C.textLight,fontWeight:700,cursor:i<step?"pointer":"default",display:"flex",alignItems:"center",justifyContent:"center"}}>{i<step?"✓":STEP_ICONS[i]}</button>
-                {i<3&&<div style={{flex:1,height:3,borderRadius:2,background:i<step?C.green:C.border}} />}
+                {i<LAST_STEP&&<div style={{flex:1,height:3,borderRadius:2,background:i<step?C.green:C.border}} />}
               </React.Fragment>)}
             </div>
             <div style={{display:"flex",justifyContent:"space-between",marginTop:4}}>
@@ -484,6 +485,8 @@ function App() {
 
             {/* Step 1 — Payment */}
             {step===1&&<>
+              {/* ── Playtime ── */}
+              <SectionHeading icon="🎪" label="Playtime" />
               <InputField label="Duration" icon="⏱️">
                 <div style={{display:"flex",gap:8,alignItems:"center"}}>
                   <Dropdown flex={1}
@@ -498,22 +501,23 @@ function App() {
                       placeholder="hrs" type="tel" inputMode="decimal"
                       style={{width:80,boxSizing:"border-box",padding:"12px 14px",borderRadius:14,border:`2px solid ${C.border}`,background:C.card,color:C.text,fontSize:14,fontWeight:700,textAlign:"center",fontFamily:"'Nunito',sans-serif",outline:"none"}} />}
                 </div>
+                {form.timeIn&&<div style={{fontSize:11,color:C.textLight,marginTop:6}}>
+                  🕐 {formatTime12(form.timeIn)} → {formatTime12(computeTimeOut(form.timeIn,form.hours))}
+                </div>}
               </InputField>
 
-              <InputField label="Amount per Kid (₹)" icon="💰" error={errors.amount}>
+              <InputField label="Playtime (₹ per kid)" icon="💰" error={errors.amount}>
                 <div style={{position:"relative"}}>
                   <span style={{position:"absolute",left:16,top:"50%",transform:"translateY(-50%)",fontSize:20,fontWeight:800,color:C.accent}}>₹</span>
                   <input value={form.amount} onChange={e=>set("amount",e.target.value.replace(/\D/g,""))} type="tel" inputMode="numeric" placeholder="300" onFocus={()=>setFocusedField("amount")} onBlur={()=>setFocusedField(null)} style={{...inputStyle(focusedField==="amount",errors.amount),paddingLeft:40,fontSize:24,fontWeight:800}} />
                 </div>
               </InputField>
-              <div style={{fontSize:11,color:C.textLight,marginTop:-12,marginBottom:10}}>
-                Auto-calculated from {formatHoursLabel(form.hours)} — edit to override.
-              </div>
-              <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:18}}>
-                {CONFIG.AMOUNT_PRESETS.map(a=><button key={a} onClick={()=>set("amount",String(a))} style={{padding:"8px 14px",borderRadius:10,border:`1.5px solid ${form.amount===String(a)?C.accent:C.border}`,background:form.amount===String(a)?C.accentSoft:"transparent",color:form.amount===String(a)?C.accent:C.textMid,fontSize:13,fontWeight:700,cursor:"pointer",transition:"all .15s ease"}}>₹{a}</button>)}
-              </div>
 
-              <InputField label={`Socks (₹${CONFIG.SOCKS_RATE} per pair)`} icon="🧦">
+              <InputField label="Payment Mode" icon="💳" error={errors.mop}><ChipSelect options={CONFIG.MOP_OPTIONS} value={form.mop} onChange={v=>set("mop",v)} /></InputField>
+
+              {/* ── Socks ── */}
+              <SectionHeading icon="🧦" label="Socks" />
+              <InputField label={`Pairs (₹${CONFIG.SOCKS_RATE} each)`} icon="🧦">
                 <div style={{display:"flex",gap:8,alignItems:"center"}}>
                   <Dropdown flex={1}
                     value={form.sockMode==="custom"?"custom":String(form.sockCount||0)}
@@ -527,30 +531,17 @@ function App() {
                       placeholder="pairs" type="tel" inputMode="numeric"
                       style={{width:80,boxSizing:"border-box",padding:"12px 14px",borderRadius:14,border:`2px solid ${C.border}`,background:C.card,color:C.text,fontSize:14,fontWeight:700,textAlign:"center",fontFamily:"'Nunito',sans-serif",outline:"none"}} />}
                 </div>
-                {(form.sockCount||0)>0 && <div style={{fontSize:11,color:C.textLight,marginTop:6}}>{form.sockCount} × ₹{CONFIG.SOCKS_RATE} = ₹{form.socks}</div>}
               </InputField>
-
-              <InputField label="Payment Mode" icon="💳" error={errors.mop}><ChipSelect options={CONFIG.MOP_OPTIONS} value={form.mop} onChange={v=>set("mop",v)} /></InputField>
               {form.socks>0&&<InputField label="Socks Payment Mode" icon="🔄"><ChipSelect options={CONFIG.MOP_OPTIONS} value={form.socksMop} onChange={v=>set("socksMop",v)} /></InputField>}
+
               <div style={{background:`linear-gradient(135deg,${C.accentSoft},${C.pinkSoft})`,borderRadius:16,padding:"16px 18px",border:`2px solid ${C.accent}20`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                 <div><div style={{fontSize:11,color:C.textMid,fontWeight:600,textTransform:"uppercase"}}>Total Amount</div><div style={{fontSize:11,color:C.textLight}}>{form.numKids} kid{form.numKids>1?"s":""} × ₹{form.amount}{form.socks>0?` + ₹${form.socks}`:""}</div></div>
                 <div style={{fontSize:28,fontWeight:900,color:C.accent}}>₹{totalAmount.toLocaleString("en-IN")}</div>
               </div>
             </>}
 
-            {/* Step 2 — Session */}
+            {/* Step 2 — Review */}
             {step===2&&<>
-              <InputField label="Time In" icon="🕐">
-                <input value={form.timeIn} onChange={e=>set("timeIn",e.target.value)} type="time" onFocus={()=>setFocusedField("timein")} onBlur={()=>setFocusedField(null)} style={{...inputStyle(focusedField==="timein"),fontSize:20,fontWeight:700,textAlign:"center"}} />
-              </InputField>
-              {form.timeIn&&<div style={{background:C.blueSoft,borderRadius:14,padding:"14px 18px",border:`1.5px solid ${C.blue}25`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <div><div style={{fontSize:11,color:C.blue,fontWeight:600,textTransform:"uppercase"}}>Session</div><div style={{fontSize:10,color:C.textLight}}>{formatHoursLabel(form.hours)}</div></div>
-                <div style={{fontSize:15,fontWeight:700,color:C.blue}}>{formatTime12(form.timeIn)} → {formatTime12(computeTimeOut(form.timeIn,form.hours))}</div>
-              </div>}
-            </>}
-
-            {/* Step 3 — Review */}
-            {step===3&&<>
               <div style={{fontSize:14,fontWeight:700,color:C.textMid,marginBottom:14,textTransform:"uppercase",letterSpacing:.8}}>Review Entry</div>
               {[
                 {l:"Type",v:CONFIG.ENTRY_TYPES.find(t=>t.key===entryType)?.label,i:CONFIG.ENTRY_TYPES.find(t=>t.key===entryType)?.icon},
@@ -579,8 +570,8 @@ function App() {
         {/* Bottom Bar — max-width matches the form body's content column (520 + padding), not the shell */}
         <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:560,padding:"14px 20px 24px",background:`linear-gradient(to top,${C.bg} 70%,transparent)`,display:"flex",gap:10,zIndex:50}}>
           {step>0&&<button onClick={prev} style={{flex:.4,padding:16,borderRadius:16,border:`2px solid ${C.border}`,background:C.card,color:C.textMid,fontSize:15,fontWeight:700,cursor:"pointer"}}>Back</button>}
-          <button disabled={saving} onClick={step===3?(editTarget?handleUpdateSubmit:submitEntry):next} style={{flex:1,padding:16,borderRadius:16,border:"none",background:step===3?`linear-gradient(135deg,${C.green},#27ae60)`:`linear-gradient(135deg,${C.accent},${C.pink})`,color:"#fff",fontSize:16,fontWeight:800,cursor:saving?"wait":"pointer",boxShadow:`0 4px 20px ${step===3?C.green:C.accent}40`,opacity:saving?.7:1}}>
-            {step===3?(editTarget?"✓ Update Entry":"✓ Save Entry"):`Next → ${STEP_LABELS[step+1]}`}
+          <button disabled={saving} onClick={step===LAST_STEP?(editTarget?handleUpdateSubmit:submitEntry):next} style={{flex:1,padding:16,borderRadius:16,border:"none",background:step===LAST_STEP?`linear-gradient(135deg,${C.green},#27ae60)`:`linear-gradient(135deg,${C.accent},${C.pink})`,color:"#fff",fontSize:16,fontWeight:800,cursor:saving?"wait":"pointer",boxShadow:`0 4px 20px ${step===LAST_STEP?C.green:C.accent}40`,opacity:saving?.7:1}}>
+            {step===LAST_STEP?(editTarget?"✓ Update Entry":"✓ Save Entry"):`Next → ${STEP_LABELS[step+1]}`}
           </button>
         </div>
       </>}
