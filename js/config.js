@@ -26,24 +26,32 @@ var CONFIG = {
     { label: "Cash", value: "Cash", icon: "\u{1F4B5}" },
   ],
 
-  // Duration options
+  // Pricing — amount per kid is derived from the duration:
+  // every full hour is charged at RATE_PER_HOUR, a trailing half hour at
+  // RATE_PER_HALF_HOUR. e.g. 1.5h = 300 + 200 = 500.
+  RATE_PER_HOUR: 300,
+  RATE_PER_HALF_HOUR: 200,
+
+  // Duration options (hours). The form adds a "Custom" choice after these.
   HOUR_OPTIONS: [
-    { label: "30m", value: "30 mins" },
-    { label: "45m", value: "45 mins" },
-    { label: "1h", value: "1" },
-    { label: "1.5h", value: "1.5" },
-    { label: "2h", value: "2" },
-    { label: "3h", value: "3" },
+    { label: "30 mins", value: "0.5" },
+    { label: "1 hour", value: "1" },
+    { label: "1.5 hours", value: "1.5" },
+    { label: "2 hours", value: "2" },
+    { label: "2.5 hours", value: "2.5" },
+    { label: "3 hours", value: "3" },
   ],
+  DEFAULT_HOURS: "1",
 
   // Socks rate (₹ per pair)
   SOCKS_RATE: 15,
 
-  // Quick amount chips
-  AMOUNT_PRESETS: [150, 200, 250, 300, 400, 500, 600],
+  // Sock pair-count options. The form adds a "Custom" choice after these.
+  SOCK_COUNT_OPTIONS: [0, 1, 2, 3, 4],
+  DEFAULT_SOCK_COUNT: 1,
 
-  // Default amount for new entries
-  DEFAULT_AMOUNT: "300",
+  // Quick amount chips (manual override of the calculated amount)
+  AMOUNT_PRESETS: [150, 200, 250, 300, 400, 500, 600],
 
   // Default payment mode
   DEFAULT_MOP: "Bank - HDFC",

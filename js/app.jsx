@@ -36,6 +36,21 @@ function getCurrentTime12() {
   return `${String(h).padStart(2,"0")}:${m} ${ampm}`;
 }
 
+// ── Pricing ──
+// Full hours at RATE_PER_HOUR + a trailing half hour at RATE_PER_HALF_HOUR.
+function computeAmountForHours(hours) {
+  const h = parseFloat(hours)||0;
+  const full = Math.floor(h);
+  return full*CONFIG.RATE_PER_HOUR + ((h-full) >= 0.5 ? CONFIG.RATE_PER_HALF_HOUR : 0);
+}
+
+function formatHoursLabel(hours) {
+  const preset = CONFIG.HOUR_OPTIONS.find(o=>o.value===String(hours));
+  if (preset) return preset.label;
+  const h = parseFloat(hours)||0;
+  return h === 1 ? "1 hour" : `${h} hours`;
+}
+
 // ── Main App ──
 function App() {
   const [screen,setScreen] = useState("home");
@@ -62,14 +77,28 @@ function App() {
 
   function getDefaultForm() {
     const n=new Date();
-    return {customerName:"",amount:CONFIG.DEFAULT_AMOUNT,mop:CONFIG.DEFAULT_MOP,numKids:1,hours:"1",
+    const hours=CONFIG.DEFAULT_HOURS, socksCount=CONFIG.DEFAULT_SOCK_COUNT;
+    return {customerName:"",amount:String(computeAmountForHours(hours)),mop:CONFIG.DEFAULT_MOP,numKids:1,
+      hours:hours,hoursMode:"preset",
       timeIn:`${String(n.getHours()).padStart(2,"0")}:${String(n.getMinutes()).padStart(2,"0")}`,
-      socks:0,sockCount:0,socksMop:"",phone:"",dob:"",date:n.toISOString().slice(0,10)};
+      socks:socksCount*CONFIG.SOCKS_RATE,sockCount:socksCount,sockMode:"preset",
+      socksMop:socksCount>0?CONFIG.DEFAULT_MOP:"",phone:"",dob:"",date:n.toISOString().slice(0,10)};
   }
 
   const set = useCallback((key,val) => {
     setFormState(f=>({...f,[key]:val}));
     setErrors(e=>({...e,[key]:undefined}));
+  },[]);
+
+  // Duration drives the per-kid amount; sock count drives the socks charge.
+  const setHours = useCallback((v) => {
+    setFormState(f=>({...f,hours:v,amount:String(computeAmountForHours(v))}));
+    setErrors(e=>({...e,amount:undefined}));
+  },[]);
+
+  const setSockCount = useCallback((n) => {
+    setFormState(f=>({...f,sockCount:n,socks:n*CONFIG.SOCKS_RATE,
+      socksMop:n>0?(f.socksMop||f.mop):""}));
   },[]);
 
   const showToastMsg = (msg,type) => { setToast({msg,type:type||"info"}); setTimeout(()=>setToast(null),3000); };
@@ -215,15 +244,20 @@ function App() {
         }
       }
     }
+    const hours = String(entry.hours||entry["Hours"]||CONFIG.DEFAULT_HOURS);
+    const socksTotal = parseInt(entry.socks||entry["Socks"]||0)||0;
+    const sockCount = socksTotal>0?Math.max(1,Math.round(socksTotal/CONFIG.SOCKS_RATE)):0;
     setFormState({
       customerName:entry.customerName||entry["Customer name"]||"",
       amount:String(entry.amount||entry["Amount"]||300),
       mop:entry.mop||entry["MOP"]||CONFIG.DEFAULT_MOP,
       numKids:parseInt(entry.numKids||entry["No of kids"]||1),
-      hours:entry.hours||entry["Hours"]||"1",
+      hours:hours,
+      hoursMode:CONFIG.HOUR_OPTIONS.some(o=>o.value===hours)?"preset":"custom",
       timeIn:timeIn,
-      socks:parseInt(entry.socks||entry["Socks"]||0)||0,
-      sockCount:parseInt(entry.socks||entry["Socks"]||0)>0?Math.max(1,Math.round((parseInt(entry.socks||entry["Socks"]||0))/CONFIG.SOCKS_RATE)):0,
+      socks:socksTotal,
+      sockCount:sockCount,
+      sockMode:CONFIG.SOCK_COUNT_OPTIONS.includes(sockCount)?"preset":"custom",
       socksMop:entry.socksMop||entry["MOP - Socks"]||"",
       phone:String(entry.phone||entry["Phone number"]||""),
       dob:entry.dob||entry["DOB"]||"",
@@ -450,34 +484,53 @@ function App() {
 
             {/* Step 1 — Payment */}
             {step===1&&<>
+              <InputField label="Duration" icon="⏱️">
+                <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                  <Dropdown flex={1}
+                    value={form.hoursMode==="custom"?"custom":String(form.hours)}
+                    options={[...CONFIG.HOUR_OPTIONS.map(o=>({value:o.value,label:o.label})),{value:"custom",label:"Custom…"}]}
+                    onChange={v=>{
+                      if(v==="custom"){ set("hoursMode","custom"); }
+                      else { set("hoursMode","preset"); setHours(v); }
+                    }} />
+                  {form.hoursMode==="custom" &&
+                    <input value={form.hours} onChange={e=>setHours(e.target.value.replace(/[^\d.]/g,""))}
+                      placeholder="hrs" type="tel" inputMode="decimal"
+                      style={{width:80,boxSizing:"border-box",padding:"12px 14px",borderRadius:14,border:`2px solid ${C.border}`,background:C.card,color:C.text,fontSize:14,fontWeight:700,textAlign:"center",fontFamily:"'Nunito',sans-serif",outline:"none"}} />}
+                </div>
+              </InputField>
+
               <InputField label="Amount per Kid (₹)" icon="💰" error={errors.amount}>
                 <div style={{position:"relative"}}>
                   <span style={{position:"absolute",left:16,top:"50%",transform:"translateY(-50%)",fontSize:20,fontWeight:800,color:C.accent}}>₹</span>
                   <input value={form.amount} onChange={e=>set("amount",e.target.value.replace(/\D/g,""))} type="tel" inputMode="numeric" placeholder="300" onFocus={()=>setFocusedField("amount")} onBlur={()=>setFocusedField(null)} style={{...inputStyle(focusedField==="amount",errors.amount),paddingLeft:40,fontSize:24,fontWeight:800}} />
                 </div>
               </InputField>
+              <div style={{fontSize:11,color:C.textLight,marginTop:-12,marginBottom:10}}>
+                Auto-calculated from {formatHoursLabel(form.hours)} — edit to override.
+              </div>
               <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:18}}>
                 {CONFIG.AMOUNT_PRESETS.map(a=><button key={a} onClick={()=>set("amount",String(a))} style={{padding:"8px 14px",borderRadius:10,border:`1.5px solid ${form.amount===String(a)?C.accent:C.border}`,background:form.amount===String(a)?C.accentSoft:"transparent",color:form.amount===String(a)?C.accent:C.textMid,fontSize:13,fontWeight:700,cursor:"pointer",transition:"all .15s ease"}}>₹{a}</button>)}
               </div>
-              <InputField label="Payment Mode" icon="💳" error={errors.mop}><ChipSelect options={CONFIG.MOP_OPTIONS} value={form.mop} onChange={v=>set("mop",v)} /></InputField>
+
               <InputField label={`Socks (₹${CONFIG.SOCKS_RATE} per pair)`} icon="🧦">
-                <div style={{display:"flex",alignItems:"center",gap:14}}>
-                  <div style={{display:"flex",alignItems:"center",background:C.warm1,borderRadius:14,border:`2px solid ${C.border}`,overflow:"hidden"}}>
-                    <button onClick={()=>{
-                      const c=Math.max(0,(form.sockCount||0)-1);
-                      set("sockCount",c); set("socks",c*CONFIG.SOCKS_RATE);
-                      if(c===0) set("socksMop","");
-                    }} style={{width:44,height:44,border:"none",background:"transparent",fontSize:20,fontWeight:700,color:(form.sockCount||0)<=0?C.textLight:C.accent,cursor:(form.sockCount||0)<=0?"default":"pointer"}}>−</button>
-                    <div style={{width:36,textAlign:"center",fontSize:18,fontWeight:800,color:C.text}}>{form.sockCount||0}</div>
-                    <button onClick={()=>{
-                      const c=(form.sockCount||0)+1;
-                      set("sockCount",c); set("socks",c*CONFIG.SOCKS_RATE);
-                      if(!form.socksMop) set("socksMop",form.mop);
-                    }} style={{width:44,height:44,border:"none",background:"transparent",fontSize:20,fontWeight:700,color:C.accent,cursor:"pointer"}}>+</button>
-                  </div>
-                  {(form.sockCount||0)>0 && <div style={{fontSize:13,fontWeight:700,color:C.accent}}>{form.sockCount} × ₹{CONFIG.SOCKS_RATE} = ₹{form.socks}</div>}
+                <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                  <Dropdown flex={1}
+                    value={form.sockMode==="custom"?"custom":String(form.sockCount||0)}
+                    options={[...CONFIG.SOCK_COUNT_OPTIONS.map(n=>({value:String(n),label:n===0?"None":`${n} pair${n>1?"s":""}`})),{value:"custom",label:"Custom…"}]}
+                    onChange={v=>{
+                      if(v==="custom"){ set("sockMode","custom"); }
+                      else { set("sockMode","preset"); setSockCount(parseInt(v)); }
+                    }} />
+                  {form.sockMode==="custom" &&
+                    <input value={form.sockCount||""} onChange={e=>{const v=e.target.value.replace(/\D/g,"");setSockCount(v===""?0:parseInt(v));}}
+                      placeholder="pairs" type="tel" inputMode="numeric"
+                      style={{width:80,boxSizing:"border-box",padding:"12px 14px",borderRadius:14,border:`2px solid ${C.border}`,background:C.card,color:C.text,fontSize:14,fontWeight:700,textAlign:"center",fontFamily:"'Nunito',sans-serif",outline:"none"}} />}
                 </div>
+                {(form.sockCount||0)>0 && <div style={{fontSize:11,color:C.textLight,marginTop:6}}>{form.sockCount} × ₹{CONFIG.SOCKS_RATE} = ₹{form.socks}</div>}
               </InputField>
+
+              <InputField label="Payment Mode" icon="💳" error={errors.mop}><ChipSelect options={CONFIG.MOP_OPTIONS} value={form.mop} onChange={v=>set("mop",v)} /></InputField>
               {form.socks>0&&<InputField label="Socks Payment Mode" icon="🔄"><ChipSelect options={CONFIG.MOP_OPTIONS} value={form.socksMop} onChange={v=>set("socksMop",v)} /></InputField>}
               <div style={{background:`linear-gradient(135deg,${C.accentSoft},${C.pinkSoft})`,borderRadius:16,padding:"16px 18px",border:`2px solid ${C.accent}20`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                 <div><div style={{fontSize:11,color:C.textMid,fontWeight:600,textTransform:"uppercase"}}>Total Amount</div><div style={{fontSize:11,color:C.textLight}}>{form.numKids} kid{form.numKids>1?"s":""} × ₹{form.amount}{form.socks>0?` + ₹${form.socks}`:""}</div></div>
@@ -487,12 +540,11 @@ function App() {
 
             {/* Step 2 — Session */}
             {step===2&&<>
-              <InputField label="Duration" icon="⏱️"><ChipSelect options={CONFIG.HOUR_OPTIONS} value={form.hours} onChange={v=>set("hours",v)} /></InputField>
               <InputField label="Time In" icon="🕐">
                 <input value={form.timeIn} onChange={e=>set("timeIn",e.target.value)} type="time" onFocus={()=>setFocusedField("timein")} onBlur={()=>setFocusedField(null)} style={{...inputStyle(focusedField==="timein"),fontSize:20,fontWeight:700,textAlign:"center"}} />
               </InputField>
               {form.timeIn&&<div style={{background:C.blueSoft,borderRadius:14,padding:"14px 18px",border:`1.5px solid ${C.blue}25`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <div><div style={{fontSize:11,color:C.blue,fontWeight:600,textTransform:"uppercase"}}>Session</div><div style={{fontSize:10,color:C.textLight}}>{form.hours} hr</div></div>
+                <div><div style={{fontSize:11,color:C.blue,fontWeight:600,textTransform:"uppercase"}}>Session</div><div style={{fontSize:10,color:C.textLight}}>{formatHoursLabel(form.hours)}</div></div>
                 <div style={{fontSize:15,fontWeight:700,color:C.blue}}>{formatTime12(form.timeIn)} → {formatTime12(computeTimeOut(form.timeIn,form.hours))}</div>
               </div>}
             </>}
@@ -506,7 +558,7 @@ function App() {
                 {l:"Kids",v:`${form.numKids}${form.numKids>1?" (separate rows)":""}`,i:"👶"},
                 {l:"Amount/Kid",v:`₹${form.amount}`,i:"💰"},
                 ...(form.socks>0?[{l:"Socks",v:`${form.sockCount} pair${form.sockCount>1?"s":""} · ₹${form.socks} (${form.socksMop})`,i:"🧦"}]:[]),
-                {l:"Payment",v:form.mop,i:"💳"},{l:"Duration",v:`${form.hours} hr`,i:"⏱️"},
+                {l:"Payment",v:form.mop,i:"💳"},{l:"Duration",v:formatHoursLabel(form.hours),i:"⏱️"},
                 {l:"Timing",v:`${formatTime12(form.timeIn)} → ${formatTime12(computeTimeOut(form.timeIn,form.hours))}`,i:"🕐"},
                 {l:"Date",v:formatDateDDMMYYYY(form.date),i:"📅"},
                 ...(form.phone?[{l:"Phone",v:form.phone,i:"📱"}]:[]),
