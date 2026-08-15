@@ -501,9 +501,12 @@ function App() {
                       placeholder="hrs" type="tel" inputMode="decimal"
                       style={{width:80,boxSizing:"border-box",padding:"12px 14px",borderRadius:14,border:`2px solid ${C.border}`,background:C.card,color:C.text,fontSize:14,fontWeight:700,textAlign:"center",fontFamily:"'Nunito',sans-serif",outline:"none"}} />}
                 </div>
-                {form.timeIn&&<div style={{fontSize:11,color:C.textLight,marginTop:6}}>
-                  🕐 {formatTime12(form.timeIn)} → {formatTime12(computeTimeOut(form.timeIn,form.hours))}
-                </div>}
+                <div style={{display:"flex",alignItems:"center",gap:6,marginTop:8,fontSize:11,color:C.textLight}}>
+                  <span title="Start time">🕐</span>
+                  <input value={form.timeIn} onChange={e=>set("timeIn",e.target.value)} type="time"
+                    style={{padding:"4px 8px",borderRadius:8,border:`1px solid ${C.border}`,background:C.card,color:C.text,fontSize:11,fontWeight:700,fontFamily:"'Nunito',sans-serif",outline:"none"}} />
+                  {form.timeIn && <span>→ {formatTime12(computeTimeOut(form.timeIn,form.hours))}</span>}
+                </div>
               </InputField>
 
               <InputField label="Playtime (₹ per kid)" icon="💰" error={errors.amount}>
