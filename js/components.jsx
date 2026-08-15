@@ -1,79 +1,61 @@
 // =============================================================================
-// FunTunes Shared Components — Purple Theme
+// FunTunes Shared Components
+// Layout/spacing lives in css/app.css; this file keeps only dynamic styling.
 // =============================================================================
 
 const C = {
-  bg:"#faf5ff", card:"#ffffff",
-  accent:"#7B2D8E", accentSoft:"#f3e8f9", accentDark:"#5a1d6b", accentLight:"#a855f7",
-  green:"#4CAF50", greenSoft:"#e8f5e9",
+  bg:"#f7f4fb", card:"#ffffff",
+  accent:"#7B2D8E", accentSoft:"#f4eaf9", accentDark:"#5a1d6b", accentLight:"#a855f7",
+  green:"#3f9c47", greenSoft:"#e9f5ea",
   blue:"#2E86DE", blueSoft:"#e8f1fc",
   pink:"#E84393", pinkSoft:"#fde8f3",
   orange:"#F39C12", orangeSoft:"#fef5e0",
   yellow:"#F4B400", yellowSoft:"#fef8e6",
-  text:"#1a1a2e", textMid:"#4a4a6a", textLight:"#9090b0",
-  border:"#e8e0f0", borderFocus:"#7B2D8E",
-  danger:"#e74c3c", dangerSoft:"#fdecea",
-  warm1:"#f8f2fd",
-  shadowLift:"0 8px 32px rgba(123,45,142,.15)",
+  text:"#1a1a2e", textMid:"#52526e", textLight:"#8a8aa6",
+  border:"#e6e0ee", borderStrong:"#d6cce2",
+  danger:"#e04b3c", dangerSoft:"#fdecea",
+  warm1:"#faf7fd",
+  shadowLift:"0 12px 34px rgba(26,16,40,.16)",
 };
 
 const Spinner = ({size=18,color=C.accent}) => (
   <div style={{width:size,height:size,border:`2.5px solid ${color}30`,borderTopColor:color,borderRadius:"50%",animation:"spin .7s linear infinite",display:"inline-block"}} />
 );
 
-const inputStyle = (focused,error) => ({
-  width:"100%",boxSizing:"border-box",padding:"14px 16px",fontSize:16,fontFamily:"'Nunito',sans-serif",fontWeight:500,
-  border:`2px solid ${error?C.danger:focused?C.borderFocus:C.border}`,borderRadius:14,
-  background:error?C.dangerSoft:focused?C.accentSoft:C.card,color:C.text,outline:"none",
-  transition:"all .25s ease",boxShadow:focused?`0 0 0 4px ${C.accent}15`:"none",
-});
-
-const InputField = ({label,icon,error,children}) => (
-  <div style={{marginBottom:18}}>
-    <label style={{display:"flex",alignItems:"center",gap:6,fontSize:12,fontWeight:600,color:error?C.danger:C.textMid,textTransform:"uppercase",letterSpacing:.8,marginBottom:6}}>
-      {icon && <span style={{fontSize:14}}>{icon}</span>}{label}
-      {error && <span style={{color:C.danger,fontSize:11,fontWeight:500,textTransform:"none",marginLeft:"auto"}}>{error}</span>}
+const InputField = ({label,icon,error,children,className}) => (
+  <div className={`field${className?" "+className:""}`}>
+    <label className="field-label">
+      {icon && <span>{icon}</span>}{label}
+      {error && <span className="err-msg">{error}</span>}
     </label>
     {children}
   </div>
 );
 
 const SectionHeading = ({icon,label}) => (
-  <div style={{display:"flex",alignItems:"center",gap:8,margin:"4px 0 14px"}}>
-    <span style={{fontSize:16}}>{icon}</span>
-    <span style={{fontSize:14,fontWeight:800,color:C.accent}}>{label}</span>
-    <div style={{flex:1,height:1,background:C.border}} />
-  </div>
+  <div className="section-title">{icon && <span>{icon}</span>}{label}</div>
 );
 
 const ChipSelect = ({options,value,onChange}) => (
-  <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+  <div className="chips">
     {options.map(opt => {
       const v=opt.value||opt; const sel=value===v;
-      return <button key={v} onClick={()=>onChange(v)} style={{
-        padding:"10px 16px",borderRadius:12,border:`2px solid ${sel?C.accent:C.border}`,
-        background:sel?C.accentSoft:C.card,color:sel?C.accent:C.textMid,
-        fontSize:14,fontWeight:sel?700:500,cursor:"pointer",transition:"all .2s ease",
-        transform:sel?"scale(1.03)":"scale(1)",display:"flex",alignItems:"center",gap:6,
-      }}>{opt.icon && <span>{opt.icon}</span>}{opt.label||opt}</button>;
+      return <button key={v} type="button" className={`chip${sel?" is-on":""}`} onClick={()=>onChange(v)}>
+        {opt.icon && <span>{opt.icon}</span>}{opt.label||opt}
+      </button>;
     })}
   </div>
 );
 
-const NumberStepper = ({value,onChange,min=1,max=10,label}) => (
-  <div style={{display:"flex",alignItems:"center",background:C.warm1,borderRadius:16,border:`2px solid ${C.border}`,overflow:"hidden"}}>
-    <button onClick={()=>onChange(Math.max(min,value-1))} style={{width:52,height:52,border:"none",background:"transparent",fontSize:22,fontWeight:700,color:value<=min?C.textLight:C.accent,cursor:value<=min?"default":"pointer"}}>−</button>
-    <div style={{flex:1,textAlign:"center"}}>
-      <div style={{fontSize:24,fontWeight:800,color:C.text}}>{value}</div>
-      {label && <div style={{fontSize:10,color:C.textLight,textTransform:"uppercase"}}>{label}</div>}
-    </div>
-    <button onClick={()=>onChange(Math.min(max,value+1))} style={{width:52,height:52,border:"none",background:"transparent",fontSize:22,fontWeight:700,color:value>=max?C.textLight:C.accent,cursor:value>=max?"default":"pointer"}}>+</button>
+const NumberStepper = ({value,onChange,min=1,max=10}) => (
+  <div className="stepper">
+    <button type="button" onClick={()=>onChange(Math.max(min,value-1))} disabled={value<=min}>−</button>
+    <div className="stepper-value">{value}</div>
+    <button type="button" onClick={()=>onChange(Math.min(max,value+1))} disabled={value>=max}>+</button>
   </div>
 );
 
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-
-const WEEK_LABELS = ["Week 1","Week 2","Week 3","Week 4","Week 5"];
 
 const STATUS_ORDER = ["not_contacted","warm","rejected","booking"];
 const STATUS_META = {
@@ -90,40 +72,45 @@ const Dropdown = ({value,options,onChange,flex}) => {
   React.useEffect(() => {
     if (!open) return;
     const onOutside = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    const onEsc = (e) => { if (e.key === "Escape") setOpen(false); };
     document.addEventListener("mousedown", onOutside);
     document.addEventListener("touchstart", onOutside);
+    document.addEventListener("keydown", onEsc);
     return () => {
       document.removeEventListener("mousedown", onOutside);
       document.removeEventListener("touchstart", onOutside);
+      document.removeEventListener("keydown", onEsc);
     };
   }, [open]);
 
   const selected = options.find(o => o.value === value);
 
   return (
-    <div ref={ref} style={{position:"relative",flex:flex||1}}>
-      <button onClick={()=>setOpen(o=>!o)} style={{
-        width:"100%",boxSizing:"border-box",display:"flex",alignItems:"center",justifyContent:"space-between",
-        padding:"12px 14px",borderRadius:14,border:`2px solid ${open?C.borderFocus:C.border}`,
-        background:open?C.accentSoft:C.card,fontSize:14,fontWeight:700,color:C.text,
-        fontFamily:"'Nunito',sans-serif",cursor:"pointer",transition:"all .2s ease",
-        boxShadow:open?`0 0 0 4px ${C.accent}15`:"none",
+    <div ref={ref} style={{position:"relative",flex:flex||1,minWidth:0}}>
+      <button type="button" className="fld" onClick={()=>setOpen(o=>!o)} style={{
+        display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,
+        cursor:"pointer",textAlign:"left",
+        borderColor:open?C.accent:undefined,
+        boxShadow:open?`0 0 0 3px rgba(123,45,142,.13)`:undefined,
       }}>
         <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{selected?selected.label:""}</span>
-        <span style={{fontSize:11,color:C.textLight,flexShrink:0,marginLeft:8,transform:open?"rotate(180deg)":"none",transition:"transform .2s ease"}}>▾</span>
+        <span style={{fontSize:10,color:C.textLight,flexShrink:0,transform:open?"rotate(180deg)":"none",transition:"transform .2s"}}>▼</span>
       </button>
       {open && <div style={{
-        position:"absolute",top:"calc(100% + 6px)",left:0,right:0,zIndex:60,
-        background:C.card,borderRadius:14,border:`1.5px solid ${C.border}`,
-        boxShadow:C.shadowLift,overflow:"hidden auto",maxHeight:260,
-        animation:"popIn .15s ease",
+        position:"absolute",top:"calc(100% + 5px)",left:0,right:0,zIndex:70,
+        background:C.card,borderRadius:10,border:`1px solid ${C.border}`,
+        boxShadow:C.shadowLift,overflowY:"auto",maxHeight:250,padding:4,
+        animation:"popIn .12s ease",
       }}>
         {options.map(o => <div key={o.value} onClick={()=>{onChange(o.value);setOpen(false);}} style={{
-          padding:"11px 14px",fontSize:14,cursor:"pointer",
-          fontWeight:o.value===value?800:500,
+          padding:"9px 11px",fontSize:14,cursor:"pointer",borderRadius:7,
+          fontWeight:o.value===value?800:600,
           color:o.value===value?C.accent:C.text,
           background:o.value===value?C.accentSoft:"transparent",
-        }}>{o.label}</div>)}
+        }}
+        onMouseEnter={e=>{ if(o.value!==value) e.currentTarget.style.background=C.warm1; }}
+        onMouseLeave={e=>{ if(o.value!==value) e.currentTarget.style.background="transparent"; }}
+        >{o.label}</div>)}
       </div>}
     </div>
   );
@@ -162,74 +149,66 @@ const BirthdayCard = ({b, isToday, onSave}) => {
   };
 
   return (
-    <div style={{
-      background: status==="not_contacted" ? (isToday?C.pinkSoft:C.warm1) : meta.bg,
-      borderRadius: 14,
-      border: `1.5px solid ${status==="not_contacted" ? (isToday?C.pink+"50":C.border) : meta.dot+"40"}`,
-      overflow: "hidden", animation: "springIn .35s ease both",
+    <div className="card" style={{
+      borderColor: status==="not_contacted" ? (isToday?C.pink+"55":C.border) : meta.dot+"55",
+      background: status==="not_contacted" ? (isToday?C.pinkSoft:C.card) : meta.bg,
+      overflow:"hidden", animation:"springIn .3s ease both", alignSelf:"start",
     }}>
-      <div onClick={() => setExpanded(x=>!x)} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",cursor:"pointer"}}>
-        <div style={{width:44,height:44,borderRadius:12,background:isToday?C.pink:C.accentSoft,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-          <div style={{fontSize:16,fontWeight:900,color:isToday?"#fff":C.accent,lineHeight:1}}>{b.day}</div>
-          <div style={{fontSize:8,fontWeight:700,color:isToday?"#fff":C.accent,textTransform:"uppercase"}}>{MONTH_NAMES[b.month-1]?.slice(0,3)}</div>
+      <div onClick={() => setExpanded(x=>!x)} style={{display:"flex",alignItems:"center",gap:11,padding:"10px 12px",cursor:"pointer"}}>
+        <div style={{width:38,height:38,borderRadius:10,background:isToday?C.pink:C.accentSoft,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",flexShrink:0,lineHeight:1}}>
+          <div style={{fontSize:15,fontWeight:900,color:isToday?"#fff":C.accent}}>{b.day}</div>
+          <div style={{fontSize:8,fontWeight:800,color:isToday?"#fff":C.accent,textTransform:"uppercase",marginTop:1}}>{MONTH_NAMES[b.month-1]?.slice(0,3)}</div>
         </div>
-        <div style={{flex:1,minWidth:0}}>
-          <div style={{fontSize:14,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{kidName}</div>
-          <div style={{fontSize:11,color:C.textLight}}>{b.phone||"No phone"}</div>
+        <div className="row-body">
+          <div className="row-title">{kidName}{isToday && " 🎉"}</div>
+          <div className="row-sub">{b.phone||"No phone"}</div>
         </div>
-        <div title={meta.label} style={{width:16,height:16,borderRadius:"50%",flexShrink:0,background:meta.dot,border:"2px solid #fff",boxShadow:"0 0 0 1px "+meta.dot+"50"}} />
-        {isToday && <div style={{fontSize:20,flexShrink:0}}>🎉</div>}
-        <span style={{fontSize:12,color:C.textLight,flexShrink:0,transform:expanded?"rotate(180deg)":"none",transition:"transform .2s"}}>▾</span>
+        <div title={meta.label} style={{width:9,height:9,borderRadius:"50%",flexShrink:0,background:meta.dot,boxShadow:`0 0 0 3px ${meta.dot}25`}} />
+        <span style={{fontSize:10,color:C.textLight,flexShrink:0,transform:expanded?"rotate(180deg)":"none",transition:"transform .2s"}}>▼</span>
       </div>
 
       {expanded && (
-        <div style={{padding:"0 14px 14px",display:"flex",flexDirection:"column",gap:10}} onClick={e=>e.stopPropagation()}>
+        <div style={{padding:"0 12px 12px",display:"flex",flexDirection:"column",gap:10,borderTop:`1px solid ${C.border}`,paddingTop:12,marginTop:2}} onClick={e=>e.stopPropagation()}>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
             <div>
-              <div style={{fontSize:10,fontWeight:700,color:C.textLight,textTransform:"uppercase",marginBottom:4}}>Parent Name</div>
-              <input value={parentName} onChange={e=>setParentName(e.target.value)} placeholder="Add parent name"
-                style={{width:"100%",boxSizing:"border-box",padding:"9px 10px",fontSize:13,border:`1.5px solid ${C.border}`,borderRadius:9,fontFamily:"'Nunito',sans-serif"}} />
+              <div className="field-label">Parent Name</div>
+              <input className="fld" value={parentName} onChange={e=>setParentName(e.target.value)} placeholder="Add parent name" />
             </div>
             <div>
-              <div style={{fontSize:10,fontWeight:700,color:C.textLight,textTransform:"uppercase",marginBottom:4}}>Phone</div>
-              <input value={phone} onChange={e=>setPhone(e.target.value.replace(/\D/g,"").slice(0,10))} placeholder="Mobile number" type="tel" inputMode="numeric"
-                style={{width:"100%",boxSizing:"border-box",padding:"9px 10px",fontSize:13,border:`1.5px solid ${C.border}`,borderRadius:9,fontFamily:"'Nunito',sans-serif"}} />
+              <div className="field-label">Phone</div>
+              <input className="fld" value={phone} onChange={e=>setPhone(e.target.value.replace(/\D/g,"").slice(0,10))} placeholder="Mobile number" type="tel" inputMode="numeric" />
             </div>
           </div>
 
           <div>
-            <div style={{fontSize:10,fontWeight:700,color:C.textLight,textTransform:"uppercase",marginBottom:4}}>Call Notes</div>
-            <textarea value={notes} onChange={e=>setNotes(e.target.value)} placeholder="e.g. Spoke to mom, interested, will confirm by Friday..." rows={2}
-              style={{width:"100%",boxSizing:"border-box",padding:"9px 10px",fontSize:13,border:`1.5px solid ${C.border}`,borderRadius:9,fontFamily:"'Nunito',sans-serif",resize:"vertical"}} />
+            <div className="field-label">Call Notes</div>
+            <textarea className="fld" value={notes} onChange={e=>setNotes(e.target.value)} rows={2}
+              placeholder="e.g. Spoke to mom, interested, will confirm by Friday..." style={{resize:"vertical"}} />
           </div>
 
           <div>
-            <div style={{fontSize:10,fontWeight:700,color:C.textLight,textTransform:"uppercase",marginBottom:6}}>Status</div>
-            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-              {STATUS_ORDER.map(s => <button key={s} onClick={()=>setStatusAndSave(s)} style={{
-                display:"flex",alignItems:"center",gap:6,padding:"7px 12px",borderRadius:10,cursor:"pointer",
-                border:`1.5px solid ${status===s?STATUS_META[s].dot:C.border}`,
-                background:status===s?STATUS_META[s].bg:C.card,
-                color:status===s?STATUS_META[s].fg:C.textMid,
-                fontSize:12,fontWeight:700,
+            <div className="field-label">Status</div>
+            <div className="chips">
+              {STATUS_ORDER.map(s => <button key={s} type="button" className="chip" onClick={()=>setStatusAndSave(s)} style={{
+                borderColor:status===s?STATUS_META[s].dot:undefined,
+                background:status===s?STATUS_META[s].bg:undefined,
+                color:status===s?STATUS_META[s].fg:undefined,
+                fontWeight:status===s?800:600,
               }}>
-                <span style={{width:8,height:8,borderRadius:"50%",background:STATUS_META[s].dot,flexShrink:0}} />
+                <span style={{width:7,height:7,borderRadius:"50%",background:STATUS_META[s].dot,flexShrink:0}} />
                 {STATUS_META[s].label}
               </button>)}
             </div>
-            {status==="booking" && <div style={{fontSize:11,color:C.green,fontWeight:600,marginTop:6}}>📋 Follow up: Sindhu</div>}
+            {status==="booking" && <div className="field-hint" style={{color:C.green}}>📋 Follow up: Sindhu</div>}
           </div>
 
-          <div style={{display:"flex",alignItems:"center",justifyContent:"flex-end"}}>
-            {phone && <a href={`tel:${phone}`} onClick={e=>e.stopPropagation()} style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",borderRadius:10,background:C.blueSoft,color:C.blue,fontSize:13,fontWeight:700,textDecoration:"none"}}>📞 Call</a>}
+          <div style={{display:"flex",gap:8,alignItems:"center"}}>
+            {phone && <a href={`tel:${phone}`} className="btn btn-sm" onClick={e=>e.stopPropagation()}
+              style={{background:C.blueSoft,color:C.blue,borderColor:"transparent",textDecoration:"none"}}>📞 Call</a>}
+            {dirty && <button type="button" className="btn btn-sm btn-primary" onClick={save} disabled={saving} style={{marginLeft:"auto"}}>
+              {saving?"Saving…":"Save changes"}
+            </button>}
           </div>
-
-          {dirty && (
-            <button onClick={save} disabled={saving} style={{
-              padding:"10px",borderRadius:10,border:"none",cursor:saving?"wait":"pointer",
-              background:`linear-gradient(135deg,${C.accent},${C.pink})`,color:"#fff",fontSize:13,fontWeight:700,opacity:saving?0.7:1,
-            }}>{saving?"Saving...":"💾 Save Changes"}</button>
-          )}
         </div>
       )}
     </div>
@@ -240,15 +219,15 @@ const weekRangeLabel = (w) => `days ${(w-1)*7+1}–${Math.min(31,w*7)}`;
 const weekOfDay = (day) => Math.min(5, Math.ceil(Number(day)/7));
 
 const BirthdayList = ({birthdays,loading,weekFilter,onSave,onShowAll}) => {
-  if (loading) return <div style={{textAlign:"center",padding:30}}><Spinner size={28} /><div style={{marginTop:10,fontSize:13,color:C.textLight}}>Loading birthdays...</div></div>;
-  if (!birthdays.length) return <div style={{textAlign:"center",padding:"30px 20px",color:C.textLight,fontSize:14}}>🎈 No birthdays found for this month.</div>;
+  if (loading) return <div className="empty-state"><Spinner size={26} /><div style={{marginTop:10}}>Loading birthdays…</div></div>;
+  if (!birthdays.length) return <div className="empty-state">🎈 No birthdays found for this month.</div>;
 
   const filtered = weekFilter === "all" ? birthdays : birthdays.filter(b => weekOfDay(b.day) === weekFilter);
   if (!filtered.length) return (
-    <div style={{textAlign:"center",padding:"30px 20px"}}>
-      <div style={{fontSize:14,color:C.textLight,marginBottom:6}}>🎈 No birthdays in {weekRangeLabel(weekFilter)}.</div>
-      <div style={{fontSize:12,color:C.textLight,marginBottom:14}}>{birthdays.length} birthday{birthdays.length!==1?"s":""} this month overall.</div>
-      {onShowAll && <button onClick={onShowAll} style={{padding:"8px 16px",borderRadius:10,border:`1.5px solid ${C.accent}`,background:C.accentSoft,color:C.accent,fontSize:13,fontWeight:700,cursor:"pointer"}}>Show All This Month</button>}
+    <div className="empty-state">
+      <div>🎈 No birthdays in {weekRangeLabel(weekFilter)}.</div>
+      <div style={{fontSize:12,margin:"6px 0 14px"}}>{birthdays.length} birthday{birthdays.length!==1?"s":""} this month overall.</div>
+      {onShowAll && <button type="button" className="btn btn-sm" onClick={onShowAll}>Show all this month</button>}
     </div>
   );
 
@@ -264,42 +243,35 @@ const BirthdayList = ({birthdays,loading,weekFilter,onSave,onShowAll}) => {
 };
 
 const EntryList = ({entries,onEdit,onDelete,loading}) => {
-  if (loading) return <div style={{textAlign:"center",padding:30}}><Spinner size={28} /><div style={{marginTop:10,fontSize:13,color:C.textLight}}>Loading entries...</div></div>;
-  if (!entries.length) return <div style={{textAlign:"center",padding:"30px 20px",color:C.textLight,fontSize:14}}>No entries today yet. Tap <strong style={{color:C.accent}}>+ New Entry</strong> to begin.</div>;
-  const total = entries.reduce((a,e)=>a+(parseInt(e.amount||e["Amount"]||0)),0);
+  if (loading) return <div className="empty-state"><Spinner size={26} /><div style={{marginTop:10}}>Loading entries…</div></div>;
+  if (!entries.length) return <div className="empty-state">No entries today yet — start with <strong style={{color:C.accent}}>New Entry</strong>.</div>;
   return (
-    <div>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 0",borderBottom:`1px solid ${C.border}`,marginBottom:10}}>
-        <span style={{fontSize:13,fontWeight:700,color:C.textMid}}>{entries.length} entries today</span>
-        <span style={{fontSize:17,fontWeight:800,color:C.green}}>₹{total.toLocaleString("en-IN")}</span>
-      </div>
-      <div className="entries-grid">
-        {entries.map((e,i) => {
-          const name=e.customerName||e["Customer name"]||"—";
-          const amt=e.amount||e["Amount"]||0;
-          const mop=e.mop||e["MOP"]||"";
-          const kids=e.numKids||e["No of kids"]||1;
-          const timing=e.timing||e["Timing"]||"";
-          const typeColors = {"funzone":C.accentSoft,"birthday":C.pinkSoft,"event":C.blueSoft,"daycare":C.orangeSoft};
-          const typeKey = e.entryType||e["Entry Type"]||"funzone";
-          return (
-            <div key={i} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",background:C.warm1,borderRadius:14,border:`1px solid ${C.border}`,animation:"springIn .35s ease both",animationDelay:`${i*.03}s`}}>
-              <div style={{width:40,height:40,borderRadius:12,background:typeColors[typeKey]||C.accentSoft,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>
-                {CONFIG.ENTRY_TYPES.find(t=>t.key===typeKey)?.icon||"🎪"}
-              </div>
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:14,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{name}</div>
-                <div style={{fontSize:11,color:C.textLight}}>{kids>1?`${kids} kids · `:""}{mop}{timing?` · ${timing}`:""}</div>
-              </div>
-              <div style={{fontSize:16,fontWeight:800,color:C.accent,flexShrink:0}}>₹{parseInt(amt).toLocaleString("en-IN")}</div>
-              <div style={{display:"flex",flexDirection:"column",gap:4,flexShrink:0}}>
-                <button onClick={()=>onEdit(e)} style={{width:30,height:30,borderRadius:8,border:`1px solid ${C.border}`,background:C.card,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>✏️</button>
-                <button onClick={()=>onDelete(e)} style={{width:30,height:30,borderRadius:8,border:`1px solid ${C.danger}30`,background:C.dangerSoft,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>🗑️</button>
-              </div>
+    <div className="entries-grid">
+      {entries.map((e,i) => {
+        const name=e.customerName||e["Customer name"]||"—";
+        const amt=e.amount||e["Amount"]||0;
+        const mop=e.mop||e["MOP"]||"";
+        const kids=e.numKids||e["No of kids"]||1;
+        const timing=e.timing||e["Timing"]||"";
+        const typeColors = {"funzone":C.accentSoft,"birthday":C.pinkSoft,"event":C.blueSoft,"daycare":C.orangeSoft};
+        const typeKey = e.entryType||e["Entry Type"]||"funzone";
+        return (
+          <div key={i} className="row-card" style={{animation:"springIn .3s ease both",animationDelay:`${Math.min(i,10)*.025}s`}}>
+            <div className="row-icon" style={{background:typeColors[typeKey]||C.accentSoft}}>
+              {CONFIG.ENTRY_TYPES.find(t=>t.key===typeKey)?.icon||"🎪"}
             </div>
-          );
-        })}
-      </div>
+            <div className="row-body">
+              <div className="row-title">{name}</div>
+              <div className="row-sub">{kids>1?`${kids} kids · `:""}{mop}{timing?` · ${timing}`:""}</div>
+            </div>
+            <div className="row-amount">₹{parseInt(amt).toLocaleString("en-IN")}</div>
+            <div className="row-actions">
+              <button type="button" className="icon-btn" title="Edit" onClick={()=>onEdit(e)}>✏️</button>
+              <button type="button" className="icon-btn danger" title="Delete" onClick={()=>onDelete(e)}>🗑️</button>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 };

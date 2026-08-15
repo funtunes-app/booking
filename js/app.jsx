@@ -59,7 +59,6 @@ function App() {
   const [entryType,setEntryType] = useState("funzone");
   const [form,setFormState] = useState(getDefaultForm());
   const [errors,setErrors] = useState({});
-  const [focusedField,setFocusedField] = useState(null);
   const [shakeStep,setShakeStep] = useState(false);
   const [todayEntries,setTodayEntries] = useState([]);
   const [loading,setLoading] = useState(false);
@@ -316,266 +315,301 @@ function App() {
     <div className="app-shell">
 
       {/* Toast */}
-      {toast && <div style={{position:"fixed",top:16,left:"50%",transform:"translateX(-50%)",zIndex:200,background:toast.type==="success"?C.green:toast.type==="error"?C.danger:C.blue,color:"#fff",padding:"10px 20px",borderRadius:14,fontSize:13,fontWeight:700,boxShadow:C.shadowLift,animation:"popIn .3s ease",maxWidth:340}}>{toast.msg}</div>}
+      {toast && <div className="toast" style={{background:toast.type==="success"?C.green:toast.type==="error"?C.danger:C.blue}}>{toast.msg}</div>}
 
       {/* Saving */}
-      {saving && <div style={{position:"fixed",inset:0,background:"rgba(123,45,142,.15)",backdropFilter:"blur(3px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:150}}>
-        <div style={{background:C.card,borderRadius:20,padding:"24px 32px",textAlign:"center",boxShadow:C.shadowLift,animation:"popIn .3s ease"}}>
-          <Spinner size={32} /><div style={{marginTop:12,fontSize:14,fontWeight:700,color:C.textMid}}>Saving to Sheet...</div>
+      {saving && <div className="overlay" style={{zIndex:150}}>
+        <div className="modal" style={{padding:"24px 30px",maxWidth:260}}>
+          <Spinner size={28} /><div style={{marginTop:10,fontSize:13.5,fontWeight:700,color:C.textMid}}>Saving to Sheet…</div>
         </div></div>}
 
       {/* Success */}
-      {showSuccess && <div style={{position:"fixed",inset:0,background:"rgba(123,45,142,.25)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:20,animation:"fadeIn .3s ease"}}>
-        <div style={{background:C.card,borderRadius:24,padding:"36px 28px",textAlign:"center",maxWidth:340,width:"100%",boxShadow:C.shadowLift,animation:"popIn .5s ease"}}>
-          <div style={{width:80,height:80,margin:"0 auto 20px",borderRadius:"50%",background:C.greenSoft,display:"flex",alignItems:"center",justifyContent:"center"}}>
-            <svg width="40" height="40" viewBox="0 0 40 40" fill="none"><path d="M10 20 L17 27 L30 14" stroke={C.green} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="40" strokeDashoffset="40" style={{animation:"checkDraw .6s ease .3s forwards"}} /></svg>
+      {showSuccess && <div className="overlay">
+        <div className="modal">
+          <div style={{width:64,height:64,margin:"0 auto 16px",borderRadius:"50%",background:C.greenSoft,display:"flex",alignItems:"center",justifyContent:"center"}}>
+            <svg width="34" height="34" viewBox="0 0 40 40" fill="none"><path d="M10 20 L17 27 L30 14" stroke={C.green} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="40" strokeDashoffset="40" style={{animation:"checkDraw .6s ease .3s forwards"}} /></svg>
           </div>
-          <h2 style={{margin:"0 0 8px",fontSize:22,fontWeight:800,color:C.text}}>Entry Saved!</h2>
-          <p style={{margin:"0 0 4px",fontSize:14,color:C.textMid}}><strong>{form.customerName}</strong>{form.numKids>1?` × ${form.numKids} kids`:""}</p>
-          <p style={{margin:"0 0 24px",fontSize:28,fontWeight:800,color:C.green}}>₹{totalAmount.toLocaleString("en-IN")}</p>
-          <button onClick={()=>{setFormState(getDefaultForm());setStep(0);setShowSuccess(false);setEntryType("funzone");}} style={{width:"100%",padding:14,borderRadius:14,border:"none",background:`linear-gradient(135deg,${C.accent},${C.pink})`,color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer",marginBottom:10,boxShadow:`0 4px 16px ${C.accent}30`}}>+ Add Another</button>
-          <button onClick={resetForm} style={{width:"100%",padding:14,borderRadius:14,border:`2px solid ${C.border}`,background:"transparent",color:C.textMid,fontSize:14,fontWeight:600,cursor:"pointer"}}>Back to Home</button>
+          <h2 style={{margin:"0 0 6px",fontSize:19,fontWeight:800}}>Entry saved</h2>
+          <p style={{margin:"0 0 2px",fontSize:13.5,color:C.textMid}}><strong>{form.customerName}</strong>{form.numKids>1?` × ${form.numKids} kids`:""}</p>
+          <p style={{margin:"0 0 20px",fontSize:26,fontWeight:800,color:C.green}}>₹{totalAmount.toLocaleString("en-IN")}</p>
+          <button className="btn btn-primary btn-block btn-lg" style={{marginBottom:8}}
+            onClick={()=>{setFormState(getDefaultForm());setStep(0);setShowSuccess(false);setEntryType("funzone");}}>+ Add another</button>
+          <button className="btn btn-block" onClick={resetForm}>Back to home</button>
         </div></div>}
 
       {/* ══════════ HOME ══════════ */}
-      {screen==="home" && <div style={{padding:"16px 20px 120px"}}>
-        {/* Header */}
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20,paddingTop:4}}>
-          <div style={{display:"flex",alignItems:"center",gap:10}}>
-            <img src="icons/logo-header.png" alt="FunTunes" style={{width:42,height:42,borderRadius:10}} />
-            <div>
-              <div style={{fontSize:18,fontWeight:800,color:C.accent}}>{CONFIG.APP_NAME}</div>
-              <div style={{fontSize:11,color:C.textLight}}>{dateDisplay} · {timeDisplay}</div>
+      {screen==="home" && <>
+        <header className="appbar">
+          <div className="container appbar-inner">
+            <div className="appbar-brand">
+              <img className="appbar-logo" src="icons/logo-header.png" alt="" />
+              <div style={{minWidth:0}}>
+                <div className="appbar-title">{CONFIG.APP_NAME}</div>
+                <div className="appbar-sub">{dateDisplay} · {timeDisplay}</div>
+              </div>
+            </div>
+            <div className="appbar-actions">
+              <button className="btn btn-sm" onClick={()=>setScreen("birthdays")} title="Birthdays">🎂 <span style={{marginLeft:2}}>Birthdays</span></button>
+              <button className="btn btn-sm btn-primary new-entry-inline" onClick={startNewEntry}>+ New Entry</button>
             </div>
           </div>
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <button onClick={()=>setScreen("birthdays")} style={{display:"flex",alignItems:"center",gap:6,background:C.pinkSoft,border:`1.5px solid ${C.pink}30`,borderRadius:20,padding:"7px 12px",fontSize:16,cursor:"pointer"}}>🎂</button>
-            <div style={{display:"flex",alignItems:"center",gap:6,background:C.greenSoft,border:`1.5px solid ${C.green}30`,borderRadius:20,padding:"5px 12px",fontSize:11,fontWeight:700,color:C.green}}>
-              <div style={{width:7,height:7,borderRadius:"50%",background:C.green}} />Online
+        </header>
+
+        <div className="container page">
+          {/* Stats */}
+          <div className="stats-grid">
+            {[
+              {l:"Entries",v:todayEntries.length,i:"🎟️",bg:C.accentSoft,clr:C.accent},
+              {l:"Revenue",v:`₹${todayEntries.reduce((a,e)=>a+(parseInt(e.amount||e["Amount"]||0)),0).toLocaleString("en-IN")}`,i:"💰",bg:C.greenSoft,clr:C.green},
+              {l:"Kids",v:todayEntries.reduce((a,e)=>a+(parseInt(e.numKids||e["No of kids"]||1)),0),i:"👶",bg:C.blueSoft,clr:C.blue}
+            ].map((s,i)=>
+              <div key={i} className="stat">
+                <div className="stat-icon" style={{background:s.bg}}>{s.i}</div>
+                <div style={{minWidth:0}}>
+                  <div className="stat-value" style={{color:s.clr}}>{s.v}</div>
+                  <div className="stat-label">{s.l}</div>
+                </div>
+              </div>)}
+          </div>
+
+          {/* Entries */}
+          <div className="card">
+            <div className="card-head">
+              <div style={{display:"flex",alignItems:"baseline",gap:8,minWidth:0}}>
+                <span className="card-title">Today's entries</span>
+                {!loading && todayEntries.length>0 &&
+                  <span style={{fontSize:12,color:C.textLight,fontWeight:600}}>{todayEntries.length}</span>}
+              </div>
+              <button className="btn btn-sm" onClick={fetchToday} disabled={loading}>↻ Refresh</button>
+            </div>
+            <div className="card-pad">
+              <EntryList entries={todayEntries} onEdit={handleEdit} onDelete={handleDelete} loading={loading} />
             </div>
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="stats-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",marginBottom:20}}>
-          {[
-            {l:"Entries",v:todayEntries.length,i:"🎟️",bg:C.accentSoft,clr:C.accent},
-            {l:"Revenue",v:`₹${todayEntries.reduce((a,e)=>a+(parseInt(e.amount||e["Amount"]||0)),0).toLocaleString("en-IN")}`,i:"💰",bg:C.greenSoft,clr:C.green},
-            {l:"Kids",v:todayEntries.reduce((a,e)=>a+(parseInt(e.numKids||e["No of kids"]||1)),0),i:"👶",bg:C.blueSoft,clr:C.blue}
-          ].map((s,i)=>
-            <div key={i} style={{background:s.bg,borderRadius:16,padding:"14px 12px",textAlign:"center",border:`1px solid ${s.clr}15`}}>
-              <div style={{fontSize:20,marginBottom:4}}>{s.i}</div>
-              <div style={{fontSize:16,fontWeight:800,color:s.clr}}>{s.v}</div>
-              <div style={{fontSize:10,color:C.textLight,textTransform:"uppercase",letterSpacing:.5}}>{s.l}</div>
-            </div>)}
+        {/* New Entry (mobile floating action button) */}
+        <div className="new-entry-fab">
+          <button className="btn btn-primary btn-block btn-lg" onClick={startNewEntry} style={{boxShadow:`0 6px 22px ${C.accent}45`,animation:"slideUp .35s ease"}}>+ New Entry</button>
         </div>
-
-        {/* Entries */}
-        <div style={{background:C.card,borderRadius:18,padding:"16px 18px",border:`1px solid ${C.border}`,boxShadow:"0 2px 12px rgba(123,45,142,.05)"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-            <h3 style={{margin:0,fontSize:15,fontWeight:800,color:C.text}}>Today's Entries</h3>
-            <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <button className="new-entry-inline" onClick={startNewEntry} style={{alignItems:"center",gap:6,padding:"7px 14px",borderRadius:10,border:"none",background:`linear-gradient(135deg,${C.accent},${C.pink})`,color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer"}}>+ New Entry</button>
-              <button onClick={fetchToday} style={{padding:"5px 12px",borderRadius:8,border:`1px solid ${C.border}`,background:C.warm1,fontSize:12,fontWeight:600,color:C.textMid,cursor:"pointer"}}>↻ Refresh</button>
-            </div>
-          </div>
-          <EntryList entries={todayEntries} onEdit={handleEdit} onDelete={handleDelete} loading={loading} />
-        </div>
-
-        {/* New Entry Button (mobile floating action button) */}
-        <div className="new-entry-fab form-bottom-bar" style={{position:"fixed",bottom:24,left:"50%",transform:"translateX(-50%)",width:"calc(100% - 40px)",zIndex:50}}>
-          <button onClick={startNewEntry} style={{width:"100%",padding:16,borderRadius:18,border:"none",background:`linear-gradient(135deg,${C.accent},${C.pink})`,color:"#fff",fontSize:16,fontWeight:800,cursor:"pointer",boxShadow:`0 6px 24px ${C.accent}40`,animation:"slideUp .4s ease"}}>+ New Entry</button>
-        </div>
-      </div>}
+      </>}
 
       {/* ══════════ BIRTHDAYS ══════════ */}
-      {screen==="birthdays" && <div style={{padding:"16px 20px 40px"}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14,paddingTop:4}}>
-          <button onClick={()=>setScreen("home")} style={{background:"transparent",border:"none",color:C.accent,fontSize:14,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>← Back</button>
-          <div style={{fontSize:15,fontWeight:800,color:C.text}}>🎂 Birthdays</div>
-          <button onClick={()=>fetchBirthdays()} disabled={birthdaysLoading} style={{padding:"5px 12px",borderRadius:8,border:`1px solid ${C.border}`,background:C.warm1,fontSize:12,fontWeight:600,color:C.textMid,cursor:"pointer"}}>↻</button>
-        </div>
+      {screen==="birthdays" && <>
+        <header className="appbar">
+          <div className="container appbar-inner">
+            <div className="appbar-brand">
+              <button className="btn btn-sm btn-ghost" onClick={()=>setScreen("home")}>← Back</button>
+              <span className="card-title">🎂 Birthdays</span>
+            </div>
+            <button className="btn btn-sm" onClick={()=>fetchBirthdays()} disabled={birthdaysLoading}>↻ Refresh</button>
+          </div>
+        </header>
 
-        {/* Month / Year selectors */}
-        <div style={{display:"flex",gap:8,marginBottom:14}}>
-          <Dropdown flex={1.4} value={birthdayMonth} onChange={changeMonth}
-            options={MONTH_NAMES.map((m,i)=>({value:i+1,label:m}))} />
-          <Dropdown flex={1} value={birthdayYear} onChange={changeYear}
-            options={[new Date().getFullYear()-1, new Date().getFullYear(), new Date().getFullYear()+1].map(y=>({value:y,label:String(y)}))} />
-        </div>
-
-        {/* Week filter chips */}
-        <div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap"}}>
-          <button onClick={()=>setWeekFilter("all")} style={{padding:"7px 14px",borderRadius:10,border:`1.5px solid ${weekFilter==="all"?C.accent:C.border}`,background:weekFilter==="all"?C.accentSoft:C.card,color:weekFilter==="all"?C.accent:C.textMid,fontSize:12,fontWeight:700,cursor:"pointer"}}>All</button>
-          {[1,2,3,4,5].map(w=>(
-            <button key={w} onClick={()=>setWeekFilter(w)} style={{padding:"7px 14px",borderRadius:10,border:`1.5px solid ${weekFilter===w?C.accent:C.border}`,background:weekFilter===w?C.accentSoft:C.card,color:weekFilter===w?C.accent:C.textMid,fontSize:12,fontWeight:700,cursor:"pointer"}}>W{w}</button>
-          ))}
-        </div>
-
-        {/* Summary */}
-        <div style={{background:`linear-gradient(135deg,${C.pinkSoft},${C.accentSoft})`,borderRadius:16,padding:"14px 16px",marginBottom:16,border:`1.5px solid ${C.pink}20`,display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
-          <div style={{display:"flex",alignItems:"center",gap:10}}>
-            <span style={{fontSize:22}}>🎉</span>
-            <div>
-              <div style={{fontSize:13,fontWeight:700,color:C.text}}>{birthdays.length} birthday{birthdays.length!==1?"s":""} in {MONTH_NAMES[birthdayMonth-1]} {birthdayYear}</div>
-              <div style={{fontSize:11,color:C.textLight}}>{birthdays.filter(b=>b.contacted).length} contacted so far</div>
+        <div className="container page">
+          {/* Filters */}
+          <div className="card card-pad" style={{marginBottom:"var(--sp-4)"}}>
+            <div style={{display:"flex",gap:"var(--gap)",marginBottom:12,flexWrap:"wrap"}}>
+              <div style={{display:"flex",gap:8,flex:"1 1 260px",minWidth:0}}>
+                <Dropdown flex={1.5} value={birthdayMonth} onChange={changeMonth}
+                  options={MONTH_NAMES.map((m,i)=>({value:i+1,label:m}))} />
+                <Dropdown flex={1} value={birthdayYear} onChange={changeYear}
+                  options={[new Date().getFullYear()-1, new Date().getFullYear(), new Date().getFullYear()+1].map(y=>({value:y,label:String(y)}))} />
+              </div>
+              <div className="chips" style={{flex:"1 1 auto",alignItems:"center"}}>
+                <button type="button" className={`chip${weekFilter==="all"?" is-on":""}`} onClick={()=>setWeekFilter("all")}>All</button>
+                {[1,2,3,4,5].map(w=>(
+                  <button key={w} type="button" className={`chip${weekFilter===w?" is-on":""}`} onClick={()=>setWeekFilter(w)}>W{w}</button>
+                ))}
+              </div>
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:8,fontSize:12,color:C.textMid,fontWeight:600,borderTop:`1px solid ${C.border}`,paddingTop:11}}>
+              <span>🎉 <strong style={{color:C.text}}>{birthdays.length}</strong> birthday{birthdays.length!==1?"s":""} in {MONTH_NAMES[birthdayMonth-1]} {birthdayYear}</span>
+              <span style={{color:C.textLight}}>·</span>
+              <span style={{color:C.green}}>{birthdays.filter(b=>(b.status||(b.contacted?"warm":"not_contacted"))!=="not_contacted").length} contacted</span>
             </div>
           </div>
-        </div>
 
-        <div style={{background:C.card,borderRadius:18,padding:"16px 18px",border:`1px solid ${C.border}`,boxShadow:"0 2px 12px rgba(123,45,142,.05)"}}>
           <BirthdayList birthdays={birthdays} loading={birthdaysLoading} weekFilter={weekFilter} onSave={saveBirthdayCall} onShowAll={()=>setWeekFilter("all")} />
         </div>
-      </div>}
+      </>}
 
       {/* ══════════ FORM ══════════ */}
       {screen==="form" && <>
-        {/* Form Header */}
-        <div style={{background:C.card,padding:"14px 20px 12px",borderBottom:`1px solid ${C.border}`,position:"sticky",top:0,zIndex:50}}>
-          <div style={{maxWidth:520,margin:"0 auto"}}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-              <button onClick={resetForm} style={{background:"transparent",border:"none",color:C.accent,fontSize:14,fontWeight:700,cursor:"pointer"}}>← Back</button>
-              <div style={{fontSize:15,fontWeight:800,color:C.text}}>{editTarget?"Edit Entry":"New Entry"}</div>
-              <div style={{width:60}} />
+        <header className="appbar">
+          <div className="container container--form" style={{paddingTop:9,paddingBottom:10}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:9}}>
+              <button className="btn btn-sm btn-ghost" onClick={resetForm}>← Back</button>
+              <span className="card-title">{editTarget?"Edit entry":"New entry"}</span>
+              <span style={{width:58}} />
             </div>
-            {/* Progress */}
-            <div style={{display:"flex",alignItems:"center",gap:4}}>
+            <div className="stepbar">
               {STEP_LABELS.map((_,i)=><React.Fragment key={i}>
-                <button onClick={()=>{if(i<step)setStep(i);}} style={{width:32,height:32,borderRadius:10,border:"none",fontSize:14,background:i<=step?(i===step?C.accent:C.green):C.border,color:i<=step?"#fff":C.textLight,fontWeight:700,cursor:i<step?"pointer":"default",display:"flex",alignItems:"center",justifyContent:"center"}}>{i<step?"✓":STEP_ICONS[i]}</button>
-                {i<LAST_STEP&&<div style={{flex:1,height:3,borderRadius:2,background:i<step?C.green:C.border}} />}
+                <button type="button" onClick={()=>{if(i<step)setStep(i);}}
+                  className={`stepdot${i===step?" is-current":i<step?" is-done":""}`}>{i<step?"✓":STEP_ICONS[i]}</button>
+                {i<LAST_STEP&&<div className={`stepline${i<step?" is-done":""}`} />}
               </React.Fragment>)}
             </div>
-            <div style={{display:"flex",justifyContent:"space-between",marginTop:4}}>
-              {STEP_LABELS.map((l,i)=><span key={l} style={{fontSize:10,fontWeight:i===step?800:500,color:i===step?C.accent:C.textLight}}>{l}</span>)}
+            <div className="steplabels">
+              {STEP_LABELS.map((l,i)=><span key={l} className={`steplabel${i===step?" is-current":""}`}>{l}</span>)}
             </div>
           </div>
-        </div>
+        </header>
 
         {/* Form Body */}
-        <div ref={containerRef} style={{padding:"20px 20px 120px",overflowY:"auto"}}>
-          <div style={{maxWidth:520,margin:"0 auto",animation:shakeStep?"shake .4s ease":"springIn .45s ease"}}>
+        <div ref={containerRef} className="container container--form page" style={{paddingBottom:0}}>
+          <div style={{animation:shakeStep?"shake .4s ease":"springIn .3s ease"}}>
 
             {/* Step 0 — Customer */}
             {step===0&&<>
-              <div style={{marginBottom:20}}>
-                <div style={{fontSize:12,fontWeight:700,color:C.textLight,textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Entry Type</div>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-                  {CONFIG.ENTRY_TYPES.map(t=><button key={t.key} onClick={()=>setEntryType(t.key)} style={{padding:"14px 12px",borderRadius:14,border:`2px solid ${entryType===t.key?t.color:C.border}`,background:entryType===t.key?`${t.color}12`:C.card,cursor:"pointer",display:"flex",alignItems:"center",gap:10,transition:"all .2s ease"}}>
-                    <span style={{fontSize:24}}>{t.icon}</span><span style={{fontSize:14,fontWeight:entryType===t.key?800:500,color:entryType===t.key?t.color:C.textMid}}>{t.label}</span>
+              <div className="section">
+                <SectionHeading label="Entry type" />
+                <div className="segmented">
+                  {CONFIG.ENTRY_TYPES.map(t=><button key={t.key} type="button"
+                    className={`seg${entryType===t.key?" is-on":""}`} onClick={()=>setEntryType(t.key)}
+                    style={entryType===t.key?{color:t.color,background:`${t.color}10`}:undefined}>
+                    <span style={{fontSize:17}}>{t.icon}</span>{t.label}
                   </button>)}
                 </div>
               </div>
-              <InputField label="Phone Number" icon="📱">
-                <div style={{position:"relative"}}>
-                  <input value={form.phone} onChange={e=>{const v=e.target.value.replace(/\D/g,"").slice(0,10);set("phone",v);if(v.length===10)lookupByPhone(v);}} placeholder="10-digit mobile" type="tel" inputMode="numeric" onFocus={()=>setFocusedField("phone")} onBlur={()=>setFocusedField(null)} style={inputStyle(focusedField==="phone")} />
-                  {phoneLookupLoading && <div style={{position:"absolute",right:16,top:"50%",transform:"translateY(-50%)"}}><Spinner size={18} /></div>}
+
+              <div className="section">
+                <SectionHeading label="Customer" />
+                <div className="form-grid">
+                  <InputField label="Phone Number" icon="📱">
+                    <div style={{position:"relative"}}>
+                      <input className="fld" value={form.phone} placeholder="10-digit mobile" type="tel" inputMode="numeric"
+                        onChange={e=>{const v=e.target.value.replace(/\D/g,"").slice(0,10);set("phone",v);if(v.length===10)lookupByPhone(v);}} />
+                      {phoneLookupLoading && <div style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)"}}><Spinner size={16} /></div>}
+                    </div>
+                  </InputField>
+                  <InputField label="Customer Name" icon="👤" error={errors.customerName}>
+                    <input className={`fld${errors.customerName?" is-error":""}`} value={form.customerName} placeholder="e.g. Priya"
+                      onChange={e=>set("customerName",e.target.value)} />
+                  </InputField>
+                  <InputField label="Number of Kids" icon="👶">
+                    <NumberStepper value={form.numKids} onChange={v=>set("numKids",v)} min={1} max={10} />
+                  </InputField>
+                  <InputField label="Date of Birth (Child)" icon="🎂">
+                    <input className="fld" value={form.dob} onChange={e=>set("dob",e.target.value)} type="date" />
+                  </InputField>
                 </div>
-              </InputField>
-              <InputField label="Customer Name" icon="👤" error={errors.customerName}>
-                <input value={form.customerName} onChange={e=>set("customerName",e.target.value)} placeholder="e.g. Priya" onFocus={()=>setFocusedField("name")} onBlur={()=>setFocusedField(null)} style={inputStyle(focusedField==="name",errors.customerName)} />
-              </InputField>
-              <InputField label="Number of Kids" icon="👶"><NumberStepper value={form.numKids} onChange={v=>set("numKids",v)} min={1} max={10} label="kids" /></InputField>
-              {form.numKids>1&&<div style={{background:C.blueSoft,borderRadius:12,padding:"10px 14px",marginBottom:18,border:`1.5px solid ${C.blue}25`,fontSize:12,color:C.blue,fontWeight:600}}>
-                ℹ️ {form.numKids} separate rows: {form.customerName||"Name"} - Kid 1, Kid 2{form.numKids>2?`, ... Kid ${form.numKids}`:""}
-              </div>}
-              <InputField label="Date of Birth (Child)" icon="🎂">
-                <input value={form.dob} onChange={e=>set("dob",e.target.value)} type="date" onFocus={()=>setFocusedField("dob")} onBlur={()=>setFocusedField(null)} style={inputStyle(focusedField==="dob")} />
-              </InputField>
+                {form.numKids>1&&<div className="field-hint" style={{color:C.blue,background:C.blueSoft,padding:"9px 11px",borderRadius:10,marginTop:2}}>
+                  ℹ️ Saved as {form.numKids} separate rows: {form.customerName||"Name"} - Kid 1, Kid 2{form.numKids>2?`, … Kid ${form.numKids}`:""}
+                </div>}
+              </div>
             </>}
 
             {/* Step 1 — Payment */}
             {step===1&&<>
-              {/* ── Playtime ── */}
-              <SectionHeading icon="🎪" label="Playtime" />
-              <InputField label="Duration" icon="⏱️">
-                <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                  <Dropdown flex={1}
-                    value={form.hoursMode==="custom"?"custom":String(form.hours)}
-                    options={[...CONFIG.HOUR_OPTIONS.map(o=>({value:o.value,label:o.label})),{value:"custom",label:"Custom…"}]}
-                    onChange={v=>{
-                      if(v==="custom"){ set("hoursMode","custom"); }
-                      else { set("hoursMode","preset"); setHours(v); }
-                    }} />
-                  {form.hoursMode==="custom" &&
-                    <input value={form.hours} onChange={e=>setHours(e.target.value.replace(/[^\d.]/g,""))}
-                      placeholder="hrs" type="tel" inputMode="decimal"
-                      style={{width:80,boxSizing:"border-box",padding:"12px 14px",borderRadius:14,border:`2px solid ${C.border}`,background:C.card,color:C.text,fontSize:14,fontWeight:700,textAlign:"center",fontFamily:"'Nunito',sans-serif",outline:"none"}} />}
-                </div>
-                <div style={{display:"flex",alignItems:"center",gap:6,marginTop:8,fontSize:11,color:C.textLight}}>
-                  <span title="Start time">🕐</span>
-                  <input value={form.timeIn} onChange={e=>set("timeIn",e.target.value)} type="time"
-                    style={{padding:"4px 8px",borderRadius:8,border:`1px solid ${C.border}`,background:C.card,color:C.text,fontSize:11,fontWeight:700,fontFamily:"'Nunito',sans-serif",outline:"none"}} />
-                  {form.timeIn && <span>→ {formatTime12(computeTimeOut(form.timeIn,form.hours))}</span>}
-                </div>
-              </InputField>
+              <div className="section">
+                <SectionHeading icon="🎪" label="Playtime" />
+                <div className="form-grid">
+                  <InputField label="Duration" icon="⏱️">
+                    <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                      <Dropdown flex={1}
+                        value={form.hoursMode==="custom"?"custom":String(form.hours)}
+                        options={[...CONFIG.HOUR_OPTIONS.map(o=>({value:o.value,label:o.label})),{value:"custom",label:"Custom…"}]}
+                        onChange={v=>{
+                          if(v==="custom"){ set("hoursMode","custom"); }
+                          else { set("hoursMode","preset"); setHours(v); }
+                        }} />
+                      {form.hoursMode==="custom" &&
+                        <input className="fld" value={form.hours} onChange={e=>setHours(e.target.value.replace(/[^\d.]/g,""))}
+                          placeholder="hrs" type="tel" inputMode="decimal" style={{width:74,flexShrink:0,textAlign:"center"}} />}
+                    </div>
+                    <div style={{display:"flex",alignItems:"center",gap:6,marginTop:7,fontSize:11,color:C.textLight,fontWeight:600}}>
+                      <span title="Start time">🕐</span>
+                      <input className="fld fld-compact" value={form.timeIn} onChange={e=>set("timeIn",e.target.value)} type="time" />
+                      {form.timeIn && <span>→ {formatTime12(computeTimeOut(form.timeIn,form.hours))}</span>}
+                    </div>
+                  </InputField>
 
-              <InputField label="Playtime (₹ per kid)" icon="💰" error={errors.amount}>
-                <div style={{position:"relative"}}>
-                  <span style={{position:"absolute",left:16,top:"50%",transform:"translateY(-50%)",fontSize:20,fontWeight:800,color:C.accent}}>₹</span>
-                  <input value={form.amount} onChange={e=>set("amount",e.target.value.replace(/\D/g,""))} type="tel" inputMode="numeric" placeholder="300" onFocus={()=>setFocusedField("amount")} onBlur={()=>setFocusedField(null)} style={{...inputStyle(focusedField==="amount",errors.amount),paddingLeft:40,fontSize:24,fontWeight:800}} />
+                  <InputField label="Playtime (₹ per kid)" icon="💰" error={errors.amount}>
+                    <div style={{position:"relative"}}>
+                      <span style={{position:"absolute",left:13,top:"50%",transform:"translateY(-50%)",fontSize:16,fontWeight:800,color:C.accent,pointerEvents:"none"}}>₹</span>
+                      <input className={`fld fld-lg${errors.amount?" is-error":""}`} value={form.amount} type="tel" inputMode="numeric" placeholder="300"
+                        onChange={e=>set("amount",e.target.value.replace(/\D/g,""))} />
+                    </div>
+                  </InputField>
                 </div>
-              </InputField>
+                <InputField label="Payment Mode" icon="💳" error={errors.mop}>
+                  <ChipSelect options={CONFIG.MOP_OPTIONS} value={form.mop} onChange={v=>set("mop",v)} />
+                </InputField>
+              </div>
 
-              <InputField label="Payment Mode" icon="💳" error={errors.mop}><ChipSelect options={CONFIG.MOP_OPTIONS} value={form.mop} onChange={v=>set("mop",v)} /></InputField>
-
-              {/* ── Socks ── */}
-              <SectionHeading icon="🧦" label="Socks" />
-              <InputField label={`Pairs (₹${CONFIG.SOCKS_RATE} each)`} icon="🧦">
-                <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                  <Dropdown flex={1}
-                    value={form.sockMode==="custom"?"custom":String(form.sockCount||0)}
-                    options={[...CONFIG.SOCK_COUNT_OPTIONS.map(n=>({value:String(n),label:n===0?"None":`${n} pair${n>1?"s":""}`})),{value:"custom",label:"Custom…"}]}
-                    onChange={v=>{
-                      if(v==="custom"){ set("sockMode","custom"); }
-                      else { set("sockMode","preset"); setSockCount(parseInt(v)); }
-                    }} />
-                  {form.sockMode==="custom" &&
-                    <input value={form.sockCount||""} onChange={e=>{const v=e.target.value.replace(/\D/g,"");setSockCount(v===""?0:parseInt(v));}}
-                      placeholder="pairs" type="tel" inputMode="numeric"
-                      style={{width:80,boxSizing:"border-box",padding:"12px 14px",borderRadius:14,border:`2px solid ${C.border}`,background:C.card,color:C.text,fontSize:14,fontWeight:700,textAlign:"center",fontFamily:"'Nunito',sans-serif",outline:"none"}} />}
+              <div className="section">
+                <SectionHeading icon="🧦" label="Socks" />
+                <div className="form-grid">
+                  <InputField label={`Pairs (₹${CONFIG.SOCKS_RATE} each)`}>
+                    <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                      <Dropdown flex={1}
+                        value={form.sockMode==="custom"?"custom":String(form.sockCount||0)}
+                        options={[...CONFIG.SOCK_COUNT_OPTIONS.map(n=>({value:String(n),label:n===0?"None":`${n} pair${n>1?"s":""}`})),{value:"custom",label:"Custom…"}]}
+                        onChange={v=>{
+                          if(v==="custom"){ set("sockMode","custom"); }
+                          else { set("sockMode","preset"); setSockCount(parseInt(v)); }
+                        }} />
+                      {form.sockMode==="custom" &&
+                        <input className="fld" value={form.sockCount||""} placeholder="pairs" type="tel" inputMode="numeric"
+                          onChange={e=>{const v=e.target.value.replace(/\D/g,"");setSockCount(v===""?0:parseInt(v));}}
+                          style={{width:74,flexShrink:0,textAlign:"center"}} />}
+                    </div>
+                  </InputField>
+                  {form.socks>0&&<InputField label="Socks Payment Mode" icon="🔄">
+                    <ChipSelect options={CONFIG.MOP_OPTIONS} value={form.socksMop} onChange={v=>set("socksMop",v)} />
+                  </InputField>}
                 </div>
-              </InputField>
-              {form.socks>0&&<InputField label="Socks Payment Mode" icon="🔄"><ChipSelect options={CONFIG.MOP_OPTIONS} value={form.socksMop} onChange={v=>set("socksMop",v)} /></InputField>}
+              </div>
 
-              <div style={{background:`linear-gradient(135deg,${C.accentSoft},${C.pinkSoft})`,borderRadius:16,padding:"16px 18px",border:`2px solid ${C.accent}20`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <div><div style={{fontSize:11,color:C.textMid,fontWeight:600,textTransform:"uppercase"}}>Total Amount</div><div style={{fontSize:11,color:C.textLight}}>{form.numKids} kid{form.numKids>1?"s":""} × ₹{form.amount}{form.socks>0?` + ₹${form.socks}`:""}</div></div>
-                <div style={{fontSize:28,fontWeight:900,color:C.accent}}>₹{totalAmount.toLocaleString("en-IN")}</div>
+              <div className="card card-pad" style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,background:C.accentSoft,borderColor:`${C.accent}30`}}>
+                <div>
+                  <div className="stat-label" style={{color:C.textMid}}>Total amount</div>
+                  <div style={{fontSize:11.5,color:C.textMid,fontWeight:600,marginTop:2}}>{form.numKids} kid{form.numKids>1?"s":""} × ₹{form.amount}{form.socks>0?` + ₹${form.socks} socks`:""}</div>
+                </div>
+                <div style={{fontSize:24,fontWeight:800,color:C.accent,letterSpacing:-0.5}}>₹{totalAmount.toLocaleString("en-IN")}</div>
               </div>
             </>}
 
             {/* Step 2 — Review */}
             {step===2&&<>
-              <div style={{fontSize:14,fontWeight:700,color:C.textMid,marginBottom:14,textTransform:"uppercase",letterSpacing:.8}}>Review Entry</div>
-              {[
-                {l:"Type",v:CONFIG.ENTRY_TYPES.find(t=>t.key===entryType)?.label,i:CONFIG.ENTRY_TYPES.find(t=>t.key===entryType)?.icon},
-                {l:"Customer",v:form.customerName,i:"👤"},
-                {l:"Kids",v:`${form.numKids}${form.numKids>1?" (separate rows)":""}`,i:"👶"},
-                {l:"Amount/Kid",v:`₹${form.amount}`,i:"💰"},
-                ...(form.socks>0?[{l:"Socks",v:`${form.sockCount} pair${form.sockCount>1?"s":""} · ₹${form.socks} (${form.socksMop})`,i:"🧦"}]:[]),
-                {l:"Payment",v:form.mop,i:"💳"},{l:"Duration",v:formatHoursLabel(form.hours),i:"⏱️"},
-                {l:"Timing",v:`${formatTime12(form.timeIn)} → ${formatTime12(computeTimeOut(form.timeIn,form.hours))}`,i:"🕐"},
-                {l:"Date",v:formatDateDDMMYYYY(form.date),i:"📅"},
-                ...(form.phone?[{l:"Phone",v:form.phone,i:"📱"}]:[]),
-                ...(form.dob?[{l:"DOB",v:form.dob,i:"🎂"}]:[]),
-              ].map((r,i)=><div key={i} style={{display:"flex",alignItems:"center",padding:"12px 0",borderBottom:`1px solid ${C.border}`}}>
-                <span style={{fontSize:18,marginRight:12,width:28,textAlign:"center"}}>{r.i}</span>
-                <span style={{fontSize:13,color:C.textLight,flex:1,fontWeight:500}}>{r.l}</span>
-                <span style={{fontSize:14,fontWeight:700,color:C.text}}>{r.v}</span>
-              </div>)}
-              <div style={{marginTop:18,background:`linear-gradient(135deg,${C.greenSoft},#d4edda)`,borderRadius:16,padding:"18px 20px",border:`2px solid ${C.green}30`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <div style={{fontSize:14,fontWeight:700,color:C.green}}>Grand Total</div>
-                <div style={{fontSize:30,fontWeight:900,color:C.green}}>₹{totalAmount.toLocaleString("en-IN")}</div>
+              <div className="section">
+                <SectionHeading label="Review entry" />
+                <div className="card">
+                  {[
+                    {l:"Type",v:CONFIG.ENTRY_TYPES.find(t=>t.key===entryType)?.label,i:CONFIG.ENTRY_TYPES.find(t=>t.key===entryType)?.icon},
+                    {l:"Customer",v:form.customerName,i:"👤"},
+                    {l:"Kids",v:`${form.numKids}${form.numKids>1?" (separate rows)":""}`,i:"👶"},
+                    {l:"Playtime",v:`₹${form.amount} per kid`,i:"💰"},
+                    ...(form.socks>0?[{l:"Socks",v:`${form.sockCount} pair${form.sockCount>1?"s":""} · ₹${form.socks} (${form.socksMop})`,i:"🧦"}]:[]),
+                    {l:"Payment",v:form.mop,i:"💳"},
+                    {l:"Duration",v:formatHoursLabel(form.hours),i:"⏱️"},
+                    {l:"Timing",v:`${formatTime12(form.timeIn)} → ${formatTime12(computeTimeOut(form.timeIn,form.hours))}`,i:"🕐"},
+                    {l:"Date",v:formatDateDDMMYYYY(form.date),i:"📅"},
+                    ...(form.phone?[{l:"Phone",v:form.phone,i:"📱"}]:[]),
+                    ...(form.dob?[{l:"DOB",v:form.dob,i:"🎂"}]:[]),
+                  ].map((r,i,arr)=><div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"9px var(--card-p)",borderBottom:i<arr.length-1?`1px solid ${C.border}`:"none"}}>
+                    <span style={{fontSize:14,width:20,textAlign:"center",flexShrink:0}}>{r.i}</span>
+                    <span style={{fontSize:12.5,color:C.textLight,flex:1,fontWeight:600}}>{r.l}</span>
+                    <span style={{fontSize:13.5,fontWeight:700,textAlign:"right"}}>{r.v}</span>
+                  </div>)}
+                </div>
+              </div>
+              <div className="card card-pad" style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:C.greenSoft,borderColor:`${C.green}40`}}>
+                <div style={{fontSize:13,fontWeight:800,color:C.green,textTransform:"uppercase",letterSpacing:.5}}>Grand total</div>
+                <div style={{fontSize:26,fontWeight:800,color:C.green,letterSpacing:-0.5}}>₹{totalAmount.toLocaleString("en-IN")}</div>
               </div>
             </>}
-          </div>
-        </div>
 
-        {/* Bottom Bar — max-width matches the form body's content column (520 + padding), not the shell */}
-        <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:560,padding:"14px 20px 24px",background:`linear-gradient(to top,${C.bg} 70%,transparent)`,display:"flex",gap:10,zIndex:50}}>
-          {step>0&&<button onClick={prev} style={{flex:.4,padding:16,borderRadius:16,border:`2px solid ${C.border}`,background:C.card,color:C.textMid,fontSize:15,fontWeight:700,cursor:"pointer"}}>Back</button>}
-          <button disabled={saving} onClick={step===LAST_STEP?(editTarget?handleUpdateSubmit:submitEntry):next} style={{flex:1,padding:16,borderRadius:16,border:"none",background:step===LAST_STEP?`linear-gradient(135deg,${C.green},#27ae60)`:`linear-gradient(135deg,${C.accent},${C.pink})`,color:"#fff",fontSize:16,fontWeight:800,cursor:saving?"wait":"pointer",boxShadow:`0 4px 20px ${step===LAST_STEP?C.green:C.accent}40`,opacity:saving?.7:1}}>
-            {step===LAST_STEP?(editTarget?"✓ Update Entry":"✓ Save Entry"):`Next → ${STEP_LABELS[step+1]}`}
-          </button>
+            {/* Actions */}
+            <div className="form-actions">
+              {step>0&&<button className="btn btn-lg" onClick={prev} style={{flex:"0 0 100px"}}>Back</button>}
+              <button className={`btn btn-lg ${step===LAST_STEP?"btn-success":"btn-primary"}`} disabled={saving} style={{flex:1}}
+                onClick={step===LAST_STEP?(editTarget?handleUpdateSubmit:submitEntry):next}>
+                {step===LAST_STEP?(editTarget?"✓ Update entry":"✓ Save entry"):`Next → ${STEP_LABELS[step+1]}`}
+              </button>
+            </div>
+          </div>
         </div>
       </>}
     </div>
