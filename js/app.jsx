@@ -266,6 +266,11 @@ function App() {
     lastLookedUpPhone.current = "";
   }
 
+  function startNewEntry() {
+    setFormState(getDefaultForm()); setEditTarget(null); setScreen("form"); setStep(0);
+    lastLookedUpPhone.current = "";
+  }
+
   const dateDisplay = getCurrentDate();
   const timeDisplay = getCurrentTime12();
 
@@ -273,7 +278,7 @@ function App() {
   // RENDER
   // =========================================================================
   return (
-    <div style={{maxWidth:420,margin:"0 auto",background:C.bg,minHeight:"100vh",fontFamily:"'Nunito',sans-serif",position:"relative"}}>
+    <div className="app-shell">
 
       {/* Toast */}
       {toast && <div style={{position:"fixed",top:16,left:"50%",transform:"translateX(-50%)",zIndex:200,background:toast.type==="success"?C.green:toast.type==="error"?C.danger:C.blue,color:"#fff",padding:"10px 20px",borderRadius:14,fontSize:13,fontWeight:700,boxShadow:C.shadowLift,animation:"popIn .3s ease",maxWidth:340}}>{toast.msg}</div>}
@@ -317,7 +322,7 @@ function App() {
         </div>
 
         {/* Stats */}
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:20}}>
+        <div className="stats-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",marginBottom:20}}>
           {[
             {l:"Entries",v:todayEntries.length,i:"🎟️",bg:C.accentSoft,clr:C.accent},
             {l:"Revenue",v:`₹${todayEntries.reduce((a,e)=>a+(parseInt(e.amount||e["Amount"]||0)),0).toLocaleString("en-IN")}`,i:"💰",bg:C.greenSoft,clr:C.green},
@@ -334,14 +339,17 @@ function App() {
         <div style={{background:C.card,borderRadius:18,padding:"16px 18px",border:`1px solid ${C.border}`,boxShadow:"0 2px 12px rgba(123,45,142,.05)"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
             <h3 style={{margin:0,fontSize:15,fontWeight:800,color:C.text}}>Today's Entries</h3>
-            <button onClick={fetchToday} style={{padding:"5px 12px",borderRadius:8,border:`1px solid ${C.border}`,background:C.warm1,fontSize:12,fontWeight:600,color:C.textMid,cursor:"pointer"}}>↻ Refresh</button>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <button className="new-entry-inline" onClick={startNewEntry} style={{alignItems:"center",gap:6,padding:"7px 14px",borderRadius:10,border:"none",background:`linear-gradient(135deg,${C.accent},${C.pink})`,color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer"}}>+ New Entry</button>
+              <button onClick={fetchToday} style={{padding:"5px 12px",borderRadius:8,border:`1px solid ${C.border}`,background:C.warm1,fontSize:12,fontWeight:600,color:C.textMid,cursor:"pointer"}}>↻ Refresh</button>
+            </div>
           </div>
           <EntryList entries={todayEntries} onEdit={handleEdit} onDelete={handleDelete} loading={loading} />
         </div>
 
-        {/* New Entry Button */}
-        <div style={{position:"fixed",bottom:24,left:"50%",transform:"translateX(-50%)",width:"calc(100% - 40px)",maxWidth:380,zIndex:50}}>
-          <button onClick={()=>{setFormState(getDefaultForm());setEditTarget(null);setScreen("form");setStep(0);lastLookedUpPhone.current="";}} style={{width:"100%",padding:16,borderRadius:18,border:"none",background:`linear-gradient(135deg,${C.accent},${C.pink})`,color:"#fff",fontSize:16,fontWeight:800,cursor:"pointer",boxShadow:`0 6px 24px ${C.accent}40`,animation:"slideUp .4s ease"}}>+ New Entry</button>
+        {/* New Entry Button (mobile floating action button) */}
+        <div className="new-entry-fab form-bottom-bar" style={{position:"fixed",bottom:24,left:"50%",transform:"translateX(-50%)",width:"calc(100% - 40px)",zIndex:50}}>
+          <button onClick={startNewEntry} style={{width:"100%",padding:16,borderRadius:18,border:"none",background:`linear-gradient(135deg,${C.accent},${C.pink})`,color:"#fff",fontSize:16,fontWeight:800,cursor:"pointer",boxShadow:`0 6px 24px ${C.accent}40`,animation:"slideUp .4s ease"}}>+ New Entry</button>
         </div>
       </div>}
 
@@ -389,26 +397,28 @@ function App() {
       {screen==="form" && <>
         {/* Form Header */}
         <div style={{background:C.card,padding:"14px 20px 12px",borderBottom:`1px solid ${C.border}`,position:"sticky",top:0,zIndex:50}}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-            <button onClick={resetForm} style={{background:"transparent",border:"none",color:C.accent,fontSize:14,fontWeight:700,cursor:"pointer"}}>← Back</button>
-            <div style={{fontSize:15,fontWeight:800,color:C.text}}>{editTarget?"Edit Entry":"New Entry"}</div>
-            <div style={{width:60}} />
-          </div>
-          {/* Progress */}
-          <div style={{display:"flex",alignItems:"center",gap:4}}>
-            {[0,1,2,3].map(i=><React.Fragment key={i}>
-              <button onClick={()=>{if(i<step)setStep(i);}} style={{width:32,height:32,borderRadius:10,border:"none",fontSize:14,background:i<=step?(i===step?C.accent:C.green):C.border,color:i<=step?"#fff":C.textLight,fontWeight:700,cursor:i<step?"pointer":"default",display:"flex",alignItems:"center",justifyContent:"center"}}>{i<step?"✓":STEP_ICONS[i]}</button>
-              {i<3&&<div style={{flex:1,height:3,borderRadius:2,background:i<step?C.green:C.border}} />}
-            </React.Fragment>)}
-          </div>
-          <div style={{display:"flex",justifyContent:"space-between",marginTop:4}}>
-            {STEP_LABELS.map((l,i)=><span key={l} style={{fontSize:10,fontWeight:i===step?800:500,color:i===step?C.accent:C.textLight}}>{l}</span>)}
+          <div style={{maxWidth:520,margin:"0 auto"}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+              <button onClick={resetForm} style={{background:"transparent",border:"none",color:C.accent,fontSize:14,fontWeight:700,cursor:"pointer"}}>← Back</button>
+              <div style={{fontSize:15,fontWeight:800,color:C.text}}>{editTarget?"Edit Entry":"New Entry"}</div>
+              <div style={{width:60}} />
+            </div>
+            {/* Progress */}
+            <div style={{display:"flex",alignItems:"center",gap:4}}>
+              {[0,1,2,3].map(i=><React.Fragment key={i}>
+                <button onClick={()=>{if(i<step)setStep(i);}} style={{width:32,height:32,borderRadius:10,border:"none",fontSize:14,background:i<=step?(i===step?C.accent:C.green):C.border,color:i<=step?"#fff":C.textLight,fontWeight:700,cursor:i<step?"pointer":"default",display:"flex",alignItems:"center",justifyContent:"center"}}>{i<step?"✓":STEP_ICONS[i]}</button>
+                {i<3&&<div style={{flex:1,height:3,borderRadius:2,background:i<step?C.green:C.border}} />}
+              </React.Fragment>)}
+            </div>
+            <div style={{display:"flex",justifyContent:"space-between",marginTop:4}}>
+              {STEP_LABELS.map((l,i)=><span key={l} style={{fontSize:10,fontWeight:i===step?800:500,color:i===step?C.accent:C.textLight}}>{l}</span>)}
+            </div>
           </div>
         </div>
 
         {/* Form Body */}
         <div ref={containerRef} style={{padding:"20px 20px 120px",overflowY:"auto"}}>
-          <div style={{animation:shakeStep?"shake .4s ease":"springIn .45s ease"}}>
+          <div style={{maxWidth:520,margin:"0 auto",animation:shakeStep?"shake .4s ease":"springIn .45s ease"}}>
 
             {/* Step 0 — Customer */}
             {step===0&&<>
@@ -514,8 +524,8 @@ function App() {
           </div>
         </div>
 
-        {/* Bottom Bar */}
-        <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:420,padding:"14px 20px 24px",background:`linear-gradient(to top,${C.bg} 70%,transparent)`,display:"flex",gap:10,zIndex:50}}>
+        {/* Bottom Bar — max-width matches the form body's content column (520 + padding), not the shell */}
+        <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:560,padding:"14px 20px 24px",background:`linear-gradient(to top,${C.bg} 70%,transparent)`,display:"flex",gap:10,zIndex:50}}>
           {step>0&&<button onClick={prev} style={{flex:.4,padding:16,borderRadius:16,border:`2px solid ${C.border}`,background:C.card,color:C.textMid,fontSize:15,fontWeight:700,cursor:"pointer"}}>Back</button>}
           <button disabled={saving} onClick={step===3?(editTarget?handleUpdateSubmit:submitEntry):next} style={{flex:1,padding:16,borderRadius:16,border:"none",background:step===3?`linear-gradient(135deg,${C.green},#27ae60)`:`linear-gradient(135deg,${C.accent},${C.pink})`,color:"#fff",fontSize:16,fontWeight:800,cursor:saving?"wait":"pointer",boxShadow:`0 4px 20px ${step===3?C.green:C.accent}40`,opacity:saving?.7:1}}>
             {step===3?(editTarget?"✓ Update Entry":"✓ Save Entry"):`Next → ${STEP_LABELS[step+1]}`}

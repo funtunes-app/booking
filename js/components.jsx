@@ -156,7 +156,7 @@ const BirthdayCard = ({b, isToday, onSave}) => {
   return (
     <div style={{
       background: status==="not_contacted" ? (isToday?C.pinkSoft:C.warm1) : meta.bg,
-      borderRadius: 14, marginBottom: 8,
+      borderRadius: 14,
       border: `1.5px solid ${status==="not_contacted" ? (isToday?C.pink+"50":C.border) : meta.dot+"40"}`,
       overflow: "hidden", animation: "springIn .35s ease both",
     }}>
@@ -247,7 +247,7 @@ const BirthdayList = ({birthdays,loading,weekFilter,onSave,onShowAll}) => {
   const now = new Date();
 
   return (
-    <div>
+    <div className="birthdays-grid">
       {filtered.map((b,i) => (
         <BirthdayCard key={b.key || i} b={b} isToday={b.day === now.getDate()} onSave={onSave} />
       ))}
@@ -265,31 +265,33 @@ const EntryList = ({entries,onEdit,onDelete,loading}) => {
         <span style={{fontSize:13,fontWeight:700,color:C.textMid}}>{entries.length} entries today</span>
         <span style={{fontSize:17,fontWeight:800,color:C.green}}>₹{total.toLocaleString("en-IN")}</span>
       </div>
-      {entries.map((e,i) => {
-        const name=e.customerName||e["Customer name"]||"—";
-        const amt=e.amount||e["Amount"]||0;
-        const mop=e.mop||e["MOP"]||"";
-        const kids=e.numKids||e["No of kids"]||1;
-        const timing=e.timing||e["Timing"]||"";
-        const typeColors = {"funzone":C.accentSoft,"birthday":C.pinkSoft,"event":C.blueSoft,"daycare":C.orangeSoft};
-        const typeKey = e.entryType||e["Entry Type"]||"funzone";
-        return (
-          <div key={i} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",background:C.warm1,borderRadius:14,marginBottom:8,border:`1px solid ${C.border}`,animation:"springIn .35s ease both",animationDelay:`${i*.03}s`}}>
-            <div style={{width:40,height:40,borderRadius:12,background:typeColors[typeKey]||C.accentSoft,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>
-              {CONFIG.ENTRY_TYPES.find(t=>t.key===typeKey)?.icon||"🎪"}
+      <div className="entries-grid">
+        {entries.map((e,i) => {
+          const name=e.customerName||e["Customer name"]||"—";
+          const amt=e.amount||e["Amount"]||0;
+          const mop=e.mop||e["MOP"]||"";
+          const kids=e.numKids||e["No of kids"]||1;
+          const timing=e.timing||e["Timing"]||"";
+          const typeColors = {"funzone":C.accentSoft,"birthday":C.pinkSoft,"event":C.blueSoft,"daycare":C.orangeSoft};
+          const typeKey = e.entryType||e["Entry Type"]||"funzone";
+          return (
+            <div key={i} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",background:C.warm1,borderRadius:14,border:`1px solid ${C.border}`,animation:"springIn .35s ease both",animationDelay:`${i*.03}s`}}>
+              <div style={{width:40,height:40,borderRadius:12,background:typeColors[typeKey]||C.accentSoft,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>
+                {CONFIG.ENTRY_TYPES.find(t=>t.key===typeKey)?.icon||"🎪"}
+              </div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:14,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{name}</div>
+                <div style={{fontSize:11,color:C.textLight}}>{kids>1?`${kids} kids · `:""}{mop}{timing?` · ${timing}`:""}</div>
+              </div>
+              <div style={{fontSize:16,fontWeight:800,color:C.accent,flexShrink:0}}>₹{parseInt(amt).toLocaleString("en-IN")}</div>
+              <div style={{display:"flex",flexDirection:"column",gap:4,flexShrink:0}}>
+                <button onClick={()=>onEdit(e)} style={{width:30,height:30,borderRadius:8,border:`1px solid ${C.border}`,background:C.card,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>✏️</button>
+                <button onClick={()=>onDelete(e)} style={{width:30,height:30,borderRadius:8,border:`1px solid ${C.danger}30`,background:C.dangerSoft,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>🗑️</button>
+              </div>
             </div>
-            <div style={{flex:1,minWidth:0}}>
-              <div style={{fontSize:14,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{name}</div>
-              <div style={{fontSize:11,color:C.textLight}}>{kids>1?`${kids} kids · `:""}{mop}{timing?` · ${timing}`:""}</div>
-            </div>
-            <div style={{fontSize:16,fontWeight:800,color:C.accent,flexShrink:0}}>₹{parseInt(amt).toLocaleString("en-IN")}</div>
-            <div style={{display:"flex",flexDirection:"column",gap:4,flexShrink:0}}>
-              <button onClick={()=>onEdit(e)} style={{width:30,height:30,borderRadius:8,border:`1px solid ${C.border}`,background:C.card,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>✏️</button>
-              <button onClick={()=>onDelete(e)} style={{width:30,height:30,borderRadius:8,border:`1px solid ${C.danger}30`,background:C.dangerSoft,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>🗑️</button>
-            </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 };

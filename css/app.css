@@ -69,3 +69,62 @@ input[type="time"]::-webkit-calendar-picker-indicator { filter: invert(0.3) sepi
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
+
+/* ============================================================
+   Responsive shell — mobile-first, widens into a real web layout
+   ============================================================ */
+.app-shell {
+  max-width: 420px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background: var(--bg);
+  position: relative;
+}
+
+@media (min-width: 640px) {
+  body { background: linear-gradient(160deg, var(--accent-soft) 0%, var(--bg) 50%); }
+  .app-shell {
+    max-width: 720px;
+    margin: 28px auto;
+    min-height: calc(100vh - 56px);
+    border-radius: 28px;
+    box-shadow: var(--shadow-lift);
+    overflow: hidden;
+    background: var(--card);
+  }
+}
+
+@media (min-width: 1080px) {
+  .app-shell { max-width: 1080px; }
+}
+
+/* Entries / birthdays: single column on mobile, grid on wider screens */
+.entries-grid, .birthdays-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+@media (min-width: 640px) {
+  .entries-grid, .birthdays-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+}
+@media (min-width: 1080px) {
+  .entries-grid, .birthdays-grid { grid-template-columns: 1fr 1fr 1fr; }
+}
+
+.stats-grid { gap: 10px; }
+@media (min-width: 640px) {
+  .stats-grid { gap: 14px; }
+}
+
+/* New Entry: floating action button on mobile, inline button on wider screens */
+.new-entry-fab { display: block; }
+.new-entry-inline { display: none; }
+@media (min-width: 640px) {
+  .new-entry-fab { display: none; }
+  .new-entry-inline { display: inline-flex; }
+}
+
+/* Elements pinned to the viewport must track the shell's max-width per breakpoint */
+.form-bottom-bar { max-width: 420px; }
+@media (min-width: 640px) { .form-bottom-bar { max-width: 720px; } }
+@media (min-width: 1080px) { .form-bottom-bar { max-width: 1080px; } }
