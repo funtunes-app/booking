@@ -5,7 +5,7 @@
 
 var CONFIG = {
   // Google Apps Script Web App URL (current backend)
-  API_URL: "https://script.google.com/macros/s/AKfycbyoIltvpeTWuFR2tWUfh4qNKQnfjmEabJAtDLFIrcE3Mmnjh6j9WH-Ntb9qMrOEFhYi/exec",
+  API_URL: "https://script.google.com/macros/s/AKfycbwxqflJtQWD6zIx3lvQwyExi6zg7dgkmhTjBbc2j8jMtKym3A5En5M_KkI01rQZj7Gu/exec",
 
   // App info
   APP_NAME: "FunTunes-dev",
