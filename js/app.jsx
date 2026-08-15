@@ -54,7 +54,7 @@ function formatHoursLabel(hours) {
 
 // ── Main App ──
 function App() {
-  const [screen,setScreen] = useState("home");
+  const [screen,setScreen] = useState("form");
   const [step,setStep] = useState(0);
   const [entryType,setEntryType] = useState("funzone");
   const [form,setFormState] = useState(getDefaultForm());
@@ -334,7 +334,7 @@ function App() {
           <p style={{margin:"0 0 20px",fontSize:26,fontWeight:800,color:C.green}}>₹{totalAmount.toLocaleString("en-IN")}</p>
           <button className="btn btn-primary btn-block btn-lg" style={{marginBottom:8}}
             onClick={()=>{setFormState(getDefaultForm());setStep(0);setShowSuccess(false);setEntryType("funzone");}}>+ Add another</button>
-          <button className="btn btn-block" onClick={resetForm}>Back to home</button>
+          <button className="btn btn-block" onClick={resetForm}>📊 Go to dashboard</button>
         </div></div>}
 
       {/* ══════════ HOME ══════════ */}
@@ -438,10 +438,12 @@ function App() {
       {screen==="form" && <>
         <header className="appbar">
           <div className="container container--form" style={{paddingTop:9,paddingBottom:10}}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:9}}>
-              <button className="btn btn-sm btn-ghost" onClick={resetForm}>← Back</button>
-              <span className="card-title">{editTarget?"Edit entry":"New entry"}</span>
-              <span style={{width:58}} />
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,marginBottom:9}}>
+              <div className="appbar-brand">
+                <img className="appbar-logo" src="icons/logo-header.png" alt="" />
+                <span className="card-title">{editTarget?"Edit entry":"New entry"}</span>
+              </div>
+              <button className="btn btn-sm btn-ghost" onClick={resetForm}>📊 Dashboard</button>
             </div>
             <div className="stepbar">
               {STEP_LABELS.map((_,i)=><React.Fragment key={i}>
