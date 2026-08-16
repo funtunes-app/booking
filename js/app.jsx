@@ -646,6 +646,7 @@ function App() {
                       <InputField label="Pay via" error={errors.mop} className="field-tight">
                         <ChipSelect options={CONFIG.MOP_OPTIONS.map(o=>({value:o.value,label:o.label}))} value={form.mop} onChange={v=>set("mop",v)} />
                       </InputField>
+                    </div>
                   </div>
 
                   {isPlayArea && <div className="section">
