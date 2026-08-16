@@ -60,6 +60,9 @@ function App() {
   const [errors,setErrors] = useState({});
   const [shakeStep,setShakeStep] = useState(false);
   const [todayEntries,setTodayEntries] = useState([]);
+  const [filterMonth,setFilterMonth] = useState(new Date().getMonth()+1);
+  const [filterYear,setFilterYear] = useState(new Date().getFullYear());
+  const [filterDay,setFilterDay] = useState(new Date().getDate());
   const [loading,setLoading] = useState(false);
   const [saving,setSaving] = useState(false);
   const [showSuccess,setShowSuccess] = useState(false);
@@ -110,7 +113,7 @@ function App() {
 
   const showToastMsg = (msg,type) => { setToast({msg,type:type||"info"}); setTimeout(()=>setToast(null),3000); };
 
-  useEffect(()=>{ fetchToday(); checkBirthdaysCache(); },[]);
+  useEffect(()=>{ fetchEntries(); checkBirthdaysCache(); },[]);
 
   // Birthdays: cache in localStorage for the CURRENT month/year only, refetch once per day.
   // Any other month/year selection always fetches fresh (not cached).
@@ -166,15 +169,20 @@ function App() {
     } catch(e) { console.error("Save call:",e); showToastMsg("Could not save — check internet","error"); }
   }
 
-  async function fetchToday() {
+  async function fetchEntries(year,month,day) {
+    const y = year||filterYear, m = month||filterMonth, d = day||filterDay;
     setLoading(true);
     try {
-      const res = await api.readToday();
+      const res = await api.readEntries(y,m,d);
       if (res.success) setTodayEntries(res.data||[]);
       else showToastMsg("Error: "+(res.error||"unknown"),"error");
     } catch(e) { console.error("Fetch:",e); showToastMsg("Could not load entries","error"); }
     finally { setLoading(false); }
   }
+
+  function changeFilterMonth(m) { setFilterMonth(m); setFilterDay("all"); fetchEntries(filterYear,m,"all"); }
+  function changeFilterYear(y) { setFilterYear(y); setFilterDay("all"); fetchEntries(y,filterMonth,"all"); }
+  function changeFilterDay(d) { setFilterDay(d); fetchEntries(filterYear,filterMonth,d); }
 
   async function lookupByPhone(phone) {
     if (phone.length !== 10 || phone === lastLookedUpPhone.current) return;
@@ -234,7 +242,7 @@ function App() {
       setSaving(true);
       try {
         const res=await api.addEntry(entry);
-        if(res.success){ showToastMsg("Entry saved!","success"); setShowSuccess(true); fetchToday(); }
+        if(res.success){ showToastMsg("Entry saved!","success"); setShowSuccess(true); fetchEntries(); }
         else showToastMsg("Error: "+(res.error||"unknown"),"error");
       } catch(e){console.error("Save:",e);showToastMsg("Could not save — check internet","error");}
       finally{setSaving(false);}
@@ -251,7 +259,7 @@ function App() {
           const res=await api.addEntry(entry);
           if(res.success) ok++;
         }
-        showToastMsg(`${ok} entries saved!`,"success"); setShowSuccess(true); fetchToday();
+        showToastMsg(`${ok} entries saved!`,"success"); setShowSuccess(true); fetchEntries();
       } catch(e){console.error("Save:",e);showToastMsg("Could not save — check internet","error");}
       finally{setSaving(false);}
     }
@@ -309,7 +317,7 @@ function App() {
     setSaving(true);
     try {
       const res=await api.updateEntry(editTarget.id,entry);
-      if(res.success){showToastMsg("Updated!","success");fetchToday();}else showToastMsg("Error: "+(res.error||"unknown"),"error");
+      if(res.success){showToastMsg("Updated!","success");fetchEntries();}else showToastMsg("Error: "+(res.error||"unknown"),"error");
     } catch(e){console.error("Update:",e);showToastMsg("Could not update","error");}
     finally{setSaving(false);resetForm();}
   }
@@ -319,7 +327,7 @@ function App() {
     setSaving(true);
     try {
       const res=await api.deleteEntry(entry.id);
-      if(res.success){showToastMsg("Deleted","info");fetchToday();}else showToastMsg("Error: "+(res.error||"unknown"),"error");
+      if(res.success){showToastMsg("Deleted","info");fetchEntries();}else showToastMsg("Error: "+(res.error||"unknown"),"error");
     } catch(e){console.error("Delete:",e);showToastMsg("Could not delete","error");}
     finally{setSaving(false);}
   }
@@ -444,15 +452,33 @@ function App() {
               </div>)}
           </div>
 
+          {/* Filters */}
+          <div className="card card-pad" style={{marginBottom:"var(--sp-4)"}}>
+            <div style={{display:"flex",gap:"var(--gap)",flexWrap:"wrap",alignItems:"center"}}>
+              <Dropdown flex={1.2} value={filterMonth} onChange={changeFilterMonth}
+                options={MONTH_NAMES.map((m,i)=>({value:i+1,label:m}))} />
+              <Dropdown flex={0.8} value={filterYear} onChange={changeFilterYear}
+                options={[new Date().getFullYear()-1,new Date().getFullYear(),new Date().getFullYear()+1].map(y=>({value:y,label:String(y)}))} />
+              <button className="btn btn-sm" onClick={()=>fetchEntries()} disabled={loading}>↻</button>
+            </div>
+            <div className="chips" style={{marginTop:10,flexWrap:"wrap"}}>
+              <button type="button" className={`chip${filterDay==="all"?" is-on":""}`}
+                onClick={()=>changeFilterDay("all")}>All</button>
+              {Array.from({length:new Date(filterYear,filterMonth,0).getDate()},(_,i)=>i+1).map(d=>(
+                <button key={d} type="button" className={`chip${filterDay===d?" is-on":""}`}
+                  onClick={()=>changeFilterDay(d)}>{d}</button>
+              ))}
+            </div>
+          </div>
+
           {/* Entries */}
           <div className="card">
             <div className="card-head">
               <div style={{display:"flex",alignItems:"baseline",gap:8,minWidth:0}}>
-                <span className="card-title">Today's entries</span>
+                <span className="card-title">{filterDay==="all"?`${MONTH_NAMES[filterMonth-1]} entries`:`${filterDay} ${MONTH_NAMES[filterMonth-1]} entries`}</span>
                 {!loading && todayEntries.length>0 &&
                   <span style={{fontSize:12,color:C.textLight,fontWeight:600}}>{todayEntries.length}</span>}
               </div>
-              <button className="btn btn-sm" onClick={fetchToday} disabled={loading}>↻ Refresh</button>
             </div>
             <div className="card-pad">
               <EntryList entries={todayEntries} onEdit={handleEdit} onDelete={handleDelete} loading={loading} />

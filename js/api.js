@@ -61,43 +61,18 @@ function _entryToRow(entry) {
 }
 
 var api = {
-  readToday: async function () {
-    var today = new Date().toISOString().slice(0, 10);
-    var { data, error } = await supabaseClient
-      .from("entries")
-      .select("*")
-      .eq("date", today)
-      .order("created_at", { ascending: false });
-    if (error) return { success: false, error: error.message };
-    return { success: true, data: (data || []).map(_rowToEntry) };
-  },
-
-  readMonth: async function (month) {
-    var startDate, endDate;
-    if (month && month.includes(" ")) {
-      var parts = month.split(" ");
-      var monthNames = ["January","February","March","April","May","June",
-        "July","August","September","October","November","December"];
-      var mi = monthNames.indexOf(parts[0]);
-      var yr = parseInt(parts[1]);
-      if (mi >= 0 && yr) {
-        startDate = yr + "-" + String(mi + 1).padStart(2, "0") + "-01";
-        var lastDay = new Date(yr, mi + 1, 0).getDate();
-        endDate = yr + "-" + String(mi + 1).padStart(2, "0") + "-" + String(lastDay).padStart(2, "0");
-      }
+  readEntries: async function (year, month, day) {
+    var mm = String(month).padStart(2, "0");
+    var query = supabaseClient.from("entries").select("*");
+    if (day && day !== "all") {
+      query = query.eq("date", year + "-" + mm + "-" + String(day).padStart(2, "0"));
+    } else {
+      var startDate = year + "-" + mm + "-01";
+      var lastDay = new Date(year, month, 0).getDate();
+      var endDate = year + "-" + mm + "-" + String(lastDay).padStart(2, "0");
+      query = query.gte("date", startDate).lte("date", endDate);
     }
-    if (!startDate) {
-      var d = new Date();
-      startDate = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-01";
-      var ld = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
-      endDate = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(ld).padStart(2, "0");
-    }
-    var { data, error } = await supabaseClient
-      .from("entries")
-      .select("*")
-      .gte("date", startDate)
-      .lte("date", endDate)
-      .order("created_at", { ascending: false });
+    var { data, error } = await query.order("created_at", { ascending: false });
     if (error) return { success: false, error: error.message };
     return { success: true, data: (data || []).map(_rowToEntry) };
   },
