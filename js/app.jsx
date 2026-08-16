@@ -83,7 +83,8 @@ function App() {
       hours:hours,hoursMode:"preset",
       timeIn:`${String(n.getHours()).padStart(2,"0")}:${String(n.getMinutes()).padStart(2,"0")}`,
       socks:socksCount*CONFIG.SOCKS_RATE,sockCount:socksCount,sockMode:"preset",
-      socksMop:socksCount>0?CONFIG.DEFAULT_MOP:"",phone:"",dob:"",date:n.toISOString().slice(0,10)};
+      socksMop:socksCount>0?CONFIG.DEFAULT_MOP:"",phone:"",dob:"",date:n.toISOString().slice(0,10),
+      kidNames:[],dobs:[]};
   }
 
   const set = useCallback((key,val) => {
@@ -224,18 +225,36 @@ function App() {
 
   async function submitEntry() {
     const timeOut = computeTimeOut(form.timeIn,form.hours);
-    const entry={...form,entryType,timeIn:form.timeIn,timeOut:timeOut,amount:parseInt(form.amount)||0,socks:socksCharge};
-    setSaving(true);
-    try {
-      const res=await api.addEntry(entry);
-      if(res.success){
-        const rowCount = form.numKids > 1 ? `${form.numKids} entries` : "Entry";
-        showToastMsg(`${rowCount} saved to Google Sheet!`,"success");
-        setShowSuccess(true);fetchToday();
-      }
-      else showToastMsg("Sheet error: "+(res.error||"unknown"),"error");
-    } catch(e){console.error("Save:",e);showToastMsg("Could not save — check internet","error");}
-    finally{setSaving(false);}
+    const totalAmt = parseInt(form.amount)||0;
+    const perKidAmt = form.numKids>1 ? Math.round(totalAmt/form.numKids) : totalAmt;
+    const kidNames = form.kidNames || [];
+
+    if (form.numKids <= 1) {
+      const entry={...form,entryType,timeIn:form.timeIn,timeOut:timeOut,amount:perKidAmt,numKids:1,socks:socksCharge};
+      setSaving(true);
+      try {
+        const res=await api.addEntry(entry);
+        if(res.success){ showToastMsg("Entry saved to Google Sheet!","success"); setShowSuccess(true); fetchToday(); }
+        else showToastMsg("Sheet error: "+(res.error||"unknown"),"error");
+      } catch(e){console.error("Save:",e);showToastMsg("Could not save — check internet","error");}
+      finally{setSaving(false);}
+    } else {
+      setSaving(true);
+      try {
+        let ok=0;
+        for (let k=0; k<form.numKids; k++) {
+          const name = k===0 ? (form.customerName||"") : (kidNames[k]||form.customerName+" - Kid "+(k+1));
+          const dob = k===0 ? (form.dob||"") : ((form.dobs&&form.dobs[k])||"");
+          const entry={...form,entryType,timeIn:form.timeIn,timeOut:timeOut,
+            customerName:name, dob:dob, amount:perKidAmt, numKids:1,
+            socks: k===0 ? socksCharge : 0, socksMop: k===0 ? form.socksMop : ""};
+          const res=await api.addEntry(entry);
+          if(res.success) ok++;
+        }
+        showToastMsg(`${ok} entries saved!`,"success"); setShowSuccess(true); fetchToday();
+      } catch(e){console.error("Save:",e);showToastMsg("Could not save — check internet","error");}
+      finally{setSaving(false);}
+    }
   }
 
   function handleEdit(entry) {
@@ -259,11 +278,12 @@ function App() {
     const hours = String(entry.hours||entry["Hours"]||CONFIG.DEFAULT_HOURS);
     const socksTotal = parseInt(entry.socks||entry["Socks"]||0)||0;
     const sockCount = socksTotal>0?Math.max(1,Math.round(socksTotal/CONFIG.SOCKS_RATE)):0;
+    const amt = String(entry.amount||entry["Amount"]||300);
     setFormState({
       customerName:entry.customerName||entry["Customer name"]||"",
-      amount:String(entry.amount||entry["Amount"]||300),
+      amount:amt,
       mop:entry.mop||entry["MOP"]||CONFIG.DEFAULT_MOP,
-      numKids:parseInt(entry.numKids||entry["No of kids"]||1),
+      numKids:1,
       hours:hours,
       hoursMode:CONFIG.HOUR_OPTIONS.some(o=>o.value===hours)?"preset":"custom",
       timeIn:timeIn,
@@ -274,6 +294,8 @@ function App() {
       phone:String(entry.phone||entry["Phone number"]||""),
       dob:entry.dob||entry["DOB"]||"",
       date:entry.date||new Date().toISOString().slice(0,10),
+      kidNames:[],
+      dobs:[],
     });
     setEntryType(entry.entryType||entry["Entry Type"]||"funzone");
     setStep(0); setScreen("form");
@@ -281,7 +303,9 @@ function App() {
 
   async function handleUpdateSubmit() {
     const timeOut = computeTimeOut(form.timeIn,form.hours);
-    const entry={...form,entryType,timeIn:form.timeIn,timeOut:timeOut,amount:parseInt(form.amount)||0,socks:socksCharge,slNo:editTarget?.["Sl.no"]||editTarget?.["SI. No"]||editTarget?.["S.no"]||""};
+    const entry={...form,entryType,timeIn:form.timeIn,timeOut:timeOut,
+      amount:parseInt(form.amount)||0,numKids:1,socks:socksCharge,
+      slNo:editTarget?.["Sl.no"]||editTarget?.["SI. No"]||editTarget?.["S.no"]||""};
     if(!editTarget?._rowIndex){showToastMsg("Cannot identify row","error");resetForm();return;}
     setSaving(true);
     try {
@@ -692,8 +716,10 @@ function App() {
                   {[
                     {l:"Type",v:CONFIG.ENTRY_TYPES.find(t=>t.key===entryType)?.label,i:CONFIG.ENTRY_TYPES.find(t=>t.key===entryType)?.icon},
                     {l:"Mobile",v:form.phone,i:"📱"},
-                    {l:"Kids Name",v:form.customerName,i:"👤"},
-                    {l:"No. of Kids",v:`${form.numKids}`,i:"👶"},
+                    {l:"Kids Name",v:form.numKids>1
+                      ? [form.customerName,...(form.kidNames||[]).slice(1,form.numKids)].filter(Boolean).join(", ")
+                      : form.customerName, i:"👤"},
+                    ...(form.numKids>1?[{l:"No. of Kids",v:`${form.numKids} (₹${Math.round((parseInt(form.amount)||0)/form.numKids)} each)`,i:"👶"}]:[]),
                     {l:"Playtime",v:`₹${form.amount}`,i:"💰"},
                     ...(form.socks>0?[{l:"Socks",v:`${form.sockCount} pair${form.sockCount>1?"s":""} · ₹${form.socks} (${form.socksMop})`,i:"🧦"}]:[]),
                     {l:"Payment",v:form.mop,i:"💳"},
