@@ -116,6 +116,43 @@ const Dropdown = ({value,options,onChange,flex}) => {
   );
 };
 
+// Icon button that opens a small menu — keeps secondary navigation out of the
+// way instead of spending header space on a permanent switcher.
+const IconMenu = ({trigger,title,items,activeValue}) => {
+  const [open,setOpen] = React.useState(false);
+  const ref = React.useRef(null);
+
+  React.useEffect(() => {
+    if (!open) return;
+    const onOutside = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    const onEsc = (e) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("mousedown", onOutside);
+    document.addEventListener("touchstart", onOutside);
+    document.addEventListener("keydown", onEsc);
+    return () => {
+      document.removeEventListener("mousedown", onOutside);
+      document.removeEventListener("touchstart", onOutside);
+      document.removeEventListener("keydown", onEsc);
+    };
+  }, [open]);
+
+  return (
+    <div ref={ref} style={{position:"relative"}}>
+      <button type="button" className="btn btn-sm btn-icon" title={title} aria-label={title}
+        aria-haspopup="menu" aria-expanded={open} onClick={()=>setOpen(o=>!o)}>{trigger}</button>
+      {open && <div className="menu" role="menu">
+        {items.map((it,i) => it.separator
+          ? <div key={"sep"+i} className="menu-sep" />
+          : <button key={it.value||i} type="button" role="menuitem"
+              className={`menu-item${it.value!=null&&it.value===activeValue?" is-on":""}`}
+              onClick={()=>{ setOpen(false); it.onSelect(); }}>
+              {it.icon && <span>{it.icon}</span>}{it.label}
+            </button>)}
+      </div>}
+    </div>
+  );
+};
+
 const initialStatus = (b) => b.status || (b.contacted ? "warm" : "not_contacted");
 
 const BirthdayCard = ({b, isToday, onSave}) => {

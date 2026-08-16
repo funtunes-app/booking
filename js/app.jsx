@@ -4,7 +4,6 @@
 const { useState, useRef, useEffect, useCallback } = React;
 
 const STEP_LABELS = ["Customer","Payment","Review"];
-const STEP_ICONS = ["👤","💳","✅"];
 const LAST_STEP = STEP_LABELS.length - 1;
 
 // ── Date/Time Formatters ──
@@ -535,38 +534,22 @@ function App() {
       {/* ══════════ FORM ══════════ */}
       {screen==="form" && <>
         <header className="appbar">
-          <div className="container container--form" style={{paddingTop:9,paddingBottom:10}}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,marginBottom:9}}>
-              <div className="appbar-brand">
-                <img className="appbar-logo" src="icons/logo-header.png" alt="" />
-                <span className="card-title">
-                  {editTarget?"Edit entry":`New ${(CONFIG.ENTRY_TYPES.find(t=>t.key===entryType)?.label||"entry").toLowerCase()}`}
-                </span>
-              </div>
-              <div className="appbar-actions">
-                <button className="btn btn-sm btn-icon" onClick={resetForm} title="Dashboard" aria-label="Dashboard">📊</button>
-                <button className="btn btn-sm btn-icon" onClick={openBirthdays} title="Birthdays" aria-label="Birthdays">🎂</button>
-              </div>
+          <div className="container container--form appbar-inner">
+            <div className="appbar-brand">
+              <img className="appbar-logo" src="icons/logo-header.png" alt="" />
+              <span className="card-title">
+                {editTarget?"Edit entry":`New ${typeMeta.label.toLowerCase()}`}
+              </span>
             </div>
-
-            {/* Entry type switcher — only when creating (an entry's type is fixed once saved) */}
-            {!editTarget && <div className="segmented" style={{marginBottom:10}}>
-              {CONFIG.ENTRY_TYPES.map(t=>
-                <button key={t.key} type="button" className={`seg${entryType===t.key?" is-on":""}`}
-                  onClick={()=>{ if(t.key!==entryType) setFormType(t.key); }}
-                  style={entryType===t.key?{color:t.color,background:`${t.color}10`}:undefined}>
-                  <span style={{fontSize:15}}>{t.icon}</span>{t.label}
-                </button>)}
-            </div>}
-            <div className="stepbar">
-              {STEP_LABELS.map((_,i)=><React.Fragment key={i}>
-                <button type="button" onClick={()=>{if(i<step)setStep(i);}}
-                  className={`stepdot${i===step?" is-current":i<step?" is-done":""}`}>{i<step?"✓":STEP_ICONS[i]}</button>
-                {i<LAST_STEP&&<div className={`stepline${i<step?" is-done":""}`} />}
-              </React.Fragment>)}
-            </div>
-            <div className="steplabels">
-              {STEP_LABELS.map((l,i)=><span key={l} className={`steplabel${i===step?" is-current":""}`}>{l}</span>)}
+            <div className="appbar-actions">
+              {/* Entry type lives behind an icon — an entry's type is fixed once saved */}
+              {!editTarget && <IconMenu trigger={typeMeta.icon} title="Change entry type" activeValue={entryType}
+                items={CONFIG.ENTRY_TYPES.map(t=>({
+                  value:t.key, icon:t.icon, label:t.label,
+                  onSelect:()=>{ if(t.key!==entryType) setFormType(t.key); },
+                }))} />}
+              <button className="btn btn-sm btn-icon" onClick={resetForm} title="Dashboard" aria-label="Dashboard">📊</button>
+              <button className="btn btn-sm btn-icon" onClick={openBirthdays} title="Birthdays" aria-label="Birthdays">🎂</button>
             </div>
           </div>
         </header>
@@ -574,6 +557,11 @@ function App() {
         {/* Form Body */}
         <div ref={containerRef} className="container container--form page" style={{paddingBottom:0}}>
           <div style={{animation:shakeStep?"shake .4s ease":"springIn .3s ease"}}>
+            <div className="step-caption">
+              <span>Step <b>{step+1}</b> of {STEP_LABELS.length} · {STEP_LABELS[step]}</span>
+              {step>0 && <button type="button" className="step-back" onClick={()=>setStep(0)}>start over</button>}
+            </div>
+
 
             {/* Step 0 — Customer */}
             {step===0&&<>
@@ -708,8 +696,8 @@ function App() {
 
             {/* Actions */}
             <div className="form-actions">
-              {step>0&&<button className="btn btn-lg" onClick={prev} style={{flex:"0 0 100px"}}>Back</button>}
-              <button className={`btn btn-lg ${step===LAST_STEP?"btn-success":"btn-primary"}`} disabled={saving} style={{flex:1}}
+              {step>0&&<button className="btn" onClick={prev}>Back</button>}
+              <button className={`btn ${step===LAST_STEP?"btn-success":"btn-primary"}`} disabled={saving}
                 onClick={step===LAST_STEP?(editTarget?handleUpdateSubmit:submitEntry):next}>
                 {step===LAST_STEP?(editTarget?"✓ Update entry":"✓ Save entry"):`Next → ${STEP_LABELS[step+1]}`}
               </button>
