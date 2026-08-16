@@ -110,7 +110,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.35) sep
 .theme-form .section-title { color: #d8b4fe; font-size: 12px; }
 .theme-form .section-title::after { background: rgba(168,85,247,.25); }
 
-.theme-form .field-label { color: #e0d0f7; font-size: 13px; letter-spacing: .8px; margin-bottom: 8px; }
+.theme-form .field-label { color: #e0d0f7; font-size: 13px; letter-spacing: .3px; margin-bottom: 8px; text-transform: capitalize; }
 .theme-form .field-hint { color: rgba(220,200,245,.65); }
 
 .theme-form .fld {
@@ -215,6 +215,14 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.35) sep
 }
 /* Form fields stack one per row, so the column stays narrow and readable */
 .container--form { max-width: 620px; }
+.container--entry { max-width: 960px; }
+
+/* Two-column entry form: customer left, payment right on >=720px */
+.entry-columns { display: flex; flex-direction: column; gap: 0; }
+@media (min-width: 720px) {
+  .entry-columns { flex-direction: row; gap: 40px; }
+  .entry-col { flex: 1; min-width: 0; }
+}
 
 .page { padding-top: var(--page-pt); padding-bottom: 104px; }
 @media (min-width: 640px) { .page { padding-bottom: var(--sp-6); } }
