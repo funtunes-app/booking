@@ -10,12 +10,12 @@
 // 6. Check the execution log for progress
 // =============================================================================
 
-var SUPABASE_URL = "https://gsdthdubpvqhlzwagaye.supabase.co";
-var SUPABASE_KEY = "sb_publishable_9xM0H5gZ1I69aFlggTMpcw_Svl9pn0E";
-var SPREADSHEET_ID = "17TBKunijIqq1JFuonQg8ygoCzrI6Ncfg81tvP3uduJM";
+var SUPA_URL = "https://gsdthdubpvqhlzwagaye.supabase.co";
+var SUPA_KEY = "sb_publishable_9xM0H5gZ1I69aFlggTMpcw_Svl9pn0E";
+var MIGRATE_SHEET_ID = "17TBKunijIqq1JFuonQg8ygoCzrI6Ncfg81tvP3uduJM";
 
 function migrateToSupabase() {
-  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var ss = SpreadsheetApp.openById(MIGRATE_SHEET_ID);
   var sheets = ss.getSheets();
   var totalMigrated = 0;
   var totalSkipped = 0;
@@ -141,13 +141,13 @@ function migrateToSupabase() {
 }
 
 function insertBatch(rows) {
-  var url = SUPABASE_URL + "/rest/v1/entries";
+  var url = SUPA_URL + "/rest/v1/entries";
   var options = {
     method: "post",
     contentType: "application/json",
     headers: {
-      "apikey": SUPABASE_KEY,
-      "Authorization": "Bearer " + SUPABASE_KEY,
+      "apikey": SUPA_KEY,
+      "Authorization": "Bearer " + SUPA_KEY,
       "Prefer": "return=minimal",
     },
     payload: JSON.stringify(rows),
