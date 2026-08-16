@@ -569,7 +569,7 @@ function App() {
             <div className="appbar-brand">
               <img className="appbar-logo" src="icons/logo-header.png" alt="" />
               <span className="card-title">
-                {editTarget?"Edit entry":`New ${typeMeta.label.toLowerCase()}`}
+                {editTarget?"Edit entry":`${CONFIG.APP_NAME} — Booking`}
               </span>
             </div>
             <div className="appbar-actions">
