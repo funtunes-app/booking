@@ -90,17 +90,17 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.35) sep
 
 /* Dark purple form theme — applied when the entry form is active */
 .app-shell.theme-form {
-  background: linear-gradient(145deg, #2a0845 0%, #4a1a6b 40%, #6b2fa0 100%);
+  background: linear-gradient(180deg, #1a0530 0%, #2d1055 30%, #4a1a78 65%, #6b2fa0 100%);
   min-height: 100vh;
 }
 .theme-form .appbar {
-  background: rgba(30, 8, 52, 0.85);
+  background: rgba(20, 5, 40, 0.8);
   backdrop-filter: saturate(180%) blur(14px);
-  border-bottom: 1px solid rgba(168, 85, 247, .18);
+  border-bottom: none;
 }
 .theme-form .appbar .card-title { color: #f0e6ff; }
-.theme-form .appbar .btn { background: rgba(255,255,255,.1); border-color: rgba(168,85,247,.3); color: #e0d0f7; }
-.theme-form .appbar .btn:hover { background: rgba(168,85,247,.22); border-color: rgba(168,85,247,.5); }
+.theme-form .appbar .btn { background: rgba(255,255,255,.08); border: none; color: #e0d0f7; }
+.theme-form .appbar .btn:hover { background: rgba(168,85,247,.2); }
 
 .theme-form .step-caption { color: rgba(230,210,255,.7); }
 .theme-form .step-caption b { color: #d8b4fe; }
@@ -108,35 +108,47 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.35) sep
 .theme-form .step-caption .step-back:hover { color: #d8b4fe; }
 
 .theme-form .section-title { color: #d8b4fe; font-size: 12px; }
-.theme-form .section-title::after { background: rgba(168,85,247,.25); }
+.theme-form .section-title::after { background: rgba(168,85,247,.15); }
 
 .theme-form .field-label { color: #e0d0f7; font-size: 13px; letter-spacing: .3px; margin-bottom: 8px; text-transform: capitalize; }
 .theme-form .field-hint { color: rgba(220,200,245,.65); }
 
 .theme-form .fld {
-  background: rgba(255,255,255,.09);
-  border-color: rgba(168,85,247,.3);
+  background: rgba(255,255,255,.08);
+  border: none;
+  border-bottom: 1.5px solid rgba(168,85,247,.25);
+  border-radius: 6px 6px 0 0;
   color: #fff;
   font-weight: 700;
+  transition: background .15s, border-color .15s, box-shadow .15s;
 }
-.theme-form .fld::placeholder { color: rgba(210,190,240,.45); }
-.theme-form .fld:hover { border-color: rgba(168,85,247,.5); }
-.theme-form .fld:focus { border-color: #a855f7; box-shadow: 0 0 0 3px rgba(168,85,247,.3); background: rgba(255,255,255,.12); }
-.theme-form .fld.is-error { border-color: #ef4444; background: rgba(239,68,68,.15); }
+.theme-form .fld::placeholder { color: rgba(210,190,240,.4); }
+.theme-form .fld:hover { background: rgba(255,255,255,.11); border-color: rgba(168,85,247,.45); }
+.theme-form .fld:focus {
+  border-color: #a855f7;
+  background: rgba(255,255,255,.13);
+  box-shadow: 0 2px 20px rgba(168,85,247,.35), 0 0 0 1px rgba(168,85,247,.15);
+  outline: none;
+}
+.theme-form .fld.is-error { border-color: #ef4444; background: rgba(239,68,68,.1); }
 
 .theme-form .chip {
-  background: rgba(255,255,255,.09); border-color: rgba(168,85,247,.28); color: #e0d0f7;
+  background: rgba(255,255,255,.07); border: none; color: #d0c0e8;
+  transition: background .15s, box-shadow .15s, color .15s;
 }
-.theme-form .chip:hover { background: rgba(168,85,247,.18); border-color: rgba(168,85,247,.45); }
-.theme-form .chip.is-on { background: rgba(168,85,247,.28); border-color: #a855f7; color: #d8b4fe; font-weight: 800; }
+.theme-form .chip:hover { background: rgba(168,85,247,.16); color: #e0d0f7; }
+.theme-form .chip.is-on {
+  background: rgba(168,85,247,.3); color: #e9d5ff; font-weight: 800;
+  box-shadow: 0 0 12px rgba(168,85,247,.3);
+}
 
-.theme-form .stepper { background: rgba(255,255,255,.09); border-color: rgba(168,85,247,.3); }
+.theme-form .stepper { background: rgba(255,255,255,.07); border: none; border-radius: 8px; }
 .theme-form .stepper button { color: #d8b4fe; }
-.theme-form .stepper button:hover:not(:disabled) { background: rgba(168,85,247,.22); }
-.theme-form .stepper button:disabled { color: rgba(200,175,235,.3); }
+.theme-form .stepper button:hover:not(:disabled) { background: rgba(168,85,247,.2); }
+.theme-form .stepper button:disabled { color: rgba(200,175,235,.25); }
 .theme-form .stepper-value { color: #fff; font-weight: 800; }
 
-.theme-form .card { background: rgba(255,255,255,.08); border-color: rgba(168,85,247,.22); }
+.theme-form .card { background: rgba(255,255,255,.06); border: none; }
 
 .theme-form .form-actions {
   position: static; background: none;
@@ -149,7 +161,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.35) sep
 .theme-form .form-actions .btn-success { background: #fff; border-color: transparent; color: #16a34a; box-shadow: 0 2px 16px rgba(0,0,0,.2); }
 .theme-form .form-actions .btn-success:hover { background: #f0fdf4; color: #15803d; }
 
-.theme-form .menu { background: #2d1050; border-color: rgba(168,85,247,.25); }
+.theme-form .menu { background: #2d1050; border: none; box-shadow: 0 8px 32px rgba(0,0,0,.45); }
 .theme-form .menu-item { color: #e0d0f7; }
 .theme-form .menu-item:hover { background: rgba(168,85,247,.15); }
 .theme-form .menu-item.is-on { background: rgba(168,85,247,.25); color: #c084fc; }
@@ -169,7 +181,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.35) sep
 .total-label { color: var(--text-mid); }
 .total-breakdown { font-size: 11.5px; color: var(--text-mid); font-weight: 600; margin-top: 2px; }
 .total-value { font-size: 24px; font-weight: 800; color: var(--accent); letter-spacing: -0.5px; }
-.theme-form .total-card { background: rgba(168,85,247,.16); border-color: rgba(168,85,247,.28); }
+.theme-form .total-card { background: rgba(168,85,247,.14); border: none; }
 .theme-form .total-label { color: #e0d0f7; }
 .theme-form .total-breakdown { color: rgba(220,200,245,.7); }
 .theme-form .total-value { color: #d8b4fe; }
@@ -181,7 +193,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.35) sep
 .review-icon { font-size: 14px; width: 20px; text-align: center; flex-shrink: 0; }
 .review-label { font-size: 12.5px; color: var(--text-light); flex: 1; font-weight: 600; }
 .review-val { font-size: 13.5px; font-weight: 700; text-align: right; }
-.theme-form .review-row { border-color: rgba(168,85,247,.2) !important; }
+.theme-form .review-row { border-color: rgba(168,85,247,.1) !important; }
 .theme-form .review-label { color: rgba(230,210,255,.7); }
 .theme-form .review-val { color: #fff; }
 
@@ -192,7 +204,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.35) sep
 }
 .grand-total-label { font-size: 13px; font-weight: 800; color: var(--green); text-transform: uppercase; letter-spacing: .5px; }
 .grand-total-value { font-size: 26px; font-weight: 800; color: var(--green); letter-spacing: -0.5px; }
-.theme-form .grand-total-card { background: rgba(34,197,94,.1); border-color: rgba(34,197,94,.2); }
+.theme-form .grand-total-card { background: rgba(34,197,94,.1); border: none; }
 .theme-form .grand-total-label { color: #4ade80; }
 .theme-form .grand-total-value { color: #4ade80; }
 
@@ -364,7 +376,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.35) sep
 .dropdown-opt:hover { background: var(--warm1); }
 .dropdown-opt.is-on { font-weight: 800; color: var(--accent); background: var(--accent-soft); }
 
-.theme-form .dropdown-panel { background: #2d1050; border-color: rgba(168,85,247,.3); }
+.theme-form .dropdown-panel { background: #2d1050; border: none; box-shadow: 0 8px 32px rgba(0,0,0,.45); }
 .theme-form .dropdown-opt { color: #e0d0f7; }
 .theme-form .dropdown-opt:hover { background: rgba(168,85,247,.15); }
 .theme-form .dropdown-opt.is-on { color: #c084fc; background: rgba(168,85,247,.25); }
