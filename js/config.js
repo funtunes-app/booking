@@ -4,8 +4,9 @@
 // =============================================================================
 
 var CONFIG = {
-  // Google Apps Script Web App URL (current backend)
-  API_URL: "https://script.google.com/macros/s/AKfycbyyX5d4JQmcvztue1i9Ck3HA_XV8J0ZaWwk5ocndgapLmYdsH80coTHv7rzIrGCbbs3/exec",
+  // Supabase backend
+  SUPABASE_URL: "https://gsdthdubpvqhlzwagaye.supabase.co",
+  SUPABASE_KEY: "sb_publishable_9xM0H5gZ1I69aFlggTMpcw_Svl9pn0E",
 
   // App info
   APP_NAME: "FunTunes-dev",
