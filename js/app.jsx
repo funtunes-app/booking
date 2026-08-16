@@ -60,9 +60,8 @@ function App() {
   const [errors,setErrors] = useState({});
   const [shakeStep,setShakeStep] = useState(false);
   const [todayEntries,setTodayEntries] = useState([]);
-  const [filterMonth,setFilterMonth] = useState(new Date().getMonth()+1);
-  const [filterYear,setFilterYear] = useState(new Date().getFullYear());
-  const [filterDay,setFilterDay] = useState(new Date().getDate());
+  const [filterDate,setFilterDate] = useState(new Date().toISOString().slice(0,10));
+  const [filterMode,setFilterMode] = useState("day");
   const [loading,setLoading] = useState(false);
   const [saving,setSaving] = useState(false);
   const [showSuccess,setShowSuccess] = useState(false);
@@ -169,20 +168,23 @@ function App() {
     } catch(e) { console.error("Save call:",e); showToastMsg("Could not save — check internet","error"); }
   }
 
-  async function fetchEntries(year,month,day) {
-    const y = year||filterYear, m = month||filterMonth, d = day||filterDay;
+  async function fetchEntries(date,mode) {
+    const d = date||filterDate, md = mode||filterMode;
+    const [y,m,dd] = d.split("-").map(Number);
     setLoading(true);
     try {
-      const res = await api.readEntries(y,m,d);
+      const res = await api.readEntries(y,m,md==="month"?"all":dd);
       if (res.success) setTodayEntries(res.data||[]);
       else showToastMsg("Error: "+(res.error||"unknown"),"error");
     } catch(e) { console.error("Fetch:",e); showToastMsg("Could not load entries","error"); }
     finally { setLoading(false); }
   }
 
-  function changeFilterMonth(m) { setFilterMonth(m); setFilterDay("all"); fetchEntries(filterYear,m,"all"); }
-  function changeFilterYear(y) { setFilterYear(y); setFilterDay("all"); fetchEntries(y,filterMonth,"all"); }
-  function changeFilterDay(d) { setFilterDay(d); fetchEntries(filterYear,filterMonth,d); }
+  function onFilterDateChange(v) { setFilterDate(v); setFilterMode("day"); fetchEntries(v,"day"); }
+  function toggleMonth() {
+    const next = filterMode==="month"?"day":"month";
+    setFilterMode(next); fetchEntries(filterDate,next);
+  }
 
   async function lookupByPhone(phone) {
     if (phone.length !== 10 || phone === lastLookedUpPhone.current) return;
@@ -452,32 +454,21 @@ function App() {
               </div>)}
           </div>
 
-          {/* Filters */}
-          <div className="card card-pad" style={{marginBottom:"var(--sp-4)"}}>
-            <div style={{display:"flex",gap:"var(--gap)",flexWrap:"wrap",alignItems:"center"}}>
-              <Dropdown flex={1.2} value={filterMonth} onChange={changeFilterMonth}
-                options={MONTH_NAMES.map((m,i)=>({value:i+1,label:m}))} />
-              <Dropdown flex={0.8} value={filterYear} onChange={changeFilterYear}
-                options={[new Date().getFullYear()-1,new Date().getFullYear(),new Date().getFullYear()+1].map(y=>({value:y,label:String(y)}))} />
-              <button className="btn btn-sm" onClick={()=>fetchEntries()} disabled={loading}>↻</button>
-            </div>
-            <div className="chips" style={{marginTop:10,flexWrap:"wrap"}}>
-              <button type="button" className={`chip${filterDay==="all"?" is-on":""}`}
-                onClick={()=>changeFilterDay("all")}>All</button>
-              {Array.from({length:new Date(filterYear,filterMonth,0).getDate()},(_,i)=>i+1).map(d=>(
-                <button key={d} type="button" className={`chip${filterDay===d?" is-on":""}`}
-                  onClick={()=>changeFilterDay(d)}>{d}</button>
-              ))}
-            </div>
-          </div>
-
           {/* Entries */}
           <div className="card">
             <div className="card-head">
-              <div style={{display:"flex",alignItems:"baseline",gap:8,minWidth:0}}>
-                <span className="card-title">{filterDay==="all"?`${MONTH_NAMES[filterMonth-1]} entries`:`${filterDay} ${MONTH_NAMES[filterMonth-1]} entries`}</span>
-                {!loading && todayEntries.length>0 &&
-                  <span style={{fontSize:12,color:C.textLight,fontWeight:600}}>{todayEntries.length}</span>}
+              <div className="date-filter">
+                <input className="fld date-filter-input" type="date" value={filterDate}
+                  onChange={e=>onFilterDateChange(e.target.value)} />
+                <button type="button" className={`chip${filterMode==="month"?" is-on":""}`}
+                  onClick={toggleMonth}>Whole month</button>
+                {filterDate!==new Date().toISOString().slice(0,10) &&
+                  <button type="button" className="chip"
+                    onClick={()=>{const t=new Date().toISOString().slice(0,10);setFilterDate(t);setFilterMode("day");fetchEntries(t,"day");}}>Today</button>}
+              </div>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                {!loading && <span style={{fontSize:12,color:C.textLight,fontWeight:700}}>{todayEntries.length} entries</span>}
+                <button className="btn btn-sm" onClick={()=>fetchEntries()} disabled={loading}>↻</button>
               </div>
             </div>
             <div className="card-pad">

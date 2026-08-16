@@ -319,6 +319,17 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.35) sep
 }
 .card-title { font-size: 14px; font-weight: 800; color: var(--text); letter-spacing: -0.1px; }
 
+.date-filter { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.date-filter-input {
+  width: auto; min-width: 140px; max-width: 170px;
+  padding: 5px 10px; font-size: 13px; font-weight: 700;
+  border: 1.5px solid var(--border); border-radius: var(--r-sm);
+  background: var(--warm1); color: var(--text);
+  cursor: pointer;
+}
+.date-filter-input:focus { border-color: var(--accent-light); outline: none; box-shadow: 0 0 0 3px rgba(168,85,247,.15); }
+.date-filter .chip { font-size: 12px; padding: 4px 12px; }
+
 .section { margin-bottom: var(--sp-4); }
 .section-title {
   display: flex; align-items: center; gap: 7px;
