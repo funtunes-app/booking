@@ -142,12 +142,12 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.35) sep
   position: static; background: none;
   padding-top: 24px; padding-bottom: 40px;
 }
-.theme-form .form-actions .btn { background: rgba(255,255,255,.1); border-color: rgba(168,85,247,.3); color: #e0d0f7; }
-.theme-form .form-actions .btn:hover { background: rgba(168,85,247,.22); }
-.theme-form .form-actions .btn-primary { background: #7c3aed; border-color: #7c3aed; color: #fff; box-shadow: 0 2px 16px rgba(124,58,237,.45); }
-.theme-form .form-actions .btn-primary:hover { background: #6d28d9; border-color: #6d28d9; }
-.theme-form .form-actions .btn-success { background: #16a34a; border-color: #16a34a; color: #fff; box-shadow: 0 2px 16px rgba(22,163,74,.4); }
-.theme-form .form-actions .btn-success:hover { background: #15803d; border-color: #15803d; }
+.theme-form .form-actions .btn { background: rgba(255,255,255,.92); border-color: transparent; color: #4a1a6b; font-weight: 800; }
+.theme-form .form-actions .btn:hover { background: #fff; }
+.theme-form .form-actions .btn-primary { background: #fff; border-color: transparent; color: #7c3aed; box-shadow: 0 2px 16px rgba(0,0,0,.2); }
+.theme-form .form-actions .btn-primary:hover { background: #f3e8ff; color: #6d28d9; }
+.theme-form .form-actions .btn-success { background: #fff; border-color: transparent; color: #16a34a; box-shadow: 0 2px 16px rgba(0,0,0,.2); }
+.theme-form .form-actions .btn-success:hover { background: #f0fdf4; color: #15803d; }
 
 .theme-form .menu { background: #2d1050; border-color: rgba(168,85,247,.25); }
 .theme-form .menu-item { color: #e0d0f7; }
