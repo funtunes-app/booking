@@ -87,14 +87,18 @@ function App() {
   }
 
   const set = useCallback((key,val) => {
-    setFormState(f=>({...f,[key]:val}));
+    setFormState(f=>{
+      const next = {...f,[key]:val};
+      if ((key==="numKids") && entryType==="funzone") {
+        next.amount = String(computeAmountForHours(next.hours) * val);
+      }
+      return next;
+    });
     setErrors(e=>({...e,[key]:undefined}));
-  },[]);
+  },[entryType]);
 
-  // Duration drives the per-kid amount for the play area only — birthday and
-  // event bookings are quoted manually, so their amount must not be overwritten.
   const setHours = useCallback((v,autoPrice) => {
-    setFormState(f=>autoPrice ? {...f,hours:v,amount:String(computeAmountForHours(v))} : {...f,hours:v});
+    setFormState(f=>autoPrice ? {...f,hours:v,amount:String(computeAmountForHours(v)*f.numKids)} : {...f,hours:v});
     if (autoPrice) setErrors(e=>({...e,amount:undefined}));
   },[]);
 
@@ -200,7 +204,7 @@ function App() {
   // Socks only ever apply to the play area — guard here too so a stale value
   // can never be billed on a party booking.
   const socksCharge = entryType === "funzone" ? (form.socks||0) : 0;
-  const totalAmount = (parseInt(form.amount)||0)*form.numKids + socksCharge;
+  const totalAmount = (parseInt(form.amount)||0) + socksCharge;
 
   const validate = (s) => {
     const errs={};
@@ -575,29 +579,34 @@ function App() {
                           {phoneLookupLoading && <div style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)"}}><Spinner size={16} /></div>}
                         </div>
                       </InputField>
-                      <InputField label="Kids Name" icon="👤" error={errors.customerName}>
-                        <input className={`fld${errors.customerName?" is-error":""}`} value={form.customerName} placeholder="e.g. Priya"
-                          onChange={e=>set("customerName",e.target.value)} />
-                      </InputField>
                       <InputField label="No. of Kids" icon="👶">
                         <NumberStepper value={form.numKids} onChange={v=>set("numKids",v)} min={1} max={10} />
                       </InputField>
-                      {form.numKids<=1 ? (
-                        <InputField label="DOB" icon="🎂">
-                          <input className="fld" value={form.dob} onChange={e=>set("dob",e.target.value)} type="date" />
-                        </InputField>
-                      ) : (
-                        Array.from({length:form.numKids},(_,i)=>(
-                          <InputField key={i} label={`DOB — Kid ${i+1}`} icon="🎂">
-                            <input className="fld" value={(form.dobs&&form.dobs[i])||""} type="date"
-                              onChange={e=>{const d=[...(form.dobs||[])];d[i]=e.target.value;set("dobs",d);if(i===0)set("dob",e.target.value);}} />
-                          </InputField>
-                        ))
-                      )}
                     </div>
-                    {form.numKids>1&&<div className="field-hint multi-kid-hint">
-                      ℹ️ Saved as {form.numKids} separate rows: {form.customerName||"Name"} - Kid 1, Kid 2{form.numKids>2?`, … Kid ${form.numKids}`:""}
-                    </div>}
+
+                    {Array.from({length:form.numKids},(_,i)=>(
+                      <div key={i} className="kid-group">
+                        {form.numKids>1 && <div className="kid-group-label">Kid {i+1}</div>}
+                        <InputField label={form.numKids>1?"Name":"Kids Name"} error={i===0?errors.customerName:undefined}>
+                          <input className={`fld${i===0&&errors.customerName?" is-error":""}`}
+                            value={i===0?form.customerName:((form.kidNames&&form.kidNames[i])||"")}
+                            placeholder={`e.g. ${["Priya","Arjun","Meera","Ravi","Ananya"][i%5]}`}
+                            onChange={e=>{
+                              if(i===0) set("customerName",e.target.value);
+                              else { const names=[...(form.kidNames||[])]; names[i]=e.target.value; set("kidNames",names); }
+                            }} />
+                        </InputField>
+                        <InputField label="DOB">
+                          <input className="fld"
+                            value={i===0?form.dob:((form.dobs&&form.dobs[i])||"")}
+                            type="date"
+                            onChange={e=>{
+                              if(i===0) set("dob",e.target.value);
+                              else { const d=[...(form.dobs||[])]; d[i]=e.target.value; set("dobs",d); }
+                            }} />
+                        </InputField>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
@@ -625,18 +634,18 @@ function App() {
                         </div>
                       </InputField>
 
-                      <InputField label={isPlayArea?"Playtime (₹ per kid)":"Amount (₹ per kid)"} icon="💰" error={errors.amount}>
+                      <InputField label={isPlayArea?"Playtime":"Amount"} icon="💰" error={errors.amount}>
                         <div style={{position:"relative"}}>
                           <span className="rupee-prefix">₹</span>
                           <input className={`fld fld-lg${errors.amount?" is-error":""}`} value={form.amount} type="tel" inputMode="numeric" placeholder="300"
                             onChange={e=>set("amount",e.target.value.replace(/\D/g,""))} />
                         </div>
+                        {isPlayArea && form.numKids>1 && <div className="field-hint">{form.numKids} kids × ₹{computeAmountForHours(form.hours)} per kid</div>}
                         {!isPlayArea && <div className="field-hint">Party pricing is set manually.</div>}
                       </InputField>
-                    </div>
-                    <InputField label="Payment Mode" icon="💳" error={errors.mop}>
-                      <ChipSelect options={CONFIG.MOP_OPTIONS} value={form.mop} onChange={v=>set("mop",v)} />
-                    </InputField>
+                      <InputField label="Pay via" error={errors.mop} className="field-tight">
+                        <ChipSelect options={CONFIG.MOP_OPTIONS.map(o=>({value:o.value,label:o.label}))} value={form.mop} onChange={v=>set("mop",v)} />
+                      </InputField>
                   </div>
 
                   {isPlayArea && <div className="section">
@@ -657,8 +666,8 @@ function App() {
                               style={{width:74,flexShrink:0,textAlign:"center"}} />}
                         </div>
                       </InputField>
-                      {form.socks>0&&<InputField label="Socks Payment Mode" icon="🔄">
-                        <ChipSelect options={CONFIG.MOP_OPTIONS} value={form.socksMop} onChange={v=>set("socksMop",v)} />
+                      {form.socks>0&&<InputField label="Pay via" className="field-tight">
+                        <ChipSelect options={CONFIG.MOP_OPTIONS.map(o=>({value:o.value,label:o.label}))} value={form.socksMop} onChange={v=>set("socksMop",v)} />
                       </InputField>}
                     </div>
                   </div>}
@@ -666,7 +675,7 @@ function App() {
                   <div className="card card-pad total-card">
                     <div>
                       <div className="stat-label total-label">Total amount</div>
-                      <div className="total-breakdown">{form.numKids} kid{form.numKids>1?"s":""} × ₹{form.amount}{form.socks>0?` + ₹${form.socks} socks`:""}</div>
+                      <div className="total-breakdown">₹{form.amount} playtime{form.socks>0?` + ₹${form.socks} socks`:""}</div>
                     </div>
                     <div className="total-value">₹{totalAmount.toLocaleString("en-IN")}</div>
                   </div>
@@ -683,8 +692,8 @@ function App() {
                     {l:"Type",v:CONFIG.ENTRY_TYPES.find(t=>t.key===entryType)?.label,i:CONFIG.ENTRY_TYPES.find(t=>t.key===entryType)?.icon},
                     {l:"Mobile",v:form.phone,i:"📱"},
                     {l:"Kids Name",v:form.customerName,i:"👤"},
-                    {l:"No. of Kids",v:`${form.numKids}${form.numKids>1?" (separate rows)":""}`,i:"👶"},
-                    {l:"Playtime",v:`₹${form.amount} per kid`,i:"💰"},
+                    {l:"No. of Kids",v:`${form.numKids}`,i:"👶"},
+                    {l:"Playtime",v:`₹${form.amount}`,i:"💰"},
                     ...(form.socks>0?[{l:"Socks",v:`${form.sockCount} pair${form.sockCount>1?"s":""} · ₹${form.socks} (${form.socksMop})`,i:"🧦"}]:[]),
                     {l:"Payment",v:form.mop,i:"💳"},
                     {l:"Duration",v:formatHoursLabel(form.hours),i:"⏱️"},

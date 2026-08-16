@@ -206,6 +206,22 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.35) sep
 .time-row { display: flex; align-items: center; gap: 6px; margin-top: 7px; font-size: 11px; color: var(--text-light); font-weight: 600; }
 .theme-form .time-row { color: rgba(230,210,255,.65); }
 
+/* Kid name + DOB grouped tightly */
+.kid-group { margin-bottom: 20px; }
+.kid-group .field { margin-bottom: 8px; }
+.theme-form .kid-group .field { margin-bottom: 8px; }
+.kid-group-label {
+  font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .6px;
+  color: var(--accent); margin-bottom: 8px; padding-top: 4px;
+  border-top: 1px dashed var(--border);
+}
+.theme-form .kid-group-label { color: #c084fc; border-color: rgba(168,85,247,.2); }
+
+/* Payment mode chips sit tighter below their amount */
+.field-tight { margin-bottom: 12px !important; }
+.field-tight .field-label { margin-bottom: 4px; }
+.field-tight .chip { padding: 5px 10px; font-size: 12px; }
+
 .container {
   width: 100%;
   max-width: 1240px;
