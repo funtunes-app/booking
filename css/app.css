@@ -88,6 +88,120 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.35) sep
    ============================================================================= */
 .app-shell { min-height: 100vh; background: var(--bg); }
 
+/* Dark purple form theme — applied when the entry form is active */
+.app-shell.theme-form {
+  background: linear-gradient(145deg, #2a0845 0%, #4a1a6b 40%, #6b2fa0 100%);
+  min-height: 100vh;
+}
+.theme-form .appbar {
+  background: rgba(30, 8, 52, 0.85);
+  backdrop-filter: saturate(180%) blur(14px);
+  border-bottom: 1px solid rgba(168, 85, 247, .18);
+}
+.theme-form .appbar .card-title { color: #e2d0f5; }
+.theme-form .appbar .btn { background: rgba(255,255,255,.08); border-color: rgba(168,85,247,.25); color: #d4b8eb; }
+.theme-form .appbar .btn:hover { background: rgba(168,85,247,.18); border-color: rgba(168,85,247,.4); }
+
+.theme-form .step-caption { color: rgba(210,185,235,.6); }
+.theme-form .step-caption b { color: #c084fc; }
+.theme-form .step-caption .step-back { color: rgba(210,185,235,.5); }
+.theme-form .step-caption .step-back:hover { color: #c084fc; }
+
+.theme-form .section-title { color: #c084fc; }
+.theme-form .section-title::after { background: rgba(168,85,247,.2); }
+
+.theme-form .field-label { color: rgba(220,200,245,.75); font-size: 12.5px; letter-spacing: .7px; margin-bottom: 7px; }
+.theme-form .field-hint { color: rgba(200,180,230,.55); }
+
+.theme-form .fld {
+  background: rgba(255,255,255,.06);
+  border-color: rgba(168,85,247,.22);
+  color: #f0e6ff;
+}
+.theme-form .fld::placeholder { color: rgba(200,175,235,.35); }
+.theme-form .fld:hover { border-color: rgba(168,85,247,.4); }
+.theme-form .fld:focus { border-color: #a855f7; box-shadow: 0 0 0 3px rgba(168,85,247,.25); background: rgba(255,255,255,.09); }
+.theme-form .fld.is-error { border-color: #ef4444; background: rgba(239,68,68,.12); }
+
+.theme-form .chip {
+  background: rgba(255,255,255,.06); border-color: rgba(168,85,247,.2); color: rgba(220,200,245,.7);
+}
+.theme-form .chip:hover { background: rgba(168,85,247,.14); border-color: rgba(168,85,247,.35); }
+.theme-form .chip.is-on { background: rgba(168,85,247,.22); border-color: #a855f7; color: #c084fc; }
+
+.theme-form .stepper { background: rgba(255,255,255,.06); border-color: rgba(168,85,247,.22); }
+.theme-form .stepper button { color: #c084fc; }
+.theme-form .stepper button:hover:not(:disabled) { background: rgba(168,85,247,.18); }
+.theme-form .stepper button:disabled { color: rgba(200,175,235,.25); }
+.theme-form .stepper-value { color: #f0e6ff; }
+
+.theme-form .card { background: rgba(255,255,255,.07); border-color: rgba(168,85,247,.18); }
+
+.theme-form .form-actions { background: linear-gradient(to top, #2a0845 72%, transparent); }
+.theme-form .form-actions .btn { background: rgba(255,255,255,.08); border-color: rgba(168,85,247,.25); color: #d4b8eb; }
+.theme-form .form-actions .btn:hover { background: rgba(168,85,247,.18); }
+.theme-form .form-actions .btn-primary { background: #7c3aed; border-color: #7c3aed; color: #fff; box-shadow: 0 2px 12px rgba(124,58,237,.4); }
+.theme-form .form-actions .btn-primary:hover { background: #6d28d9; border-color: #6d28d9; }
+.theme-form .form-actions .btn-success { background: #16a34a; border-color: #16a34a; color: #fff; box-shadow: 0 2px 12px rgba(22,163,74,.35); }
+.theme-form .form-actions .btn-success:hover { background: #15803d; border-color: #15803d; }
+
+.theme-form .menu { background: #2d1050; border-color: rgba(168,85,247,.25); }
+.theme-form .menu-item { color: #d4b8eb; }
+.theme-form .menu-item:hover { background: rgba(168,85,247,.15); }
+.theme-form .menu-item.is-on { background: rgba(168,85,247,.25); color: #c084fc; }
+.theme-form .menu-sep { background: rgba(168,85,247,.15); }
+
+.theme-form .toast { box-shadow: 0 4px 20px rgba(0,0,0,.35); }
+.theme-form .overlay { background: rgba(15,5,30,.55); }
+
+.multi-kid-hint { color: var(--blue); background: var(--blue-soft); padding: 9px 11px; border-radius: 10px; margin-top: 2px; }
+.theme-form .multi-kid-hint { color: #93c5fd; background: rgba(59,130,246,.12); }
+
+/* Total amount card (step 1) */
+.total-card {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  background: var(--accent-soft); border-color: rgba(123,45,142,.2);
+}
+.total-label { color: var(--text-mid); }
+.total-breakdown { font-size: 11.5px; color: var(--text-mid); font-weight: 600; margin-top: 2px; }
+.total-value { font-size: 24px; font-weight: 800; color: var(--accent); letter-spacing: -0.5px; }
+.theme-form .total-card { background: rgba(168,85,247,.14); border-color: rgba(168,85,247,.22); }
+.theme-form .total-label { color: rgba(210,185,235,.65); }
+.theme-form .total-breakdown { color: rgba(210,185,235,.5); }
+.theme-form .total-value { color: #c084fc; }
+
+/* Review rows (step 2) */
+.review-row {
+  display: flex; align-items: center; gap: 10px; padding: 9px var(--card-p);
+}
+.review-icon { font-size: 14px; width: 20px; text-align: center; flex-shrink: 0; }
+.review-label { font-size: 12.5px; color: var(--text-light); flex: 1; font-weight: 600; }
+.review-val { font-size: 13.5px; font-weight: 700; text-align: right; }
+.theme-form .review-row { border-color: rgba(168,85,247,.15) !important; }
+.theme-form .review-label { color: rgba(210,185,235,.5); }
+.theme-form .review-val { color: #f0e6ff; }
+
+/* Grand total card (step 2) */
+.grand-total-card {
+  display: flex; justify-content: space-between; align-items: center;
+  background: var(--green-soft); border-color: rgba(63,156,71,.25);
+}
+.grand-total-label { font-size: 13px; font-weight: 800; color: var(--green); text-transform: uppercase; letter-spacing: .5px; }
+.grand-total-value { font-size: 26px; font-weight: 800; color: var(--green); letter-spacing: -0.5px; }
+.theme-form .grand-total-card { background: rgba(34,197,94,.1); border-color: rgba(34,197,94,.2); }
+.theme-form .grand-total-label { color: #4ade80; }
+.theme-form .grand-total-value { color: #4ade80; }
+
+/* ₹ prefix inside amount field */
+.rupee-prefix {
+  position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
+  font-size: 16px; font-weight: 800; color: var(--accent); pointer-events: none;
+}
+.theme-form .rupee-prefix { color: #c084fc; }
+
+.time-row { display: flex; align-items: center; gap: 6px; margin-top: 7px; font-size: 11px; color: var(--text-light); font-weight: 600; }
+.theme-form .time-row { color: rgba(210,185,235,.45); }
+
 .container {
   width: 100%;
   max-width: 1240px;
@@ -177,6 +291,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.35) sep
    Form fields
    ============================================================================= */
 .field { margin-bottom: var(--stack); min-width: 0; }
+.theme-form .field { margin-bottom: 22px; }
 .field-label {
   display: flex; align-items: center; gap: 5px;
   font-size: 11px; font-weight: 700; color: var(--text-mid);
@@ -204,6 +319,26 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.35) sep
 /* Fields run one after another at every width — side-by-side pairs made the
    form harder to scan than the vertical space they saved was worth. */
 .form-grid { display: block; }
+
+/* Dropdown panel */
+.dropdown-panel {
+  position: absolute; top: calc(100% + 5px); left: 0; right: 0; z-index: 70;
+  background: var(--card); border-radius: 10px; border: 1px solid var(--border);
+  box-shadow: var(--shadow-lift); overflow-y: auto; max-height: 250px; padding: 4px;
+  animation: popIn .12s ease;
+}
+.dropdown-opt {
+  padding: 9px 11px; font-size: 14px; cursor: pointer; border-radius: 7px;
+  font-weight: 600; color: var(--text);
+  transition: background .12s;
+}
+.dropdown-opt:hover { background: var(--warm1); }
+.dropdown-opt.is-on { font-weight: 800; color: var(--accent); background: var(--accent-soft); }
+
+.theme-form .dropdown-panel { background: #2d1050; border-color: rgba(168,85,247,.3); }
+.theme-form .dropdown-opt { color: #d4b8eb; }
+.theme-form .dropdown-opt:hover { background: rgba(168,85,247,.15); }
+.theme-form .dropdown-opt.is-on { color: #c084fc; background: rgba(168,85,247,.25); }
 
 /* Chip selector */
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }

@@ -359,7 +359,7 @@ function App() {
   // RENDER
   // =========================================================================
   return (
-    <div className="app-shell">
+    <div className={`app-shell${screen==="form"?" theme-form":""}`}>
 
       {/* Toast */}
       {toast && <div className="toast" style={{background:toast.type==="success"?C.green:toast.type==="error"?C.danger:C.blue}}>{toast.msg}</div>}
@@ -586,7 +586,7 @@ function App() {
                     <input className="fld" value={form.dob} onChange={e=>set("dob",e.target.value)} type="date" />
                   </InputField>
                 </div>
-                {form.numKids>1&&<div className="field-hint" style={{color:C.blue,background:C.blueSoft,padding:"9px 11px",borderRadius:10,marginTop:2}}>
+                {form.numKids>1&&<div className="field-hint multi-kid-hint">
                   ℹ️ Saved as {form.numKids} separate rows: {form.customerName||"Name"} - Kid 1, Kid 2{form.numKids>2?`, … Kid ${form.numKids}`:""}
                 </div>}
               </div>
@@ -610,7 +610,7 @@ function App() {
                         <input className="fld" value={form.hours} onChange={e=>setHours(e.target.value.replace(/[^\d.]/g,""),isPlayArea)}
                           placeholder="hrs" type="tel" inputMode="decimal" style={{width:74,flexShrink:0,textAlign:"center"}} />}
                     </div>
-                    <div style={{display:"flex",alignItems:"center",gap:6,marginTop:7,fontSize:11,color:C.textLight,fontWeight:600}}>
+                    <div className="time-row">
                       <span title="Start time">🕐</span>
                       <input className="fld fld-compact" value={form.timeIn} onChange={e=>set("timeIn",e.target.value)} type="time" />
                       {form.timeIn && <span>→ {formatTime12(computeTimeOut(form.timeIn,form.hours))}</span>}
@@ -619,7 +619,7 @@ function App() {
 
                   <InputField label={isPlayArea?"Playtime (₹ per kid)":"Amount (₹ per kid)"} icon="💰" error={errors.amount}>
                     <div style={{position:"relative"}}>
-                      <span style={{position:"absolute",left:13,top:"50%",transform:"translateY(-50%)",fontSize:16,fontWeight:800,color:C.accent,pointerEvents:"none"}}>₹</span>
+                      <span className="rupee-prefix">₹</span>
                       <input className={`fld fld-lg${errors.amount?" is-error":""}`} value={form.amount} type="tel" inputMode="numeric" placeholder="300"
                         onChange={e=>set("amount",e.target.value.replace(/\D/g,""))} />
                     </div>
@@ -655,12 +655,12 @@ function App() {
                 </div>
               </div>}
 
-              <div className="card card-pad" style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,background:C.accentSoft,borderColor:`${C.accent}30`}}>
+              <div className="card card-pad total-card">
                 <div>
-                  <div className="stat-label" style={{color:C.textMid}}>Total amount</div>
-                  <div style={{fontSize:11.5,color:C.textMid,fontWeight:600,marginTop:2}}>{form.numKids} kid{form.numKids>1?"s":""} × ₹{form.amount}{form.socks>0?` + ₹${form.socks} socks`:""}</div>
+                  <div className="stat-label total-label">Total amount</div>
+                  <div className="total-breakdown">{form.numKids} kid{form.numKids>1?"s":""} × ₹{form.amount}{form.socks>0?` + ₹${form.socks} socks`:""}</div>
                 </div>
-                <div style={{fontSize:24,fontWeight:800,color:C.accent,letterSpacing:-0.5}}>₹{totalAmount.toLocaleString("en-IN")}</div>
+                <div className="total-value">₹{totalAmount.toLocaleString("en-IN")}</div>
               </div>
             </>}
 
@@ -681,16 +681,16 @@ function App() {
                     {l:"Date",v:formatDateDDMMYYYY(form.date),i:"📅"},
                     ...(form.phone?[{l:"Phone",v:form.phone,i:"📱"}]:[]),
                     ...(form.dob?[{l:"DOB",v:form.dob,i:"🎂"}]:[]),
-                  ].map((r,i,arr)=><div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"9px var(--card-p)",borderBottom:i<arr.length-1?`1px solid ${C.border}`:"none"}}>
-                    <span style={{fontSize:14,width:20,textAlign:"center",flexShrink:0}}>{r.i}</span>
-                    <span style={{fontSize:12.5,color:C.textLight,flex:1,fontWeight:600}}>{r.l}</span>
-                    <span style={{fontSize:13.5,fontWeight:700,textAlign:"right"}}>{r.v}</span>
+                  ].map((r,i,arr)=><div key={i} className="review-row" style={{borderBottom:i<arr.length-1?`1px solid var(--border)`:"none"}}>
+                    <span className="review-icon">{r.i}</span>
+                    <span className="review-label">{r.l}</span>
+                    <span className="review-val">{r.v}</span>
                   </div>)}
                 </div>
               </div>
-              <div className="card card-pad" style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:C.greenSoft,borderColor:`${C.green}40`}}>
-                <div style={{fontSize:13,fontWeight:800,color:C.green,textTransform:"uppercase",letterSpacing:.5}}>Grand total</div>
-                <div style={{fontSize:26,fontWeight:800,color:C.green,letterSpacing:-0.5}}>₹{totalAmount.toLocaleString("en-IN")}</div>
+              <div className="card card-pad grand-total-card">
+                <div className="grand-total-label">Grand total</div>
+                <div className="grand-total-value">₹{totalAmount.toLocaleString("en-IN")}</div>
               </div>
             </>}
 

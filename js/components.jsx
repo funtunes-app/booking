@@ -96,20 +96,9 @@ const Dropdown = ({value,options,onChange,flex}) => {
         <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{selected?selected.label:""}</span>
         <span style={{fontSize:10,color:C.textLight,flexShrink:0,transform:open?"rotate(180deg)":"none",transition:"transform .2s"}}>▼</span>
       </button>
-      {open && <div style={{
-        position:"absolute",top:"calc(100% + 5px)",left:0,right:0,zIndex:70,
-        background:C.card,borderRadius:10,border:`1px solid ${C.border}`,
-        boxShadow:C.shadowLift,overflowY:"auto",maxHeight:250,padding:4,
-        animation:"popIn .12s ease",
-      }}>
-        {options.map(o => <div key={o.value} onClick={()=>{onChange(o.value);setOpen(false);}} style={{
-          padding:"9px 11px",fontSize:14,cursor:"pointer",borderRadius:7,
-          fontWeight:o.value===value?800:600,
-          color:o.value===value?C.accent:C.text,
-          background:o.value===value?C.accentSoft:"transparent",
-        }}
-        onMouseEnter={e=>{ if(o.value!==value) e.currentTarget.style.background=C.warm1; }}
-        onMouseLeave={e=>{ if(o.value!==value) e.currentTarget.style.background="transparent"; }}
+      {open && <div className="dropdown-panel">
+        {options.map(o => <div key={o.value} className={`dropdown-opt${o.value===value?" is-on":""}`}
+          onClick={()=>{onChange(o.value);setOpen(false);}}
         >{o.label}</div>)}
       </div>}
     </div>
