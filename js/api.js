@@ -1,69 +1,166 @@
 // =============================================================================
-// FunTunes API Layer
-// Handles all communication with Google Sheets backend
+// FunTunes API Layer — Supabase backend
 // =============================================================================
 
+var supabaseClient = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
+
+function _fmtTime12(t24) {
+  if (!t24 || t24.indexOf(":") === -1) return t24 || "";
+  var parts = t24.split(":");
+  var h = parseInt(parts[0]), m = parts[1];
+  var ap = h >= 12 ? "PM" : "AM";
+  h = h % 12; if (h === 0) h = 12;
+  return String(h).padStart(2, "0") + ":" + m + " " + ap;
+}
+
+function _rowToEntry(row) {
+  return {
+    id: row.id,
+    date: row.date,
+    customerName: row.customer_name,
+    amount: row.amount,
+    mop: row.mop,
+    socks: row.socks,
+    socksMop: row.socks_mop,
+    numKids: row.num_kids,
+    hours: row.hours,
+    timeIn: row.time_in,
+    timeOut: row.time_out,
+    timing: row.timing,
+    phone: row.phone,
+    dob: row.dob,
+    entryType: row.entry_type,
+    createdAt: row.created_at,
+  };
+}
+
+function _entryToRow(entry) {
+  var timeIn = entry.timeIn || "";
+  var timeOut = entry.timeOut || "";
+  var timing = "";
+  if (timeIn) timing = _fmtTime12(timeIn) + " to " + _fmtTime12(timeOut);
+  return {
+    date: entry.date || new Date().toISOString().slice(0, 10),
+    customer_name: entry.customerName || "",
+    amount: parseInt(entry.amount) || 0,
+    mop: entry.mop || "",
+    socks: parseInt(entry.socks) || 0,
+    socks_mop: entry.socksMop || "",
+    num_kids: parseInt(entry.numKids) || 1,
+    hours: String(entry.hours || "1"),
+    time_in: timeIn,
+    time_out: timeOut,
+    timing: timing,
+    phone: entry.phone || "",
+    dob: entry.dob || "",
+    entry_type: entry.entryType || "funzone",
+  };
+}
+
 var api = {
-  async call(action, method, body, params) {
-    method = method || "GET";
-    params = params || {};
-    var url = new URL(CONFIG.API_URL);
-    url.searchParams.set("action", action);
-    Object.entries(params).forEach(function(kv) { url.searchParams.set(kv[0], kv[1]); });
-    var opts = { method: method, redirect: "follow" };
-    if (body) {
-      opts.method = "POST";
-      opts.headers = { "Content-Type": "text/plain" };
-      opts.body = JSON.stringify(body);
+  readToday: async function () {
+    var today = new Date().toISOString().slice(0, 10);
+    var { data, error } = await supabaseClient
+      .from("entries")
+      .select("*")
+      .eq("date", today)
+      .order("created_at", { ascending: false });
+    if (error) return { success: false, error: error.message };
+    return { success: true, data: (data || []).map(_rowToEntry) };
+  },
+
+  readMonth: async function (month) {
+    var startDate, endDate;
+    if (month && month.includes(" ")) {
+      var parts = month.split(" ");
+      var monthNames = ["January","February","March","April","May","June",
+        "July","August","September","October","November","December"];
+      var mi = monthNames.indexOf(parts[0]);
+      var yr = parseInt(parts[1]);
+      if (mi >= 0 && yr) {
+        startDate = yr + "-" + String(mi + 1).padStart(2, "0") + "-01";
+        var lastDay = new Date(yr, mi + 1, 0).getDate();
+        endDate = yr + "-" + String(mi + 1).padStart(2, "0") + "-" + String(lastDay).padStart(2, "0");
+      }
     }
-    var res = await fetch(url.toString(), opts);
-    return res.json();
+    if (!startDate) {
+      var d = new Date();
+      startDate = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-01";
+      var ld = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+      endDate = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(ld).padStart(2, "0");
+    }
+    var { data, error } = await supabaseClient
+      .from("entries")
+      .select("*")
+      .gte("date", startDate)
+      .lte("date", endDate)
+      .order("created_at", { ascending: false });
+    if (error) return { success: false, error: error.message };
+    return { success: true, data: (data || []).map(_rowToEntry) };
   },
 
-  readToday: function() {
-    return this.call("read", "GET", null, { date: new Date().toISOString().slice(0, 10) });
+  addEntry: async function (entry) {
+    var row = _entryToRow(entry);
+    var { data, error } = await supabaseClient
+      .from("entries")
+      .insert(row)
+      .select();
+    if (error) return { success: false, error: error.message };
+    return { success: true, data: data && data[0] ? _rowToEntry(data[0]) : null };
   },
 
-  readMonth: function(month) {
-    return this.call("read", "GET", null, { month: month });
+  updateEntry: async function (id, entry) {
+    var row = _entryToRow(entry);
+    var { data, error } = await supabaseClient
+      .from("entries")
+      .update(row)
+      .eq("id", id)
+      .select();
+    if (error) return { success: false, error: error.message };
+    return { success: true, data: data && data[0] ? _rowToEntry(data[0]) : null };
   },
 
-  addEntry: function(entry) {
-    return this.call("add", "POST", { entry: entry });
+  deleteEntry: async function (id) {
+    var { error } = await supabaseClient
+      .from("entries")
+      .delete()
+      .eq("id", id);
+    if (error) return { success: false, error: error.message };
+    return { success: true };
   },
 
-  updateEntry: function(tab, rowIndex, entry) {
-    return this.call("update", "POST", { tab: tab, rowIndex: rowIndex, entry: entry });
+  listTabs: async function () {
+    return { success: true, data: [] };
   },
 
-  deleteEntry: function(tab, rowIndex) {
-    return this.call("delete", "POST", { tab: tab, rowIndex: rowIndex });
+  lookupPhone: async function (phone) {
+    var { data, error } = await supabaseClient
+      .from("entries")
+      .select("customer_name, dob")
+      .eq("phone", phone)
+      .order("created_at", { ascending: false })
+      .limit(1);
+    if (error) return { success: false, error: error.message };
+    if (data && data.length > 0) {
+      return { success: true, found: true, customerName: data[0].customer_name, dob: data[0].dob };
+    }
+    return { success: true, found: false };
   },
 
-  listTabs: function() {
-    return this.call("tabs");
+  // Birthday & enquiry methods — stubbed until separate tables are set up
+  getBirthdays: async function () {
+    return { success: true, data: [] };
   },
 
-  getBirthdays: function(month, year) {
-    var params = {};
-    if (month) params.month = month;
-    if (year) params.year = year;
-    return this.call("birthdays", "GET", null, params);
+  updateBirthdayCall: async function () {
+    return { success: false, error: "Not yet migrated to Supabase" };
   },
 
-  updateBirthdayCall: function(record) {
-    return this.call("updateBirthdayCall", "POST", record);
+  addEnquiry: async function () {
+    return { success: false, error: "Not yet migrated to Supabase" };
   },
 
-  lookupPhone: function(phone) {
-    return this.call("lookupPhone", "GET", null, { phone: phone });
-  },
-
-  addEnquiry: function(enquiry) {
-    return this.call("addEnquiry", "POST", enquiry);
-  },
-
-  listEnquiries: function() {
-    return this.call("enquiries");
+  listEnquiries: async function () {
+    return { success: true, data: [] };
   },
 };

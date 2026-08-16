@@ -144,7 +144,7 @@ function App() {
           const todayStr = new Date().toISOString().slice(0,10);
           localStorage.setItem(BIRTHDAY_CACHE_KEY, JSON.stringify({date:todayStr, month:m, year:y, data:res.data||[]}));
         }
-      } else showToastMsg("Sheet error: "+(res.error||"unknown"),"error");
+      } else showToastMsg("Error: "+(res.error||"unknown"),"error");
     } catch(e) { console.error("Birthdays fetch:",e); showToastMsg("Could not load birthdays","error"); }
     finally { setBirthdaysLoading(false); }
   }
@@ -171,8 +171,8 @@ function App() {
     try {
       const res = await api.readToday();
       if (res.success) setTodayEntries(res.data||[]);
-      else showToastMsg("Sheet error: "+(res.error||"unknown"),"error");
-    } catch(e) { console.error("Fetch:",e); showToastMsg("Could not reach Google Sheet","error"); }
+      else showToastMsg("Error: "+(res.error||"unknown"),"error");
+    } catch(e) { console.error("Fetch:",e); showToastMsg("Could not load entries","error"); }
     finally { setLoading(false); }
   }
 
@@ -234,8 +234,8 @@ function App() {
       setSaving(true);
       try {
         const res=await api.addEntry(entry);
-        if(res.success){ showToastMsg("Entry saved to Google Sheet!","success"); setShowSuccess(true); fetchToday(); }
-        else showToastMsg("Sheet error: "+(res.error||"unknown"),"error");
+        if(res.success){ showToastMsg("Entry saved!","success"); setShowSuccess(true); fetchToday(); }
+        else showToastMsg("Error: "+(res.error||"unknown"),"error");
       } catch(e){console.error("Save:",e);showToastMsg("Could not save — check internet","error");}
       finally{setSaving(false);}
     } else {
@@ -304,27 +304,21 @@ function App() {
   async function handleUpdateSubmit() {
     const timeOut = computeTimeOut(form.timeIn,form.hours);
     const entry={...form,entryType,timeIn:form.timeIn,timeOut:timeOut,
-      amount:parseInt(form.amount)||0,numKids:1,socks:socksCharge,
-      slNo:editTarget?.["Sl.no"]||editTarget?.["SI. No"]||editTarget?.["S.no"]||""};
-    if(!editTarget?._rowIndex){showToastMsg("Cannot identify row","error");resetForm();return;}
+      amount:parseInt(form.amount)||0,numKids:1,socks:socksCharge};
+    if(!editTarget?.id){showToastMsg("Cannot identify entry","error");resetForm();return;}
     setSaving(true);
     try {
-      const res=await api.updateEntry(editTarget._tab||"",editTarget._rowIndex,entry);
+      const res=await api.updateEntry(editTarget.id,entry);
       if(res.success){showToastMsg("Updated!","success");fetchToday();}else showToastMsg("Error: "+(res.error||"unknown"),"error");
     } catch(e){console.error("Update:",e);showToastMsg("Could not update","error");}
     finally{setSaving(false);resetForm();}
   }
 
   async function handleDelete(entry) {
-    if(!entry._rowIndex){showToastMsg("Cannot identify row","error");return;}
-    const tab = entry._tab || (() => {
-      const months=["January","February","March","April","May","June","July","August","September","October","November","December"];
-      const d=new Date();
-      return `Funzone - ${months[d.getMonth()]} ${d.getFullYear()}`;
-    })();
+    if(!entry.id){showToastMsg("Cannot identify entry","error");return;}
     setSaving(true);
     try {
-      const res=await api.deleteEntry(tab,entry._rowIndex);
+      const res=await api.deleteEntry(entry.id);
       if(res.success){showToastMsg("Deleted","info");fetchToday();}else showToastMsg("Error: "+(res.error||"unknown"),"error");
     } catch(e){console.error("Delete:",e);showToastMsg("Could not delete","error");}
     finally{setSaving(false);}
@@ -398,7 +392,7 @@ function App() {
       {/* Saving */}
       {saving && <div className="overlay" style={{zIndex:150}}>
         <div className="modal" style={{padding:"24px 30px",maxWidth:260}}>
-          <Spinner size={28} /><div style={{marginTop:10,fontSize:13.5,fontWeight:700,color:C.textMid}}>Saving to Sheet…</div>
+          <Spinner size={28} /><div style={{marginTop:10,fontSize:13.5,fontWeight:700,color:C.textMid}}>Saving…</div>
         </div></div>}
 
       {/* Success */}
