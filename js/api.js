@@ -2,7 +2,10 @@
 // FunTunes API Layer — Supabase backend
 // =============================================================================
 
-var supabaseClient = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
+if (!window.supabase || !window.supabase.createClient) {
+  console.error("Supabase JS library not loaded — check the CDN script in index.html");
+}
+var supabaseClient = window.supabase && window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
 
 function _fmtTime12(t24) {
   if (!t24 || t24.indexOf(":") === -1) return t24 || "";
