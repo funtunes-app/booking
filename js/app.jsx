@@ -791,7 +791,7 @@ function App() {
                 <div className="section">
                   <SectionHeading icon="💳" label={`Playtime Payment · ₹${parseInt(form.amount)||0}`} />
                   <div className="form-grid">
-                    <InputField label="Pay via" error={errors.playMop} className="field-tight">
+                    <InputField label="Paid via" error={errors.playMop} className="field-tight">
                       <ChipSelect options={CONFIG.MOP_OPTIONS.map(o=>({value:o.value,label:o.label}))} value={form.playMop} onChange={v=>{
                         set("playMop",v);
                         if(v!=="UPI + Cash"){set("playUpiAmount","");set("playCashAmount","");}
@@ -829,7 +829,7 @@ function App() {
                 {socksCharge>0 && <div className="section">
                   <SectionHeading icon="🧦" label={`Socks Payment · ₹${socksCharge}`} />
                   <div className="form-grid">
-                    <InputField label="Pay via" error={errors.socksMop} className="field-tight">
+                    <InputField label="Paid via" error={errors.socksMop} className="field-tight">
                       <ChipSelect options={CONFIG.MOP_OPTIONS.map(o=>({value:o.value,label:o.label}))} value={form.socksMop} onChange={v=>{
                         set("socksMop",v);
                         if(v!=="UPI + Cash"){set("socksUpiAmount","");set("socksCashAmount","");}
