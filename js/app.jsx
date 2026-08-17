@@ -749,7 +749,7 @@ function App() {
                   {isPlayArea && <div className="section">
                     <SectionHeading icon="🧦" label="Socks" />
                     <div className="form-grid">
-                      <InputField label={`Pairs (₹${CONFIG.SOCKS_RATE} each)`}>
+                      <InputField label="Pairs">
                         <div style={{display:"flex",gap:8,alignItems:"center"}}>
                           <Dropdown flex={1}
                             value={form.sockMode==="custom"?"custom":String(form.sockCount||0)}
