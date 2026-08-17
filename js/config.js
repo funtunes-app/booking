@@ -23,9 +23,9 @@ var CONFIG = {
 
   // Payment modes
   MOP_OPTIONS: [
-    { label: "HDFC", value: "Bank - HDFC", icon: "\u{1F3E6}" },
-    { label: "ICICI", value: "Bank - ICICI", icon: "\u{1F3DB}\uFE0F" },
-    { label: "Cash", value: "Cash", icon: "\u{1F4B5}" },
+    { label: "UPI", value: "UPI" },
+    { label: "Cash", value: "Cash" },
+    { label: "UPI + Cash", value: "UPI + Cash" },
   ],
 
   // Pricing — amount per kid is derived from the duration:
@@ -53,5 +53,5 @@ var CONFIG = {
   DEFAULT_SOCK_COUNT: 1,
 
   // Default payment mode
-  DEFAULT_MOP: "Bank - HDFC",
+  DEFAULT_MOP: "UPI",
 };

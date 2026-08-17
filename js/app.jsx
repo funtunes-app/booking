@@ -85,8 +85,9 @@ function App() {
       hours:hours,hoursMode:"preset",
       timeIn:`${String(n.getHours()).padStart(2,"0")}:${String(n.getMinutes()).padStart(2,"0")}`,
       socks:socksCount*CONFIG.SOCKS_RATE,sockCount:socksCount,sockMode:"preset",
-      socksMop:socksCount>0?CONFIG.DEFAULT_MOP:"",phone:"",dob:"",date:n.toISOString().slice(0,10),
-      kidNames:[],dobs:[]};
+      phone:"",dob:"",date:n.toISOString().slice(0,10),
+      kidNames:[],dobs:[],
+      upiAmount:"",cashAmount:""};
   }
 
   const set = useCallback((key,val) => {
@@ -233,14 +234,23 @@ function App() {
   const next = () => { if(validate(step)){setStep(s=>Math.min(s+1,LAST_STEP));containerRef.current?.scrollTo({top:0,behavior:"smooth"});} };
   const prev = () => setStep(s=>Math.max(s-1,0));
 
+  function getMopString() {
+    if(form.mop==="UPI + Cash"){
+      const u=parseInt(form.upiAmount)||0, c=parseInt(form.cashAmount)||0;
+      return `UPI ₹${u} + Cash ₹${c}`;
+    }
+    return form.mop;
+  }
+
   async function submitEntry() {
     const timeOut = computeTimeOut(form.timeIn,form.hours);
     const totalAmt = parseInt(form.amount)||0;
     const perKidAmt = form.numKids>1 ? Math.round(totalAmt/form.numKids) : totalAmt;
     const kidNames = form.kidNames || [];
+    const mopStr = getMopString();
 
     if (form.numKids <= 1) {
-      const entry={...form,entryType,timeIn:form.timeIn,timeOut:timeOut,amount:perKidAmt,numKids:1,socks:socksCharge};
+      const entry={...form,mop:mopStr,socksMop:"",entryType,timeIn:form.timeIn,timeOut:timeOut,amount:perKidAmt,numKids:1,socks:socksCharge};
       setSaving(true);
       try {
         const res=await api.addEntry(entry);
@@ -255,9 +265,9 @@ function App() {
         for (let k=0; k<form.numKids; k++) {
           const name = k===0 ? (form.customerName||"") : (kidNames[k]||form.customerName+" - Kid "+(k+1));
           const dob = k===0 ? (form.dob||"") : ((form.dobs&&form.dobs[k])||"");
-          const entry={...form,entryType,timeIn:form.timeIn,timeOut:timeOut,
+          const entry={...form,mop:mopStr,socksMop:"",entryType,timeIn:form.timeIn,timeOut:timeOut,
             customerName:name, dob:dob, amount:perKidAmt, numKids:1,
-            socks: k===0 ? socksCharge : 0, socksMop: k===0 ? form.socksMop : ""};
+            socks: k===0 ? socksCharge : 0};
           const res=await api.addEntry(entry);
           if(res.success) ok++;
         }
@@ -289,10 +299,16 @@ function App() {
     const socksTotal = parseInt(entry.socks||entry["Socks"]||0)||0;
     const sockCount = socksTotal>0?Math.max(1,Math.round(socksTotal/CONFIG.SOCKS_RATE)):0;
     const amt = String(entry.amount||entry["Amount"]||300);
+    const rawMop = entry.mop||entry["MOP"]||CONFIG.DEFAULT_MOP;
+    let editMop = rawMop, editUpi = "", editCash = "";
+    const splitMatch = rawMop.match(/^UPI\s*₹(\d+)\s*\+\s*Cash\s*₹(\d+)$/);
+    if (splitMatch) { editMop = "UPI + Cash"; editUpi = splitMatch[1]; editCash = splitMatch[2]; }
     setFormState({
       customerName:entry.customerName||entry["Customer name"]||"",
       amount:amt,
-      mop:entry.mop||entry["MOP"]||CONFIG.DEFAULT_MOP,
+      mop:editMop,
+      upiAmount:editUpi,
+      cashAmount:editCash,
       numKids:1,
       hours:hours,
       hoursMode:CONFIG.HOUR_OPTIONS.some(o=>o.value===hours)?"preset":"custom",
@@ -300,7 +316,6 @@ function App() {
       socks:socksTotal,
       sockCount:sockCount,
       sockMode:CONFIG.SOCK_COUNT_OPTIONS.includes(sockCount)?"preset":"custom",
-      socksMop:entry.socksMop||entry["MOP - Socks"]||"",
       phone:String(entry.phone||entry["Phone number"]||""),
       dob:entry.dob||entry["DOB"]||"",
       date:entry.date||new Date().toISOString().slice(0,10),
@@ -313,7 +328,7 @@ function App() {
 
   async function handleUpdateSubmit() {
     const timeOut = computeTimeOut(form.timeIn,form.hours);
-    const entry={...form,entryType,timeIn:form.timeIn,timeOut:timeOut,
+    const entry={...form,mop:getMopString(),socksMop:"",entryType,timeIn:form.timeIn,timeOut:timeOut,
       amount:parseInt(form.amount)||0,numKids:1,socks:socksCharge};
     if(!editTarget?.id){showToastMsg("Cannot identify entry","error");resetForm();return;}
     setSaving(true);
@@ -372,9 +387,9 @@ function App() {
     setFormState(f=>{
       if (type === "funzone") {
         const n = f.sockCount || CONFIG.DEFAULT_SOCK_COUNT;
-        return {...f, sockCount:n, socks:n*CONFIG.SOCKS_RATE, socksMop:f.socksMop||f.mop};
+        return {...f, sockCount:n, socks:n*CONFIG.SOCKS_RATE};
       }
-      return {...f, sockCount:0, socks:0, socksMop:""};
+      return {...f, sockCount:0, socks:0};
     });
   }
 
@@ -678,9 +693,6 @@ function App() {
                         {isPlayArea && form.numKids>1 && <div className="field-hint">{form.numKids} kids × ₹{computeAmountForHours(form.hours)} per kid</div>}
                         {!isPlayArea && <div className="field-hint">Party pricing is set manually.</div>}
                       </InputField>
-                      <InputField label="Pay via" error={errors.mop} className="field-tight">
-                        <ChipSelect options={CONFIG.MOP_OPTIONS.map(o=>({value:o.value,label:o.label}))} value={form.mop} onChange={v=>set("mop",v)} />
-                      </InputField>
                     </div>
                   </div>
 
@@ -702,18 +714,57 @@ function App() {
                               style={{width:74,flexShrink:0,textAlign:"center"}} />}
                         </div>
                       </InputField>
-                      {form.socks>0&&<InputField label="Pay via" className="field-tight">
-                        <ChipSelect options={CONFIG.MOP_OPTIONS.map(o=>({value:o.value,label:o.label}))} value={form.socksMop} onChange={v=>set("socksMop",v)} />
+                      {form.socks>0&&<InputField label="Socks Amount" icon="💰">
+                        <div style={{position:"relative"}}>
+                          <span className="rupee-prefix">₹</span>
+                          <input className="fld fld-lg" value={form.socks} type="tel" inputMode="numeric" placeholder="15"
+                            onChange={e=>set("socks",e.target.value===""?0:parseInt(e.target.value.replace(/\D/g,""))||0)} />
+                        </div>
                       </InputField>}
                     </div>
                   </div>}
 
-                  <div className="card card-pad total-card">
-                    <div>
-                      <div className="stat-label total-label">Total amount</div>
-                      <div className="total-breakdown">₹{form.amount} playtime{form.socks>0?` + ₹${form.socks} socks`:""}</div>
+                  <div className="section">
+                    <SectionHeading icon="💳" label="Payment" />
+                    <div className="card card-pad total-card" style={{marginBottom:12}}>
+                      <div>
+                        <div className="stat-label total-label">Total</div>
+                        <div className="total-breakdown">₹{form.amount} playtime{socksCharge>0?` + ₹${socksCharge} socks`:""}</div>
+                      </div>
+                      <div className="total-value">₹{totalAmount.toLocaleString("en-IN")}</div>
                     </div>
-                    <div className="total-value">₹{totalAmount.toLocaleString("en-IN")}</div>
+                    <div className="form-grid">
+                      <InputField label="Pay via" error={errors.mop} className="field-tight">
+                        <ChipSelect options={CONFIG.MOP_OPTIONS.map(o=>({value:o.value,label:o.label}))} value={form.mop} onChange={v=>{
+                          set("mop",v);
+                          if(v!=="UPI + Cash"){set("upiAmount","");set("cashAmount","");}
+                        }} />
+                      </InputField>
+                      {form.mop==="UPI + Cash"&&<>
+                        <InputField label="UPI Amount" icon="📱">
+                          <div style={{position:"relative"}}>
+                            <span className="rupee-prefix">₹</span>
+                            <input className="fld fld-lg" value={form.upiAmount} type="tel" inputMode="numeric" placeholder="0"
+                              onChange={e=>{
+                                const v=e.target.value.replace(/\D/g,"");
+                                set("upiAmount",v);
+                                set("cashAmount",String(Math.max(0,totalAmount-(parseInt(v)||0))));
+                              }} />
+                          </div>
+                        </InputField>
+                        <InputField label="Cash Amount" icon="💵">
+                          <div style={{position:"relative"}}>
+                            <span className="rupee-prefix">₹</span>
+                            <input className="fld fld-lg" value={form.cashAmount} type="tel" inputMode="numeric" placeholder="0"
+                              onChange={e=>{
+                                const v=e.target.value.replace(/\D/g,"");
+                                set("cashAmount",v);
+                                set("upiAmount",String(Math.max(0,totalAmount-(parseInt(v)||0))));
+                              }} />
+                          </div>
+                        </InputField>
+                      </>}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -757,20 +808,23 @@ function App() {
                         </td>
                         <td className="invoice-amt">₹{parseInt(form.amount||0).toLocaleString("en-IN")}</td>
                       </tr>
-                      {form.socks>0 && <tr>
+                      {socksCharge>0 && <tr>
                         <td>Socks</td>
-                        <td>{form.sockCount} pair{form.sockCount>1?"s":""}<div className="invoice-cell-sub">via {form.socksMop}</div></td>
-                        <td className="invoice-amt">₹{form.socks}</td>
+                        <td>{form.sockCount} pair{form.sockCount>1?"s":""}</td>
+                        <td className="invoice-amt">₹{socksCharge}</td>
                       </tr>}
                     </tbody>
                   </table>
                 </div>
 
                 <div className="invoice-footer">
-                  <div className="invoice-pay">
+                  {form.mop==="UPI + Cash"?<div className="invoice-split">
+                    <div className="invoice-split-row"><span>UPI</span><span>₹{form.upiAmount||0}</span></div>
+                    <div className="invoice-split-row"><span>Cash</span><span>₹{form.cashAmount||0}</span></div>
+                  </div>:<div className="invoice-pay">
                     <span className="invoice-pay-label">Payment</span>
                     <span className="invoice-pay-mode">{form.mop}</span>
-                  </div>
+                  </div>}
                   <div className="invoice-total">
                     <span className="invoice-total-label">Total</span>
                     <span className="invoice-total-value">₹{totalAmount.toLocaleString("en-IN")}</span>
