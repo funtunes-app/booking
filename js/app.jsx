@@ -719,35 +719,63 @@ function App() {
               </div>
             </>}
 
-            {/* Step 1 — Review */}
+            {/* Step 1 — Invoice-style Review */}
             {step===1&&<>
-              <div className="section">
-                <SectionHeading label="Review entry" />
-                <div className="card">
-                  {[
-                    {l:"Type",v:CONFIG.ENTRY_TYPES.find(t=>t.key===entryType)?.label,i:CONFIG.ENTRY_TYPES.find(t=>t.key===entryType)?.icon},
-                    {l:"Mobile",v:form.phone,i:"📱"},
-                    {l:"Kids Name",v:form.numKids>1
-                      ? [form.customerName,...(form.kidNames||[]).slice(1,form.numKids)].filter(Boolean).join(", ")
-                      : form.customerName, i:"👤"},
-                    ...(form.numKids>1?[{l:"No. of Kids",v:`${form.numKids} (₹${Math.round((parseInt(form.amount)||0)/form.numKids)} each)`,i:"👶"}]:[]),
-                    {l:"Playtime",v:`₹${form.amount}`,i:"💰"},
-                    ...(form.socks>0?[{l:"Socks",v:`${form.sockCount} pair${form.sockCount>1?"s":""} · ₹${form.socks} (${form.socksMop})`,i:"🧦"}]:[]),
-                    {l:"Payment",v:form.mop,i:"💳"},
-                    {l:"Duration",v:formatHoursLabel(form.hours),i:"⏱️"},
-                    {l:"Timing",v:`${formatTime12(form.timeIn)} → ${formatTime12(computeTimeOut(form.timeIn,form.hours))}`,i:"🕐"},
-                    {l:"Date",v:formatDateDDMMYYYY(form.date),i:"📅"},
-                    ...(form.dob?[{l:"DOB",v:form.dob,i:"🎂"}]:[]),
-                  ].map((r,i,arr)=><div key={i} className="review-row" style={{borderBottom:i<arr.length-1?`1px solid var(--border)`:"none"}}>
-                    <span className="review-icon">{r.i}</span>
-                    <span className="review-label">{r.l}</span>
-                    <span className="review-val">{r.v}</span>
-                  </div>)}
+              <div className="invoice">
+                <div className="invoice-header">
+                  <div>
+                    <div className="invoice-brand">{CONFIG.APP_NAME}</div>
+                    <div className="invoice-meta">{formatDateDDMMYYYY(form.date)} · {formatTime12(form.timeIn)}</div>
+                  </div>
+                  <div className="invoice-badge">{typeMeta.icon} {typeMeta.label}</div>
                 </div>
-              </div>
-              <div className="card card-pad grand-total-card">
-                <div className="grand-total-label">Grand total</div>
-                <div className="grand-total-value">₹{totalAmount.toLocaleString("en-IN")}</div>
+
+                <div className="invoice-section">
+                  <div className="invoice-section-title">Customer</div>
+                  <div className="invoice-customer">
+                    <div className="invoice-name">{form.customerName||"—"}</div>
+                    {form.phone && <div className="invoice-phone">{form.phone}</div>}
+                    {form.numKids>1 && <div className="invoice-kids">
+                      {[form.customerName,...(form.kidNames||[]).slice(1,form.numKids)].filter(Boolean).map((n,i)=>
+                        <span key={i} className="invoice-kid-tag">{n}{form.dobs&&form.dobs[i]?` · ${form.dobs[i]}`:i===0&&form.dob?` · ${form.dob}`:""}</span>
+                      )}
+                    </div>}
+                    {form.numKids<=1 && form.dob && <div className="invoice-phone">DOB: {form.dob}</div>}
+                  </div>
+                </div>
+
+                <div className="invoice-section">
+                  <div className="invoice-section-title">Booking Details</div>
+                  <table className="invoice-table">
+                    <thead><tr><th>Item</th><th>Details</th><th>Amount</th></tr></thead>
+                    <tbody>
+                      <tr>
+                        <td>{isPlayArea?"Playtime":"Booking"}</td>
+                        <td>
+                          {form.numKids>1?`${form.numKids} kids × `:""}{formatHoursLabel(form.hours)}
+                          <div className="invoice-cell-sub">{formatTime12(form.timeIn)} → {formatTime12(computeTimeOut(form.timeIn,form.hours))}</div>
+                        </td>
+                        <td className="invoice-amt">₹{parseInt(form.amount||0).toLocaleString("en-IN")}</td>
+                      </tr>
+                      {form.socks>0 && <tr>
+                        <td>Socks</td>
+                        <td>{form.sockCount} pair{form.sockCount>1?"s":""}<div className="invoice-cell-sub">via {form.socksMop}</div></td>
+                        <td className="invoice-amt">₹{form.socks}</td>
+                      </tr>}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="invoice-footer">
+                  <div className="invoice-pay">
+                    <span className="invoice-pay-label">Payment</span>
+                    <span className="invoice-pay-mode">{form.mop}</span>
+                  </div>
+                  <div className="invoice-total">
+                    <span className="invoice-total-label">Total</span>
+                    <span className="invoice-total-value">₹{totalAmount.toLocaleString("en-IN")}</span>
+                  </div>
+                </div>
               </div>
             </>}
 
