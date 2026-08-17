@@ -264,6 +264,16 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.35) sep
 .invoice-split-row span:first-child { color: var(--text-light); font-weight: 600; }
 .theme-form .invoice-pay-label { color: rgba(220,200,245,.5); }
 .theme-form .invoice-pay-mode { color: #e9d5ff; }
+.invoice-pay-rows { display: flex; flex-direction: column; gap: 6px; }
+.invoice-pay-row {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 13px; font-weight: 600; padding: 4px 0;
+}
+.invoice-pay-item { color: var(--text-light); font-weight: 700; }
+.invoice-pay-detail { color: var(--text); font-weight: 800; }
+.theme-form .invoice-pay-item { color: rgba(220,200,245,.5); }
+.theme-form .invoice-pay-detail { color: #e9d5ff; }
+
 .theme-form .invoice-split { border-color: rgba(168,85,247,.2); }
 .theme-form .invoice-split-row { color: #f0e6ff; }
 .theme-form .invoice-split-row span:first-child { color: rgba(220,200,245,.5); }

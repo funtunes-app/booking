@@ -3,7 +3,7 @@
 // =============================================================================
 const { useState, useRef, useEffect, useCallback } = React;
 
-const STEP_LABELS = ["Entry","Review"];
+const STEP_LABELS = ["Customer","Payment","Review"];
 const LAST_STEP = STEP_LABELS.length - 1;
 
 // ── Date/Time Formatters ──
@@ -73,7 +73,7 @@ function App() {
   const [birthdayYear,setBirthdayYear] = useState(new Date().getFullYear());
   const [weekFilter,setWeekFilter] = useState(()=>Math.min(5,Math.ceil(new Date().getDate()/7)));
   const [phoneLookupLoading,setPhoneLookupLoading] = useState(false);
-  const [enquiry,setEnquiry] = useState(null);   // null = closed
+  const [enquiry,setEnquiry] = useState(null);
   const [enquirySaving,setEnquirySaving] = useState(false);
   const containerRef = useRef(null);
   const lastLookedUpPhone = useRef("");
@@ -81,13 +81,14 @@ function App() {
   function getDefaultForm() {
     const n=new Date();
     const hours=CONFIG.DEFAULT_HOURS, socksCount=CONFIG.DEFAULT_SOCK_COUNT;
-    return {customerName:"",amount:String(computeAmountForHours(hours)),mop:CONFIG.DEFAULT_MOP,numKids:1,
+    return {customerName:"",amount:String(computeAmountForHours(hours)),numKids:1,
       hours:hours,hoursMode:"preset",
       timeIn:`${String(n.getHours()).padStart(2,"0")}:${String(n.getMinutes()).padStart(2,"0")}`,
       socks:socksCount*CONFIG.SOCKS_RATE,sockCount:socksCount,sockMode:"preset",
       phone:"",dob:"",date:n.toISOString().slice(0,10),
       kidNames:[],dobs:[],
-      upiAmount:"",cashAmount:""};
+      playMop:CONFIG.DEFAULT_MOP,playUpiAmount:"",playCashAmount:"",
+      socksMop:CONFIG.DEFAULT_MOP,socksUpiAmount:"",socksCashAmount:""};
   }
 
   const set = useCallback((key,val) => {
@@ -108,15 +109,13 @@ function App() {
 
   const setSockCount = useCallback((n) => {
     setFormState(f=>({...f,sockCount:n,socks:n*CONFIG.SOCKS_RATE,
-      socksMop:n>0?(f.socksMop||f.mop):""}));
+      socksMop:n>0?(f.socksMop||f.playMop):""}));
   },[]);
 
   const showToastMsg = (msg,type) => { setToast({msg,type:type||"info"}); setTimeout(()=>setToast(null),3000); };
 
   useEffect(()=>{ fetchEntries(); checkBirthdaysCache(); },[]);
 
-  // Birthdays: cache in localStorage for the CURRENT month/year only, refetch once per day.
-  // Any other month/year selection always fetches fresh (not cached).
   const BIRTHDAY_CACHE_KEY = "funtunes_birthdays_cache_v2";
 
   function checkBirthdaysCache() {
@@ -128,7 +127,7 @@ function App() {
         const cached = JSON.parse(raw);
         if (cached.date === todayStr && cached.month === nowMonth && cached.year === nowYear) {
           setBirthdays(cached.data || []);
-          return; // Already fetched today — skip API call
+          return;
         }
       }
     } catch(e) { console.error("Birthday cache read error:", e); }
@@ -213,8 +212,6 @@ function App() {
     return `${String(Math.floor(t/60)%24).padStart(2,"0")}:${String(Math.round(t%60)).padStart(2,"0")}`;
   };
 
-  // Socks only ever apply to the play area — guard here too so a stale value
-  // can never be billed on a party booking.
   const socksCharge = entryType === "funzone" ? (form.socks||0) : 0;
   const totalAmount = (parseInt(form.amount)||0) + socksCharge;
 
@@ -224,7 +221,10 @@ function App() {
       if(!form.phone||form.phone.length!==10) errs.phone="10 digits required";
       if(!form.customerName.trim()) errs.customerName="Required";
       if(!form.amount||parseInt(form.amount)<=0) errs.amount="Enter amount";
-      if(!form.mop) errs.mop="Select mode";
+    }
+    if(s===1) {
+      if(!form.playMop) errs.playMop="Select mode";
+      if(socksCharge>0 && !form.socksMop) errs.socksMop="Select mode";
     }
     setErrors(errs);
     if(Object.keys(errs).length){setShakeStep(true);setTimeout(()=>setShakeStep(false),500);}
@@ -234,12 +234,35 @@ function App() {
   const next = () => { if(validate(step)){setStep(s=>Math.min(s+1,LAST_STEP));containerRef.current?.scrollTo({top:0,behavior:"smooth"});} };
   const prev = () => setStep(s=>Math.max(s-1,0));
 
-  function getMopString() {
-    if(form.mop==="UPI + Cash"){
-      const u=parseInt(form.upiAmount)||0, c=parseInt(form.cashAmount)||0;
+  function getPlayMopString() {
+    if(form.playMop==="UPI + Cash"){
+      const u=parseInt(form.playUpiAmount)||0, c=parseInt(form.playCashAmount)||0;
       return `UPI ₹${u} + Cash ₹${c}`;
     }
-    return form.mop;
+    return form.playMop;
+  }
+
+  function getSocksMopString() {
+    if(socksCharge<=0) return "";
+    if(form.socksMop==="UPI + Cash"){
+      const u=parseInt(form.socksUpiAmount)||0, c=parseInt(form.socksCashAmount)||0;
+      return `UPI ₹${u} + Cash ₹${c}`;
+    }
+    return form.socksMop;
+  }
+
+  function computePaymentCols() {
+    const playAmt=parseInt(form.amount)||0;
+    let pu=0,pc=0,su=0,sc=0;
+    if(form.playMop==="UPI") pu=playAmt;
+    else if(form.playMop==="Cash") pc=playAmt;
+    else if(form.playMop==="UPI + Cash"){pu=parseInt(form.playUpiAmount)||0;pc=parseInt(form.playCashAmount)||0;}
+    if(socksCharge>0){
+      if(form.socksMop==="UPI") su=socksCharge;
+      else if(form.socksMop==="Cash") sc=socksCharge;
+      else if(form.socksMop==="UPI + Cash"){su=parseInt(form.socksUpiAmount)||0;sc=parseInt(form.socksCashAmount)||0;}
+    }
+    return {playUpi:pu,playCash:pc,socksUpi:su,socksCash:sc};
   }
 
   async function submitEntry() {
@@ -247,10 +270,14 @@ function App() {
     const totalAmt = parseInt(form.amount)||0;
     const perKidAmt = form.numKids>1 ? Math.round(totalAmt/form.numKids) : totalAmt;
     const kidNames = form.kidNames || [];
-    const mopStr = getMopString();
+    const playMopStr = getPlayMopString();
+    const socksMopStr = getSocksMopString();
+    const pay = computePaymentCols();
 
     if (form.numKids <= 1) {
-      const entry={...form,mop:mopStr,socksMop:"",entryType,timeIn:form.timeIn,timeOut:timeOut,amount:perKidAmt,numKids:1,socks:socksCharge};
+      const entry={...form,mop:playMopStr,socksMop:socksMopStr,entryType,timeIn:form.timeIn,timeOut:timeOut,
+        amount:perKidAmt,numKids:1,socks:socksCharge,
+        playUpi:pay.playUpi,playCash:pay.playCash,socksUpi:pay.socksUpi,socksCash:pay.socksCash};
       setSaving(true);
       try {
         const res=await api.addEntry(entry);
@@ -265,9 +292,13 @@ function App() {
         for (let k=0; k<form.numKids; k++) {
           const name = k===0 ? (form.customerName||"") : (kidNames[k]||form.customerName+" - Kid "+(k+1));
           const dob = k===0 ? (form.dob||"") : ((form.dobs&&form.dobs[k])||"");
-          const entry={...form,mop:mopStr,socksMop:"",entryType,timeIn:form.timeIn,timeOut:timeOut,
+          const kidPU = Math.round(pay.playUpi/form.numKids);
+          const kidPC = Math.round(pay.playCash/form.numKids);
+          const entry={...form,mop:playMopStr,socksMop:k===0?socksMopStr:"",entryType,timeIn:form.timeIn,timeOut:timeOut,
             customerName:name, dob:dob, amount:perKidAmt, numKids:1,
-            socks: k===0 ? socksCharge : 0};
+            socks: k===0 ? socksCharge : 0,
+            playUpi:kidPU, playCash:kidPC,
+            socksUpi: k===0 ? pay.socksUpi : 0, socksCash: k===0 ? pay.socksCash : 0};
           const res=await api.addEntry(entry);
           if(res.success) ok++;
         }
@@ -299,16 +330,38 @@ function App() {
     const socksTotal = parseInt(entry.socks||entry["Socks"]||0)||0;
     const sockCount = socksTotal>0?Math.max(1,Math.round(socksTotal/CONFIG.SOCKS_RATE)):0;
     const amt = String(entry.amount||entry["Amount"]||300);
-    const rawMop = entry.mop||entry["MOP"]||CONFIG.DEFAULT_MOP;
-    let editMop = rawMop, editUpi = "", editCash = "";
-    const splitMatch = rawMop.match(/^UPI\s*₹(\d+)\s*\+\s*Cash\s*₹(\d+)$/);
-    if (splitMatch) { editMop = "UPI + Cash"; editUpi = splitMatch[1]; editCash = splitMatch[2]; }
+
+    let editPlayMop=CONFIG.DEFAULT_MOP, editPlayUpi="", editPlayCash="";
+    const pu=parseInt(entry.playUpi)||0, pc=parseInt(entry.playCash)||0;
+    if(pu>0&&pc>0){editPlayMop="UPI + Cash";editPlayUpi=String(pu);editPlayCash=String(pc);}
+    else if(pc>0) editPlayMop="Cash";
+    else if(pu>0) editPlayMop="UPI";
+    else {
+      const rawMop=entry.mop||entry["MOP"]||CONFIG.DEFAULT_MOP;
+      const sm=rawMop.match(/^UPI\s*₹(\d+)\s*\+\s*Cash\s*₹(\d+)$/);
+      if(sm){editPlayMop="UPI + Cash";editPlayUpi=sm[1];editPlayCash=sm[2];}
+      else editPlayMop=rawMop;
+    }
+
+    let editSocksMop=CONFIG.DEFAULT_MOP, editSocksUpi="", editSocksCash="";
+    if(socksTotal>0){
+      const su=parseInt(entry.socksUpi)||0, sc=parseInt(entry.socksCash)||0;
+      if(su>0&&sc>0){editSocksMop="UPI + Cash";editSocksUpi=String(su);editSocksCash=String(sc);}
+      else if(sc>0) editSocksMop="Cash";
+      else if(su>0) editSocksMop="UPI";
+      else {
+        const rsm=entry.socksMop||"";
+        const ssm=rsm.match(/^UPI\s*₹(\d+)\s*\+\s*Cash\s*₹(\d+)$/);
+        if(ssm){editSocksMop="UPI + Cash";editSocksUpi=ssm[1];editSocksCash=ssm[2];}
+        else if(rsm) editSocksMop=rsm;
+      }
+    }
+
     setFormState({
       customerName:entry.customerName||entry["Customer name"]||"",
       amount:amt,
-      mop:editMop,
-      upiAmount:editUpi,
-      cashAmount:editCash,
+      playMop:editPlayMop,playUpiAmount:editPlayUpi,playCashAmount:editPlayCash,
+      socksMop:editSocksMop,socksUpiAmount:editSocksUpi,socksCashAmount:editSocksCash,
       numKids:1,
       hours:hours,
       hoursMode:CONFIG.HOUR_OPTIONS.some(o=>o.value===hours)?"preset":"custom",
@@ -328,8 +381,10 @@ function App() {
 
   async function handleUpdateSubmit() {
     const timeOut = computeTimeOut(form.timeIn,form.hours);
-    const entry={...form,mop:getMopString(),socksMop:"",entryType,timeIn:form.timeIn,timeOut:timeOut,
-      amount:parseInt(form.amount)||0,numKids:1,socks:socksCharge};
+    const pay = computePaymentCols();
+    const entry={...form,mop:getPlayMopString(),socksMop:getSocksMopString(),entryType,timeIn:form.timeIn,timeOut:timeOut,
+      amount:parseInt(form.amount)||0,numKids:1,socks:socksCharge,
+      playUpi:pay.playUpi,playCash:pay.playCash,socksUpi:pay.socksUpi,socksCash:pay.socksCash};
     if(!editTarget?.id){showToastMsg("Cannot identify entry","error");resetForm();return;}
     setSaving(true);
     try {
@@ -373,14 +428,11 @@ function App() {
     finally { setEnquirySaving(false); }
   }
 
-  // Leaves the form (clearing any draft) and lands on the birthdays screen.
   function openBirthdays() {
     resetForm();
     setScreen("birthdays");
   }
 
-  // Socks are a play-area thing only — a birthday/event booking must not carry
-  // the default pair charge into its total.
   function setFormType(type) {
     setEntryType(type);
     setStep(0);
@@ -402,7 +454,6 @@ function App() {
   const dateDisplay = getCurrentDate();
   const timeDisplay = getCurrentTime12();
   const typeMeta = CONFIG.ENTRY_TYPES.find(t=>t.key===entryType) || CONFIG.ENTRY_TYPES[0];
-  // Only the play area is priced off the duration; parties are quoted manually.
   const isPlayArea = entryType === "funzone";
 
   // =========================================================================
@@ -599,7 +650,6 @@ function App() {
               </span>
             </div>
             <div className="appbar-actions">
-              {/* Entry type lives behind an icon — an entry's type is fixed once saved */}
               {!editTarget && <IconMenu trigger={typeMeta.icon} title="Change entry type" activeValue={entryType}
                 items={CONFIG.ENTRY_TYPES.map(t=>({
                   value:t.key, icon:t.icon, label:t.label,
@@ -615,7 +665,7 @@ function App() {
         <div ref={containerRef} className="container container--entry page" style={{paddingBottom:0}}>
           <div style={{animation:shakeStep?"shake .4s ease":"springIn .3s ease"}}>
 
-            {/* Step 0 — Customer + Payment side by side on web */}
+            {/* ── Step 0 — Customer + Booking Details ── */}
             {step===0&&<>
               <div className="entry-columns">
                 <div className="entry-col">
@@ -684,7 +734,7 @@ function App() {
                         </div>
                       </InputField>
 
-                      <InputField label={isPlayArea?"Playtime":"Amount"} icon="💰" error={errors.amount}>
+                      <InputField label={isPlayArea?"Playtime Amount":"Amount"} icon="💰" error={errors.amount}>
                         <div style={{position:"relative"}}>
                           <span className="rupee-prefix">₹</span>
                           <input className={`fld fld-lg${errors.amount?" is-error":""}`} value={form.amount} type="tel" inputMode="numeric" placeholder="300"
@@ -723,55 +773,99 @@ function App() {
                       </InputField>}
                     </div>
                   </div>}
-
-                  <div className="section">
-                    <SectionHeading icon="💳" label="Payment" />
-                    <div className="card card-pad total-card" style={{marginBottom:12}}>
-                      <div>
-                        <div className="stat-label total-label">Total</div>
-                        <div className="total-breakdown">₹{form.amount} playtime{socksCharge>0?` + ₹${socksCharge} socks`:""}</div>
-                      </div>
-                      <div className="total-value">₹{totalAmount.toLocaleString("en-IN")}</div>
-                    </div>
-                    <div className="form-grid">
-                      <InputField label="Pay via" error={errors.mop} className="field-tight">
-                        <ChipSelect options={CONFIG.MOP_OPTIONS.map(o=>({value:o.value,label:o.label}))} value={form.mop} onChange={v=>{
-                          set("mop",v);
-                          if(v!=="UPI + Cash"){set("upiAmount","");set("cashAmount","");}
-                        }} />
-                      </InputField>
-                      {form.mop==="UPI + Cash"&&<>
-                        <InputField label="UPI Amount" icon="📱">
-                          <div style={{position:"relative"}}>
-                            <span className="rupee-prefix">₹</span>
-                            <input className="fld fld-lg" value={form.upiAmount} type="tel" inputMode="numeric" placeholder="0"
-                              onChange={e=>{
-                                const v=e.target.value.replace(/\D/g,"");
-                                set("upiAmount",v);
-                                set("cashAmount",String(Math.max(0,totalAmount-(parseInt(v)||0))));
-                              }} />
-                          </div>
-                        </InputField>
-                        <InputField label="Cash Amount" icon="💵">
-                          <div style={{position:"relative"}}>
-                            <span className="rupee-prefix">₹</span>
-                            <input className="fld fld-lg" value={form.cashAmount} type="tel" inputMode="numeric" placeholder="0"
-                              onChange={e=>{
-                                const v=e.target.value.replace(/\D/g,"");
-                                set("cashAmount",v);
-                                set("upiAmount",String(Math.max(0,totalAmount-(parseInt(v)||0))));
-                              }} />
-                          </div>
-                        </InputField>
-                      </>}
-                    </div>
-                  </div>
                 </div>
               </div>
             </>}
 
-            {/* Step 1 — Invoice-style Review */}
+            {/* ── Step 1 — Payment ── */}
             {step===1&&<>
+              <div style={{maxWidth:540}}>
+                <div className="card card-pad total-card" style={{marginBottom:24}}>
+                  <div>
+                    <div className="stat-label total-label">Total</div>
+                    <div className="total-breakdown">₹{form.amount} playtime{socksCharge>0?` + ₹${socksCharge} socks`:""}</div>
+                  </div>
+                  <div className="total-value">₹{totalAmount.toLocaleString("en-IN")}</div>
+                </div>
+
+                <div className="section">
+                  <SectionHeading icon="💳" label={`Playtime Payment · ₹${parseInt(form.amount)||0}`} />
+                  <div className="form-grid">
+                    <InputField label="Pay via" error={errors.playMop} className="field-tight">
+                      <ChipSelect options={CONFIG.MOP_OPTIONS.map(o=>({value:o.value,label:o.label}))} value={form.playMop} onChange={v=>{
+                        set("playMop",v);
+                        if(v!=="UPI + Cash"){set("playUpiAmount","");set("playCashAmount","");}
+                      }} />
+                    </InputField>
+                    {form.playMop==="UPI + Cash"&&<>
+                      <InputField label="UPI Amount" icon="📱">
+                        <div style={{position:"relative"}}>
+                          <span className="rupee-prefix">₹</span>
+                          <input className="fld fld-lg" value={form.playUpiAmount} type="tel" inputMode="numeric" placeholder="0"
+                            onChange={e=>{
+                              const v=e.target.value.replace(/\D/g,"");
+                              const playAmt=parseInt(form.amount)||0;
+                              set("playUpiAmount",v);
+                              set("playCashAmount",String(Math.max(0,playAmt-(parseInt(v)||0))));
+                            }} />
+                        </div>
+                      </InputField>
+                      <InputField label="Cash Amount" icon="💵">
+                        <div style={{position:"relative"}}>
+                          <span className="rupee-prefix">₹</span>
+                          <input className="fld fld-lg" value={form.playCashAmount} type="tel" inputMode="numeric" placeholder="0"
+                            onChange={e=>{
+                              const v=e.target.value.replace(/\D/g,"");
+                              const playAmt=parseInt(form.amount)||0;
+                              set("playCashAmount",v);
+                              set("playUpiAmount",String(Math.max(0,playAmt-(parseInt(v)||0))));
+                            }} />
+                        </div>
+                      </InputField>
+                    </>}
+                  </div>
+                </div>
+
+                {socksCharge>0 && <div className="section">
+                  <SectionHeading icon="🧦" label={`Socks Payment · ₹${socksCharge}`} />
+                  <div className="form-grid">
+                    <InputField label="Pay via" error={errors.socksMop} className="field-tight">
+                      <ChipSelect options={CONFIG.MOP_OPTIONS.map(o=>({value:o.value,label:o.label}))} value={form.socksMop} onChange={v=>{
+                        set("socksMop",v);
+                        if(v!=="UPI + Cash"){set("socksUpiAmount","");set("socksCashAmount","");}
+                      }} />
+                    </InputField>
+                    {form.socksMop==="UPI + Cash"&&<>
+                      <InputField label="UPI Amount" icon="📱">
+                        <div style={{position:"relative"}}>
+                          <span className="rupee-prefix">₹</span>
+                          <input className="fld fld-lg" value={form.socksUpiAmount} type="tel" inputMode="numeric" placeholder="0"
+                            onChange={e=>{
+                              const v=e.target.value.replace(/\D/g,"");
+                              set("socksUpiAmount",v);
+                              set("socksCashAmount",String(Math.max(0,socksCharge-(parseInt(v)||0))));
+                            }} />
+                        </div>
+                      </InputField>
+                      <InputField label="Cash Amount" icon="💵">
+                        <div style={{position:"relative"}}>
+                          <span className="rupee-prefix">₹</span>
+                          <input className="fld fld-lg" value={form.socksCashAmount} type="tel" inputMode="numeric" placeholder="0"
+                            onChange={e=>{
+                              const v=e.target.value.replace(/\D/g,"");
+                              set("socksCashAmount",v);
+                              set("socksUpiAmount",String(Math.max(0,socksCharge-(parseInt(v)||0))));
+                            }} />
+                        </div>
+                      </InputField>
+                    </>}
+                  </div>
+                </div>}
+              </div>
+            </>}
+
+            {/* ── Step 2 — Invoice Review ── */}
+            {step===2&&<>
               <div className="invoice">
                 <div className="invoice-header">
                   <div>
@@ -817,14 +911,25 @@ function App() {
                   </table>
                 </div>
 
+                <div className="invoice-section">
+                  <div className="invoice-section-title">Payment</div>
+                  <div className="invoice-pay-rows">
+                    <div className="invoice-pay-row">
+                      <span className="invoice-pay-item">Playtime</span>
+                      {form.playMop==="UPI + Cash"
+                        ?<span className="invoice-pay-detail">UPI ₹{form.playUpiAmount||0} + Cash ₹{form.playCashAmount||0}</span>
+                        :<span className="invoice-pay-detail">{form.playMop}</span>}
+                    </div>
+                    {socksCharge>0 && <div className="invoice-pay-row">
+                      <span className="invoice-pay-item">Socks</span>
+                      {form.socksMop==="UPI + Cash"
+                        ?<span className="invoice-pay-detail">UPI ₹{form.socksUpiAmount||0} + Cash ₹{form.socksCashAmount||0}</span>
+                        :<span className="invoice-pay-detail">{form.socksMop}</span>}
+                    </div>}
+                  </div>
+                </div>
+
                 <div className="invoice-footer">
-                  {form.mop==="UPI + Cash"?<div className="invoice-split">
-                    <div className="invoice-split-row"><span>UPI</span><span>₹{form.upiAmount||0}</span></div>
-                    <div className="invoice-split-row"><span>Cash</span><span>₹{form.cashAmount||0}</span></div>
-                  </div>:<div className="invoice-pay">
-                    <span className="invoice-pay-label">Payment</span>
-                    <span className="invoice-pay-mode">{form.mop}</span>
-                  </div>}
                   <div className="invoice-total">
                     <span className="invoice-total-label">Total</span>
                     <span className="invoice-total-value">₹{totalAmount.toLocaleString("en-IN")}</span>
