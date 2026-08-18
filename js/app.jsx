@@ -522,15 +522,15 @@ function App() {
           }} />
 
           {/* Shared calendar filter for list & stats */}
-          {(dashTab==="list"||dashTab==="stats") && <div className="card card-pad filter-bar">
-            <div className="filter-bar-left">
-              {!loading && <span className="filter-bar-count">{todayEntries.length} entries</span>}
-              <button className="btn btn-sm btn-icon" onClick={()=>fetchEntries()} disabled={loading} title="Refresh">↻</button>
-            </div>
+          {(dashTab==="list"||dashTab==="stats") && <div className="card card-pad filter-bar" style={{marginBottom:"var(--sp-4)"}}>
             <CalendarFilter mode={calMode} date={filterDate}
               rangeStart={rangeStart} rangeEnd={rangeEnd}
               onModeChange={onCalModeChange} onDateChange={onCalDateChange}
               onRangeChange={onCalRangeChange} onToday={onCalToday} />
+            <div className="filter-bar-right">
+              {!loading && <span className="filter-bar-count">{todayEntries.length} entries</span>}
+              <button className="btn btn-sm btn-icon" onClick={()=>fetchEntries()} disabled={loading} title="Refresh">↻</button>
+            </div>
           </div>}
 
           {/* ── LIST TAB ── */}
