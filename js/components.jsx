@@ -283,23 +283,21 @@ const CalendarFilter = ({mode,date,rangeStart,rangeEnd,onModeChange,onDateChange
     <div className="cal-filter">
       <div className="cal-filter-modes">
         {[{v:"day",l:"Day"},{v:"month",l:"Month"},{v:"range",l:"Range"}].map(m => (
-          <button key={m.v} type="button" className={`chip${mode===m.v?" is-on":""}`}
+          <button key={m.v} type="button" className={`chip chip-sm${mode===m.v?" is-on":""}`}
             onClick={()=>onModeChange(m.v)}>{m.l}</button>
         ))}
       </div>
-      <div className="cal-filter-inputs">
-        {mode==="day" && <>
-          <input className="fld cal-filter-date" type="date" value={date} onChange={e=>onDateChange(e.target.value)} />
-          {!isToday && <button type="button" className="chip" onClick={onToday}>Today</button>}
-        </>}
-        {mode==="month" && <input className="fld cal-filter-date" type="month" value={date.slice(0,7)}
-          onChange={e=>onDateChange(e.target.value+"-01")} />}
-        {mode==="range" && <>
-          <input className="fld cal-filter-date" type="date" value={rangeStart||""} onChange={e=>onRangeChange(e.target.value,rangeEnd)} />
-          <span className="cal-filter-to">to</span>
-          <input className="fld cal-filter-date" type="date" value={rangeEnd||""} onChange={e=>onRangeChange(rangeStart,e.target.value)} />
-        </>}
-      </div>
+      {mode==="day" && <>
+        <input className="fld cal-filter-date" type="date" value={date} onChange={e=>onDateChange(e.target.value)} />
+        {!isToday && <button type="button" className="chip chip-sm" onClick={onToday}>Today</button>}
+      </>}
+      {mode==="month" && <input className="fld cal-filter-date" type="month" value={date.slice(0,7)}
+        onChange={e=>onDateChange(e.target.value+"-01")} />}
+      {mode==="range" && <>
+        <input className="fld cal-filter-date" type="date" value={rangeStart||""} onChange={e=>onRangeChange(e.target.value,rangeEnd)} />
+        <span className="cal-filter-to">to</span>
+        <input className="fld cal-filter-date" type="date" value={rangeEnd||""} onChange={e=>onRangeChange(rangeStart,e.target.value)} />
+      </>}
     </div>
   );
 };
