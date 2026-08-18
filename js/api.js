@@ -115,6 +115,14 @@ var api = {
     return { success: true };
   },
 
+  readDateRange: async function (startDate, endDate) {
+    var { data, error } = await supabaseClient.from("entries").select("*")
+      .gte("date", startDate).lte("date", endDate)
+      .order("created_at", { ascending: false });
+    if (error) return { success: false, error: error.message };
+    return { success: true, data: (data || []).map(_rowToEntry) };
+  },
+
   listTabs: async function () {
     return { success: true, data: [] };
   },

@@ -61,7 +61,10 @@ function App() {
   const [shakeStep,setShakeStep] = useState(false);
   const [todayEntries,setTodayEntries] = useState([]);
   const [filterDate,setFilterDate] = useState(new Date().toISOString().slice(0,10));
-  const [filterMode,setFilterMode] = useState("day");
+  const [calMode,setCalMode] = useState("day");
+  const [rangeStart,setRangeStart] = useState("");
+  const [rangeEnd,setRangeEnd] = useState("");
+  const [dashTab,setDashTab] = useState("list");
   const [loading,setLoading] = useState(false);
   const [saving,setSaving] = useState(false);
   const [showSuccess,setShowSuccess] = useState(false);
@@ -168,23 +171,29 @@ function App() {
     } catch(e) { console.error("Save call:",e); showToastMsg("Could not save — check internet","error"); }
   }
 
-  async function fetchEntries(date,mode) {
-    const d = date||filterDate, md = mode||filterMode;
-    const [y,m,dd] = d.split("-").map(Number);
+  async function fetchEntries(date,mode,rs,re) {
+    const d = date||filterDate, md = mode||calMode;
     setLoading(true);
     try {
-      const res = await api.readEntries(y,m,md==="month"?"all":dd);
+      let res;
+      if (md === "range") {
+        const s = rs||rangeStart, e2 = re||rangeEnd;
+        if (s && e2) res = await api.readDateRange(s, e2);
+        else { setLoading(false); return; }
+      } else {
+        const [y,m,dd] = d.split("-").map(Number);
+        res = await api.readEntries(y,m,md==="month"?"all":dd);
+      }
       if (res.success) setTodayEntries(res.data||[]);
       else showToastMsg("Error: "+(res.error||"unknown"),"error");
     } catch(e) { console.error("Fetch:",e); showToastMsg("Could not load entries","error"); }
     finally { setLoading(false); }
   }
 
-  function onFilterDateChange(v) { setFilterDate(v); setFilterMode("day"); fetchEntries(v,"day"); }
-  function toggleMonth() {
-    const next = filterMode==="month"?"day":"month";
-    setFilterMode(next); fetchEntries(filterDate,next);
-  }
+  function onCalModeChange(m) { setCalMode(m); if (m!=="range") fetchEntries(filterDate,m); }
+  function onCalDateChange(v) { setFilterDate(v); fetchEntries(v,calMode); }
+  function onCalRangeChange(s,e) { setRangeStart(s); setRangeEnd(e); if(s&&e) fetchEntries(filterDate,"range",s,e); }
+  function onCalToday() { const t=new Date().toISOString().slice(0,10); setFilterDate(t); setCalMode("day"); fetchEntries(t,"day"); }
 
   async function lookupByPhone(phone) {
     if (phone.length !== 10 || phone === lastLookedUpPhone.current) return;
@@ -430,7 +439,7 @@ function App() {
 
   function openBirthdays() {
     resetForm();
-    setScreen("birthdays");
+    setDashTab("birthdays");
   }
 
   function setFormType(type) {
@@ -485,7 +494,7 @@ function App() {
           <button className="btn btn-block" onClick={resetForm}>📊 Go to dashboard</button>
         </div></div>}
 
-      {/* ══════════ HOME ══════════ */}
+      {/* ══════════ HOME (List / Stats / Birthdays tabs) ══════════ */}
       {screen==="home" && <>
         <header className="appbar">
           <div className="container appbar-inner">
@@ -497,50 +506,77 @@ function App() {
               </div>
             </div>
             <div className="appbar-actions">
-              <button className="btn btn-sm" onClick={()=>setScreen("birthdays")} title="Birthdays">🎂 <span style={{marginLeft:2}}>Birthdays</span></button>
               <button className="btn btn-sm btn-primary new-entry-inline" onClick={()=>startNewEntry("funzone")}>+ New Entry</button>
             </div>
           </div>
         </header>
 
         <div className="container page">
-          {/* Stats */}
-          <div className="stats-grid">
-            {[
-              {l:"Entries",v:todayEntries.length,i:"🎟️",bg:C.accentSoft,clr:C.accent},
-              {l:"Revenue",v:`₹${todayEntries.reduce((a,e)=>a+(parseInt(e.amount||e["Amount"]||0)),0).toLocaleString("en-IN")}`,i:"💰",bg:C.greenSoft,clr:C.green},
-              {l:"Kids",v:todayEntries.reduce((a,e)=>a+(parseInt(e.numKids||e["No of kids"]||1)),0),i:"👶",bg:C.blueSoft,clr:C.blue}
-            ].map((s,i)=>
-              <div key={i} className="stat">
-                <div className="stat-icon" style={{background:s.bg}}>{s.i}</div>
-                <div style={{minWidth:0}}>
-                  <div className="stat-value" style={{color:s.clr}}>{s.v}</div>
-                  <div className="stat-label">{s.l}</div>
-                </div>
-              </div>)}
-          </div>
+          <TabBar tabs={[
+            {value:"list",label:"List",icon:"📋"},
+            {value:"stats",label:"Stats",icon:"📊"},
+            {value:"birthdays",label:"Birthdays",icon:"🎂"},
+          ]} active={dashTab} onChange={v=>{
+            setDashTab(v);
+            if(v==="birthdays") checkBirthdaysCache();
+          }} />
 
-          {/* Entries */}
-          <div className="card">
-            <div className="card-head">
-              <div className="date-filter">
-                <input className="fld date-filter-input" type="date" value={filterDate}
-                  onChange={e=>onFilterDateChange(e.target.value)} />
-                <button type="button" className={`chip${filterMode==="month"?" is-on":""}`}
-                  onClick={toggleMonth}>Whole month</button>
-                {filterDate!==new Date().toISOString().slice(0,10) &&
-                  <button type="button" className="chip"
-                    onClick={()=>{const t=new Date().toISOString().slice(0,10);setFilterDate(t);setFilterMode("day");fetchEntries(t,"day");}}>Today</button>}
-              </div>
-              <div style={{display:"flex",alignItems:"center",gap:8}}>
-                {!loading && <span style={{fontSize:12,color:C.textLight,fontWeight:700}}>{todayEntries.length} entries</span>}
-                <button className="btn btn-sm" onClick={()=>fetchEntries()} disabled={loading}>↻</button>
+          {/* Shared calendar filter for list & stats */}
+          {(dashTab==="list"||dashTab==="stats") && <div className="card card-pad" style={{marginBottom:"var(--sp-4)"}}>
+            <CalendarFilter mode={calMode} date={filterDate}
+              rangeStart={rangeStart} rangeEnd={rangeEnd}
+              onModeChange={onCalModeChange} onDateChange={onCalDateChange}
+              onRangeChange={onCalRangeChange} onToday={onCalToday} />
+            <div style={{display:"flex",alignItems:"center",gap:8,marginTop:10}}>
+              {!loading && <span style={{fontSize:12,color:C.textLight,fontWeight:700}}>{todayEntries.length} entries</span>}
+              <button className="btn btn-sm" onClick={()=>fetchEntries()} disabled={loading} style={{marginLeft:"auto"}}>↻</button>
+            </div>
+          </div>}
+
+          {/* ── LIST TAB ── */}
+          {dashTab==="list" && <>
+            <StatsCards entries={todayEntries} />
+            <div className="card">
+              <div className="card-pad">
+                <EntryList entries={[...todayEntries].sort((a,b)=>(a.id||0)-(b.id||0))} onEdit={handleEdit} onDelete={handleDelete} loading={loading} />
               </div>
             </div>
-            <div className="card-pad">
-              <EntryList entries={todayEntries} onEdit={handleEdit} onDelete={handleDelete} loading={loading} />
+          </>}
+
+          {/* ── STATS TAB ── */}
+          {dashTab==="stats" && <>
+            <StatsCards entries={todayEntries} />
+            {loading ? <div className="empty-state"><Spinner size={26} /><div style={{marginTop:10}}>Loading…</div></div>
+              : <PeriodSummary entries={todayEntries} mode={calMode==="month"||calMode==="range"?"day":"day"} />}
+          </>}
+
+          {/* ── BIRTHDAYS TAB ── */}
+          {dashTab==="birthdays" && <>
+            <div className="card card-pad" style={{marginBottom:"var(--sp-4)"}}>
+              <div style={{display:"flex",gap:"var(--gap)",marginBottom:12,flexWrap:"wrap"}}>
+                <div style={{display:"flex",gap:8,flex:"1 1 260px",minWidth:0}}>
+                  <Dropdown flex={1.5} value={birthdayMonth} onChange={changeMonth}
+                    options={MONTH_NAMES.map((m,i)=>({value:i+1,label:m}))} />
+                  <Dropdown flex={1} value={birthdayYear} onChange={changeYear}
+                    options={[new Date().getFullYear()-1, new Date().getFullYear(), new Date().getFullYear()+1].map(y=>({value:y,label:String(y)}))} />
+                </div>
+                <div className="chips" style={{flex:"1 1 auto",alignItems:"center"}}>
+                  <button type="button" className={`chip${weekFilter==="all"?" is-on":""}`} onClick={()=>setWeekFilter("all")}>All</button>
+                  {[1,2,3,4,5].map(w=>(
+                    <button key={w} type="button" className={`chip${weekFilter===w?" is-on":""}`} onClick={()=>setWeekFilter(w)}>W{w}</button>
+                  ))}
+                </div>
+              </div>
+              <div style={{display:"flex",alignItems:"center",gap:8,fontSize:12,color:C.textMid,fontWeight:600,borderTop:`1px solid ${C.border}`,paddingTop:11}}>
+                <span>🎉 <strong style={{color:C.text}}>{birthdays.length}</strong> birthday{birthdays.length!==1?"s":""} in {MONTH_NAMES[birthdayMonth-1]} {birthdayYear}</span>
+                <span style={{color:C.textLight}}>·</span>
+                <span style={{color:C.green}}>{birthdays.filter(b=>(b.status||(b.contacted?"warm":"not_contacted"))!=="not_contacted").length} contacted</span>
+                <button className="btn btn-sm" style={{marginLeft:"auto"}} onClick={openEnquiry}>+ Enquiry</button>
+                <button className="btn btn-sm btn-icon" onClick={()=>fetchBirthdays()} disabled={birthdaysLoading} title="Refresh" aria-label="Refresh">↻</button>
+              </div>
             </div>
-          </div>
+            <BirthdayList birthdays={birthdays} loading={birthdaysLoading} weekFilter={weekFilter} onSave={saveBirthdayCall} onShowAll={()=>setWeekFilter("all")} />
+          </>}
         </div>
 
         {/* New Entry (mobile floating action button) */}
@@ -549,48 +585,7 @@ function App() {
         </div>
       </>}
 
-      {/* ══════════ BIRTHDAYS ══════════ */}
-      {screen==="birthdays" && <>
-        <header className="appbar">
-          <div className="container appbar-inner">
-            <div className="appbar-brand">
-              <button className="btn btn-sm btn-ghost" onClick={()=>setScreen("home")}>← Back</button>
-              <span className="card-title">🎂 Birthdays</span>
-            </div>
-            <div className="appbar-actions">
-              <button className="btn btn-sm btn-primary" onClick={openEnquiry} title="New birthday enquiry">+ Enquiry</button>
-              <button className="btn btn-sm btn-icon" onClick={()=>fetchBirthdays()} disabled={birthdaysLoading} title="Refresh" aria-label="Refresh">↻</button>
-            </div>
-          </div>
-        </header>
-
-        <div className="container page">
-          {/* Filters */}
-          <div className="card card-pad" style={{marginBottom:"var(--sp-4)"}}>
-            <div style={{display:"flex",gap:"var(--gap)",marginBottom:12,flexWrap:"wrap"}}>
-              <div style={{display:"flex",gap:8,flex:"1 1 260px",minWidth:0}}>
-                <Dropdown flex={1.5} value={birthdayMonth} onChange={changeMonth}
-                  options={MONTH_NAMES.map((m,i)=>({value:i+1,label:m}))} />
-                <Dropdown flex={1} value={birthdayYear} onChange={changeYear}
-                  options={[new Date().getFullYear()-1, new Date().getFullYear(), new Date().getFullYear()+1].map(y=>({value:y,label:String(y)}))} />
-              </div>
-              <div className="chips" style={{flex:"1 1 auto",alignItems:"center"}}>
-                <button type="button" className={`chip${weekFilter==="all"?" is-on":""}`} onClick={()=>setWeekFilter("all")}>All</button>
-                {[1,2,3,4,5].map(w=>(
-                  <button key={w} type="button" className={`chip${weekFilter===w?" is-on":""}`} onClick={()=>setWeekFilter(w)}>W{w}</button>
-                ))}
-              </div>
-            </div>
-            <div style={{display:"flex",alignItems:"center",gap:8,fontSize:12,color:C.textMid,fontWeight:600,borderTop:`1px solid ${C.border}`,paddingTop:11}}>
-              <span>🎉 <strong style={{color:C.text}}>{birthdays.length}</strong> birthday{birthdays.length!==1?"s":""} in {MONTH_NAMES[birthdayMonth-1]} {birthdayYear}</span>
-              <span style={{color:C.textLight}}>·</span>
-              <span style={{color:C.green}}>{birthdays.filter(b=>(b.status||(b.contacted?"warm":"not_contacted"))!=="not_contacted").length} contacted</span>
-            </div>
-          </div>
-
-          <BirthdayList birthdays={birthdays} loading={birthdaysLoading} weekFilter={weekFilter} onSave={saveBirthdayCall} onShowAll={()=>setWeekFilter("all")} />
-        </div>
-      </>}
+      {/* Birthdays screen removed — now lives inside the home tab bar */}
 
       {/* ══════════ BIRTHDAY ENQUIRY ══════════ */}
       {enquiry && <div className="overlay" onClick={()=>!enquirySaving&&setEnquiry(null)}>
@@ -655,8 +650,7 @@ function App() {
                   value:t.key, icon:t.icon, label:t.label,
                   onSelect:()=>{ if(t.key!==entryType) setFormType(t.key); },
                 }))} />}
-              <button className="btn btn-sm btn-icon" onClick={resetForm} title="Dashboard" aria-label="Dashboard">📊</button>
-              <button className="btn btn-sm btn-icon" onClick={openBirthdays} title="Birthdays" aria-label="Birthdays">🎂</button>
+              <button className="btn btn-sm" onClick={resetForm} title="Dashboard">📊 Dashboard</button>
             </div>
           </div>
         </header>

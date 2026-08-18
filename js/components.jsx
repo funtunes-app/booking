@@ -262,6 +262,151 @@ const BirthdayList = ({birthdays,loading,weekFilter,onSave,onShowAll}) => {
   );
 };
 
+// ── Dashboard Components ──
+
+const TabBar = ({tabs,active,onChange}) => (
+  <div className="tab-bar">
+    {tabs.map(t => (
+      <button key={t.value} type="button"
+        className={`tab-item${active===t.value?" is-on":""}`}
+        onClick={()=>onChange(t.value)}>
+        {t.icon && <span>{t.icon}</span>}{t.label}
+      </button>
+    ))}
+  </div>
+);
+
+const CalendarFilter = ({mode,date,rangeStart,rangeEnd,onModeChange,onDateChange,onRangeChange,onToday}) => {
+  const today = new Date().toISOString().slice(0,10);
+  const isToday = date === today;
+  return (
+    <div className="cal-filter">
+      <div className="cal-filter-modes">
+        {[{v:"day",l:"Day"},{v:"month",l:"Month"},{v:"range",l:"Range"}].map(m => (
+          <button key={m.v} type="button" className={`chip${mode===m.v?" is-on":""}`}
+            onClick={()=>onModeChange(m.v)}>{m.l}</button>
+        ))}
+      </div>
+      <div className="cal-filter-inputs">
+        {mode==="day" && <>
+          <input className="fld cal-filter-date" type="date" value={date} onChange={e=>onDateChange(e.target.value)} />
+          {!isToday && <button type="button" className="chip" onClick={onToday}>Today</button>}
+        </>}
+        {mode==="month" && <input className="fld cal-filter-date" type="month" value={date.slice(0,7)}
+          onChange={e=>onDateChange(e.target.value+"-01")} />}
+        {mode==="range" && <>
+          <input className="fld cal-filter-date" type="date" value={rangeStart||""} onChange={e=>onRangeChange(e.target.value,rangeEnd)} />
+          <span className="cal-filter-to">to</span>
+          <input className="fld cal-filter-date" type="date" value={rangeEnd||""} onChange={e=>onRangeChange(rangeStart,e.target.value)} />
+        </>}
+      </div>
+    </div>
+  );
+};
+
+const BarChart = ({data,labelKey,valueKey,color,height=180,prefix=""}) => {
+  if (!data||!data.length) return <div className="empty-state">No data to chart.</div>;
+  const max = Math.max(...data.map(d=>d[valueKey]),1);
+  return (
+    <div className="bar-chart" style={{height}}>
+      <div className="bar-chart-bars">
+        {data.map((d,i) => {
+          const pct = (d[valueKey]/max)*100;
+          return (
+            <div key={i} className="bar-chart-col">
+              <div className="bar-chart-val">{prefix}{d[valueKey].toLocaleString("en-IN")}</div>
+              <div className="bar-chart-bar" style={{height:`${Math.max(pct,2)}%`,background:color||C.accent}} />
+              <div className="bar-chart-label">{d[labelKey]}</div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+const StatsCards = ({entries}) => {
+  const totalRevenue = entries.reduce((a,e)=>a+(parseInt(e.amount)||0),0);
+  const totalKids = entries.reduce((a,e)=>a+(parseInt(e.numKids)||1),0);
+  const totalSocks = entries.reduce((a,e)=>a+(parseInt(e.socks)||0),0);
+  const upiTotal = entries.reduce((a,e)=>a+(parseInt(e.playUpi)||0)+(parseInt(e.socksUpi)||0),0);
+  const cashTotal = entries.reduce((a,e)=>a+(parseInt(e.playCash)||0)+(parseInt(e.socksCash)||0),0);
+  const items = [
+    {l:"Entries",v:entries.length,i:"🎟️",bg:C.accentSoft,clr:C.accent},
+    {l:"Revenue",v:`₹${totalRevenue.toLocaleString("en-IN")}`,i:"💰",bg:C.greenSoft,clr:C.green},
+    {l:"Kids",v:totalKids,i:"👶",bg:C.blueSoft,clr:C.blue},
+    {l:"Socks",v:`₹${totalSocks.toLocaleString("en-IN")}`,i:"🧦",bg:C.orangeSoft,clr:C.orange},
+    {l:"UPI",v:`₹${upiTotal.toLocaleString("en-IN")}`,i:"📱",bg:C.accentSoft,clr:C.accent},
+    {l:"Cash",v:`₹${cashTotal.toLocaleString("en-IN")}`,i:"💵",bg:C.yellowSoft,clr:"#8a6d00"},
+  ];
+  return (
+    <div className="stats-grid stats-grid-6">
+      {items.map((s,i) => (
+        <div key={i} className="stat">
+          <div className="stat-icon" style={{background:s.bg}}>{s.i}</div>
+          <div style={{minWidth:0}}>
+            <div className="stat-value" style={{color:s.clr}}>{s.v}</div>
+            <div className="stat-label">{s.l}</div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const PeriodSummary = ({entries,mode}) => {
+  if (!entries.length) return null;
+
+  const grouped = {};
+  entries.forEach(e => {
+    let key;
+    if (mode === "month") {
+      key = e.date ? e.date.slice(0,7) : "unknown";
+    } else {
+      key = e.date || "unknown";
+    }
+    if (!grouped[key]) grouped[key] = {revenue:0,kids:0,count:0};
+    grouped[key].revenue += parseInt(e.amount)||0;
+    grouped[key].kids += parseInt(e.numKids)||1;
+    grouped[key].count += 1;
+  });
+
+  const sorted = Object.keys(grouped).sort();
+  const rows = sorted.map(k => ({
+    label: mode==="month" ? MONTH_NAMES[parseInt(k.split("-")[1])-1]+" "+k.split("-")[0] : k.split("-").reverse().join("/"),
+    ...grouped[k],
+  }));
+
+  const kidsData = rows.map(r => ({label:r.label, value:r.kids}));
+  const revenueData = rows.map(r => ({label:r.label, value:r.revenue}));
+
+  return (
+    <div className="period-summary">
+      <div className="card card-pad" style={{marginBottom:"var(--sp-4)"}}>
+        <div className="card-title" style={{marginBottom:12}}>👶 Kids per {mode==="month"?"month":"day"}</div>
+        <BarChart data={kidsData} labelKey="label" valueKey="value" color={C.blue} height={160} />
+      </div>
+      <div className="card card-pad" style={{marginBottom:"var(--sp-4)"}}>
+        <div className="card-title" style={{marginBottom:12}}>💰 Revenue per {mode==="month"?"month":"day"}</div>
+        <BarChart data={revenueData} labelKey="label" valueKey="value" color={C.green} height={160} prefix="₹" />
+      </div>
+      <div className="card" style={{marginBottom:"var(--sp-4)"}}>
+        <div className="card-head"><div className="card-title">📊 Breakdown</div></div>
+        <div className="breakdown-table-wrap">
+          <table className="breakdown-table">
+            <thead><tr><th>Date</th><th>Entries</th><th>Kids</th><th>Revenue</th></tr></thead>
+            <tbody>
+              {rows.map((r,i) => (
+                <tr key={i}><td>{r.label}</td><td>{r.count}</td><td>{r.kids}</td><td>₹{r.revenue.toLocaleString("en-IN")}</td></tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const EntryList = ({entries,onEdit,onDelete,loading}) => {
   if (loading) return <div className="empty-state"><Spinner size={26} /><div style={{marginTop:10}}>Loading entries…</div></div>;
   if (!entries.length) return <div className="empty-state">No entries today yet — start with <strong style={{color:C.accent}}>New Entry</strong>.</div>;

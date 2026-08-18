@@ -639,6 +639,102 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.35) sep
 }
 
 /* =============================================================================
+   Tab Bar
+   ============================================================================= */
+.tab-bar {
+  display: flex; gap: 4px; margin-bottom: var(--sp-4);
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--r-lg);
+  padding: 4px; box-shadow: var(--shadow-xs);
+}
+.tab-item {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 10px 8px; border: none; border-radius: var(--r);
+  background: transparent; color: var(--text-mid);
+  font-size: 13px; font-weight: 700; cursor: pointer;
+  transition: all .15s ease;
+}
+.tab-item:hover { background: var(--warm1); }
+.tab-item.is-on {
+  background: var(--accent); color: #fff; font-weight: 800;
+  box-shadow: 0 2px 8px rgba(123,45,142,.25);
+}
+
+/* =============================================================================
+   Calendar Filter
+   ============================================================================= */
+.cal-filter { display: flex; flex-direction: column; gap: 10px; }
+.cal-filter-modes { display: flex; gap: 6px; }
+.cal-filter-inputs { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.cal-filter-date {
+  width: auto; min-width: 140px; max-width: 180px;
+  padding: 6px 10px; font-size: 13px; font-weight: 700;
+  border: 1.5px solid var(--border); border-radius: var(--r-sm);
+  background: var(--warm1); color: var(--text); cursor: pointer;
+}
+.cal-filter-date:focus { border-color: var(--accent-light); outline: none; box-shadow: 0 0 0 3px rgba(168,85,247,.15); }
+.cal-filter-to { font-size: 12px; color: var(--text-light); font-weight: 700; }
+
+/* =============================================================================
+   Bar Chart
+   ============================================================================= */
+.bar-chart { width: 100%; overflow-x: auto; }
+.bar-chart-bars {
+  display: flex; align-items: flex-end; gap: 4px; height: 100%;
+  min-width: min-content; padding-bottom: 22px; position: relative;
+}
+.bar-chart-col {
+  flex: 1; min-width: 28px; max-width: 56px;
+  display: flex; flex-direction: column; align-items: center;
+  position: relative; height: 100%;
+  justify-content: flex-end;
+}
+.bar-chart-bar {
+  width: 100%; border-radius: 4px 4px 0 0;
+  transition: height .3s ease;
+  min-height: 2px;
+}
+.bar-chart-val {
+  font-size: 9px; font-weight: 800; color: var(--text-mid);
+  white-space: nowrap; margin-bottom: 3px;
+}
+.bar-chart-label {
+  font-size: 9px; font-weight: 700; color: var(--text-light);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 56px; text-align: center; margin-top: 4px;
+  position: absolute; bottom: 0;
+}
+
+/* =============================================================================
+   Breakdown Table
+   ============================================================================= */
+.breakdown-table-wrap { overflow-x: auto; }
+.breakdown-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.breakdown-table th {
+  text-align: left; padding: 8px var(--card-p); font-size: 10px; font-weight: 800;
+  text-transform: uppercase; letter-spacing: .5px; color: var(--text-light);
+  border-bottom: 1px solid var(--border);
+}
+.breakdown-table th:last-child, .breakdown-table td:last-child { text-align: right; }
+.breakdown-table td {
+  padding: 9px var(--card-p); font-weight: 600; color: var(--text);
+  border-bottom: 1px solid var(--border);
+}
+.breakdown-table tr:last-child td { border-bottom: none; }
+.breakdown-table tr:hover td { background: var(--warm1); }
+
+/* =============================================================================
+   Stats grid 6-col variant
+   ============================================================================= */
+.stats-grid-6 { grid-template-columns: repeat(2, 1fr); }
+@media (min-width: 640px) { .stats-grid-6 { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 960px) { .stats-grid-6 { grid-template-columns: repeat(6, 1fr); } }
+
+/* =============================================================================
+   Period Summary
+   ============================================================================= */
+.period-summary { }
+
+/* =============================================================================
    Animations
    ============================================================================= */
 @keyframes springIn {
