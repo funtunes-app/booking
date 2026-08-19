@@ -264,17 +264,7 @@ const BirthdayList = ({birthdays,loading,weekFilter,onSave,onShowAll}) => {
 
 // ── Dashboard Components ──
 
-const TabBar = ({tabs,active,onChange}) => (
-  <div className="tab-bar">
-    {tabs.map(t => (
-      <button key={t.value} type="button"
-        className={`tab-item${active===t.value?" is-on":""}`}
-        onClick={()=>onChange(t.value)}>
-        {t.icon && <span>{t.icon}</span>}{t.label}
-      </button>
-    ))}
-  </div>
-);
+const STATS_PASSWORD = "FunSamu5";
 
 const CalendarFilter = ({mode,date,rangeStart,rangeEnd,onModeChange,onDateChange,onRangeChange,onToday}) => {
   const today = new Date().toISOString().slice(0,10);
@@ -323,84 +313,249 @@ const BarChart = ({data,labelKey,valueKey,color,height=180,prefix=""}) => {
   );
 };
 
-const StatsCards = ({entries}) => {
-  const totalRevenue = entries.reduce((a,e)=>a+(parseInt(e.amount)||0),0);
-  const totalKids = entries.reduce((a,e)=>a+(parseInt(e.numKids)||1),0);
-  const totalSocks = entries.reduce((a,e)=>a+(parseInt(e.socks)||0),0);
-  const upiTotal = entries.reduce((a,e)=>a+(parseInt(e.playUpi)||0)+(parseInt(e.socksUpi)||0),0);
-  const cashTotal = entries.reduce((a,e)=>a+(parseInt(e.playCash)||0)+(parseInt(e.socksCash)||0),0);
-  const items = [
-    {l:"Entries",v:entries.length,i:"🎟️",bg:C.accentSoft,clr:C.accent},
-    {l:"Revenue",v:`₹${totalRevenue.toLocaleString("en-IN")}`,i:"💰",bg:C.greenSoft,clr:C.green},
-    {l:"Kids",v:totalKids,i:"👶",bg:C.blueSoft,clr:C.blue},
-    {l:"Socks",v:`₹${totalSocks.toLocaleString("en-IN")}`,i:"🧦",bg:C.orangeSoft,clr:C.orange},
-    {l:"UPI",v:`₹${upiTotal.toLocaleString("en-IN")}`,i:"📱",bg:C.accentSoft,clr:C.accent},
-    {l:"Cash",v:`₹${cashTotal.toLocaleString("en-IN")}`,i:"💵",bg:C.yellowSoft,clr:"#8a6d00"},
-  ];
+const PasswordGate = ({onUnlock}) => {
+  const [pw,setPw] = React.useState("");
+  const [error,setError] = React.useState(false);
+  const submit = () => {
+    if (pw === STATS_PASSWORD) {
+      sessionStorage.setItem("stats_unlocked","1");
+      onUnlock();
+    } else { setError(true); setTimeout(()=>setError(false),1500); }
+  };
   return (
-    <div className="stats-grid stats-grid-6">
-      {items.map((s,i) => (
-        <div key={i} className="stat">
-          <div className="stat-icon" style={{background:s.bg}}>{s.i}</div>
-          <div style={{minWidth:0}}>
-            <div className="stat-value" style={{color:s.clr}}>{s.v}</div>
-            <div className="stat-label">{s.l}</div>
-          </div>
-        </div>
+    <div className="password-gate">
+      <div className="card card-pad password-card">
+        <div style={{fontSize:32,marginBottom:12}}>🔒</div>
+        <div className="card-title" style={{marginBottom:4}}>Stats Dashboard</div>
+        <div style={{fontSize:12,color:C.textLight,fontWeight:600,marginBottom:16}}>Enter password to view stats</div>
+        <input className={`fld${error?" is-error":""}`} type="password" placeholder="Password"
+          value={pw} onChange={e=>{setPw(e.target.value);setError(false);}}
+          onKeyDown={e=>{if(e.key==="Enter")submit();}}
+          style={{textAlign:"center",marginBottom:12}} />
+        {error && <div style={{fontSize:12,color:C.danger,fontWeight:700,marginBottom:8}}>Wrong password</div>}
+        <button className="btn btn-primary btn-block" onClick={submit}>Unlock</button>
+      </div>
+    </div>
+  );
+};
+
+const CHECKOUT_KEY = "funtunes_checkouts";
+
+function getCheckedOutIds() {
+  try {
+    const raw = localStorage.getItem(CHECKOUT_KEY);
+    if (!raw) return {};
+    const data = JSON.parse(raw);
+    const today = new Date().toISOString().slice(0,10);
+    if (data._date !== today) return {};
+    return data;
+  } catch(e) { return {}; }
+}
+
+function setCheckedOut(id) {
+  const data = getCheckedOutIds();
+  data._date = new Date().toISOString().slice(0,10);
+  data[id] = true;
+  localStorage.setItem(CHECKOUT_KEY, JSON.stringify(data));
+}
+
+function parseTime24ToMinutes(t) {
+  if (!t || t.indexOf(":") === -1) return null;
+  const parts = t.split(":");
+  return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+}
+
+function formatTime12Short(t24) {
+  if (!t24 || t24.indexOf(":") === -1) return "";
+  const [hStr,mStr] = t24.split(":");
+  let h = parseInt(hStr);
+  const ap = h >= 12 ? "p" : "a";
+  h = h % 12; if (h === 0) h = 12;
+  return `${h}:${mStr}${ap}`;
+}
+
+const LiveEntryRow = ({e, onEdit, onDelete, onCheckout, isCheckedOut, now}) => {
+  const name = e.customerName || "—";
+  const dob = e.dob || "";
+  const timeIn = e.timeIn || "";
+  const timeOut = e.timeOut || "";
+  const hours = e.hours || "1";
+  const amt = parseInt(e.amount) || 0;
+  const socks = parseInt(e.socks) || 0;
+  const total = amt + socks;
+  const playUpi = parseInt(e.playUpi) || 0;
+  const playCash = parseInt(e.playCash) || 0;
+  const socksUpi = parseInt(e.socksUpi) || 0;
+  const socksCash = parseInt(e.socksCash) || 0;
+  const upiTotal = playUpi + socksUpi;
+  const cashTotal = playCash + socksCash;
+
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+  const outMins = parseTime24ToMinutes(timeOut);
+  const entryDate = e.date || "";
+  const todayStr = now.toISOString().slice(0,10);
+  const isToday = entryDate === todayStr;
+
+  let timeStatus = "normal";
+  if (isToday && timeIn && outMins !== null && !isCheckedOut) {
+    timeStatus = nowMins < outMins ? "active" : "exceeded";
+  }
+
+  const splitParts = [];
+  if (upiTotal > 0) splitParts.push(`UPI ₹${upiTotal.toLocaleString("en-IN")}`);
+  if (cashTotal > 0) splitParts.push(`Cash ₹${cashTotal.toLocaleString("en-IN")}`);
+  const splitStr = splitParts.length ? ` (${splitParts.join(" + ")})` : "";
+
+  return (
+    <div className={`live-row${timeStatus==="exceeded"?" live-row--exceeded":""}`}>
+      <div className="live-row-main">
+        <div className="live-row-name">{name}</div>
+        {dob && <span className="live-row-dob">DOB: {dob}</span>}
+      </div>
+      <div className={`live-row-time live-row-time--${timeStatus}`}>
+        <span>⏱ {formatTime12Short(timeIn)} → {formatTime12Short(timeOut)}</span>
+        <span className="live-row-dur">{hours}h</span>
+      </div>
+      <div className="live-row-amount">
+        <span className="live-row-total">₹{total.toLocaleString("en-IN")}</span>
+        {splitStr && <span className="live-row-split">{splitStr}</span>}
+      </div>
+      <div className="live-row-actions">
+        {isToday && !isCheckedOut && timeIn && <button type="button" className={`icon-btn${timeStatus==="exceeded"?" icon-btn--alert":""}`} title="Checkout" onClick={()=>onCheckout(e)}>🚪</button>}
+        {isCheckedOut && <span className="live-row-done" title="Checked out">✅</span>}
+        <button type="button" className="icon-btn" title="Edit" onClick={()=>onEdit(e)}>✏️</button>
+        <button type="button" className="icon-btn danger" title="Delete" onClick={()=>onDelete(e)}>🗑️</button>
+      </div>
+    </div>
+  );
+};
+
+const LiveEntryList = ({entries, onEdit, onDelete, onCheckout, loading}) => {
+  const [now, setNow] = React.useState(new Date());
+  React.useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 30000);
+    return () => clearInterval(id);
+  }, []);
+
+  const checkedOut = getCheckedOutIds();
+
+  if (loading) return <div className="empty-state"><Spinner size={26} /><div style={{marginTop:10}}>Loading entries…</div></div>;
+  if (!entries.length) return <div className="empty-state">No entries yet — start with <strong style={{color:C.accent}}>New Entry</strong>.</div>;
+  return (
+    <div className="live-list">
+      <div className="live-list-header">
+        <span className="live-col-name">Name</span>
+        <span className="live-col-time">Playtime</span>
+        <span className="live-col-amount">Amount</span>
+        <span className="live-col-actions">Actions</span>
+      </div>
+      {entries.map((e,i) => (
+        <LiveEntryRow key={e.id||i} e={e} onEdit={onEdit} onDelete={onDelete}
+          onCheckout={onCheckout} isCheckedOut={!!checkedOut[e.id]} now={now} />
       ))}
     </div>
   );
 };
 
-const PeriodSummary = ({entries,mode}) => {
-  if (!entries.length) return null;
+const StatsDashboard = ({entries}) => {
+  const totalKids = entries.reduce((a,e) => a + (parseInt(e.numKids)||1), 0);
+  const totalRevenue = entries.reduce((a,e) => a + (parseInt(e.amount)||0) + (parseInt(e.socks)||0), 0);
+  const totalPlayUpi = entries.reduce((a,e) => a + (parseInt(e.playUpi)||0), 0);
+  const totalPlayCash = entries.reduce((a,e) => a + (parseInt(e.playCash)||0), 0);
+  const totalPlayAmt = entries.reduce((a,e) => a + (parseInt(e.amount)||0), 0);
+  const totalSocksUpi = entries.reduce((a,e) => a + (parseInt(e.socksUpi)||0), 0);
+  const totalSocksCash = entries.reduce((a,e) => a + (parseInt(e.socksCash)||0), 0);
+  const totalSocksAmt = entries.reduce((a,e) => a + (parseInt(e.socks)||0), 0);
+  const totalUpi = totalPlayUpi + totalSocksUpi;
+  const totalCash = totalPlayCash + totalSocksCash;
 
   const grouped = {};
   entries.forEach(e => {
-    let key;
-    if (mode === "month") {
-      key = e.date ? e.date.slice(0,7) : "unknown";
-    } else {
-      key = e.date || "unknown";
-    }
+    const key = e.date || "unknown";
     if (!grouped[key]) grouped[key] = {revenue:0,kids:0,count:0};
-    grouped[key].revenue += parseInt(e.amount)||0;
+    grouped[key].revenue += (parseInt(e.amount)||0) + (parseInt(e.socks)||0);
     grouped[key].kids += parseInt(e.numKids)||1;
     grouped[key].count += 1;
   });
-
   const sorted = Object.keys(grouped).sort();
-  const rows = sorted.map(k => ({
-    label: mode==="month" ? MONTH_NAMES[parseInt(k.split("-")[1])-1]+" "+k.split("-")[0] : k.split("-").reverse().join("/"),
-    ...grouped[k],
-  }));
-
+  const rows = sorted.map(k => ({label:k.split("-").reverse().join("/"), ...grouped[k]}));
   const kidsData = rows.map(r => ({label:r.label, value:r.kids}));
   const revenueData = rows.map(r => ({label:r.label, value:r.revenue}));
 
+  const f = (v) => `₹${v.toLocaleString("en-IN")}`;
+
   return (
-    <div className="period-summary">
-      <div className="card card-pad" style={{marginBottom:"var(--sp-4)"}}>
-        <div className="card-title" style={{marginBottom:12}}>👶 Kids per {mode==="month"?"month":"day"}</div>
-        <BarChart data={kidsData} labelKey="label" valueKey="value" color={C.blue} height={160} />
+    <div className="stats-dash">
+      <div className="stats-dash-cards">
+        <div className="scard scard--blue">
+          <div className="scard-icon">👶</div>
+          <div className="scard-body">
+            <div className="scard-value">{totalKids}</div>
+            <div className="scard-label">Total Kids</div>
+          </div>
+        </div>
+
+        <div className="scard scard--green">
+          <div className="scard-icon">💰</div>
+          <div className="scard-body">
+            <div className="scard-value">{f(totalRevenue)}</div>
+            <div className="scard-label">Total Revenue</div>
+            <div className="scard-split">
+              <span className="scard-tag scard-tag--accent">📱 UPI {f(totalUpi)}</span>
+              <span className="scard-tag scard-tag--yellow">💵 Cash {f(totalCash)}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="scard scard--accent">
+          <div className="scard-icon">🎪</div>
+          <div className="scard-body">
+            <div className="scard-value">{f(totalPlayAmt)}</div>
+            <div className="scard-label">Playtime Revenue</div>
+            <div className="scard-split">
+              <span className="scard-tag scard-tag--accent">📱 UPI {f(totalPlayUpi)}</span>
+              <span className="scard-tag scard-tag--yellow">💵 Cash {f(totalPlayCash)}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="scard scard--orange">
+          <div className="scard-icon">🧦</div>
+          <div className="scard-body">
+            <div className="scard-value">{f(totalSocksAmt)}</div>
+            <div className="scard-label">Socks Revenue</div>
+            <div className="scard-split">
+              <span className="scard-tag scard-tag--accent">📱 UPI {f(totalSocksUpi)}</span>
+              <span className="scard-tag scard-tag--yellow">💵 Cash {f(totalSocksCash)}</span>
+            </div>
+          </div>
+        </div>
       </div>
-      <div className="card card-pad" style={{marginBottom:"var(--sp-4)"}}>
-        <div className="card-title" style={{marginBottom:12}}>💰 Revenue per {mode==="month"?"month":"day"}</div>
-        <BarChart data={revenueData} labelKey="label" valueKey="value" color={C.green} height={160} prefix="₹" />
-      </div>
-      <div className="card" style={{marginBottom:"var(--sp-4)"}}>
-        <div className="card-head"><div className="card-title">📊 Breakdown</div></div>
+
+      {rows.length > 1 && <>
+        <div className="card card-pad" style={{marginBottom:"var(--sp-4)"}}>
+          <div className="card-title" style={{marginBottom:12}}>👶 Kids per day</div>
+          <BarChart data={kidsData} labelKey="label" valueKey="value" color={C.blue} height={160} />
+        </div>
+        <div className="card card-pad" style={{marginBottom:"var(--sp-4)"}}>
+          <div className="card-title" style={{marginBottom:12}}>💰 Revenue per day</div>
+          <BarChart data={revenueData} labelKey="label" valueKey="value" color={C.green} height={160} prefix="₹" />
+        </div>
+      </>}
+
+      {rows.length > 0 && <div className="card" style={{marginBottom:"var(--sp-4)"}}>
+        <div className="card-head"><div className="card-title">📊 Daily Breakdown</div></div>
         <div className="breakdown-table-wrap">
           <table className="breakdown-table">
             <thead><tr><th>Date</th><th>Entries</th><th>Kids</th><th>Revenue</th></tr></thead>
             <tbody>
               {rows.map((r,i) => (
-                <tr key={i}><td>{r.label}</td><td>{r.count}</td><td>{r.kids}</td><td>₹{r.revenue.toLocaleString("en-IN")}</td></tr>
+                <tr key={i}><td>{r.label}</td><td>{r.count}</td><td>{r.kids}</td><td>{f(r.revenue)}</td></tr>
               ))}
             </tbody>
           </table>
         </div>
-      </div>
+      </div>}
     </div>
   );
 };

@@ -64,7 +64,11 @@ function App() {
   const [calMode,setCalMode] = useState("day");
   const [rangeStart,setRangeStart] = useState("");
   const [rangeEnd,setRangeEnd] = useState("");
-  const [dashTab,setDashTab] = useState("list");
+  const [dashTab,setDashTab] = useState(()=>{
+    const h = location.hash.replace("#","");
+    return ["list","stats","birthdays"].includes(h) ? h : "list";
+  });
+  const [statsUnlocked,setStatsUnlocked] = useState(()=>sessionStorage.getItem("stats_unlocked")==="1");
   const [loading,setLoading] = useState(false);
   const [saving,setSaving] = useState(false);
   const [showSuccess,setShowSuccess] = useState(false);
@@ -117,7 +121,27 @@ function App() {
 
   const showToastMsg = (msg,type) => { setToast({msg,type:type||"info"}); setTimeout(()=>setToast(null),3000); };
 
-  useEffect(()=>{ fetchEntries(); checkBirthdaysCache(); },[]);
+  useEffect(()=>{
+    fetchEntries(); checkBirthdaysCache();
+    const onHash = () => {
+      const h = location.hash.replace("#","");
+      if (["list","stats","birthdays"].includes(h)) setDashTab(h);
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  },[]);
+
+  function switchTab(tab) {
+    setDashTab(tab);
+    location.hash = tab;
+    if (tab === "birthdays") checkBirthdaysCache();
+  }
+
+  function handleCheckout(entry) {
+    if (!entry.id) return;
+    setCheckedOut(entry.id);
+    setTodayEntries(prev => [...prev]);
+  }
 
   const BIRTHDAY_CACHE_KEY = "funtunes_birthdays_cache_v2";
 
@@ -439,7 +463,7 @@ function App() {
 
   function openBirthdays() {
     resetForm();
-    setDashTab("birthdays");
+    switchTab("birthdays");
   }
 
   function setFormType(type) {
@@ -512,14 +536,12 @@ function App() {
         </header>
 
         <div className="container page">
-          <TabBar tabs={[
-            {value:"list",label:"List",icon:"📋"},
-            {value:"stats",label:"Stats",icon:"📊"},
-            {value:"birthdays",label:"Birthdays",icon:"🎂"},
-          ]} active={dashTab} onChange={v=>{
-            setDashTab(v);
-            if(v==="birthdays") checkBirthdaysCache();
-          }} />
+          <div className="tab-bar">
+            {[{value:"list",label:"List",icon:"📋"},{value:"stats",label:"Stats",icon:"📊"},{value:"birthdays",label:"Birthdays",icon:"🎂"}].map(t=>(
+              <button key={t.value} type="button" className={`tab-item${dashTab===t.value?" is-on":""}`}
+                onClick={()=>switchTab(t.value)}>{t.icon} {t.label}</button>
+            ))}
+          </div>
 
           {/* Shared calendar filter for list & stats */}
           {(dashTab==="list"||dashTab==="stats") && <div className="card card-pad filter-bar" style={{marginBottom:"var(--sp-4)"}}>
@@ -535,19 +557,15 @@ function App() {
 
           {/* ── LIST TAB ── */}
           {dashTab==="list" && <>
-            <StatsCards entries={todayEntries} />
-            <div className="card">
-              <div className="card-pad">
-                <EntryList entries={[...todayEntries].sort((a,b)=>(a.id||0)-(b.id||0))} onEdit={handleEdit} onDelete={handleDelete} loading={loading} />
-              </div>
-            </div>
+            <LiveEntryList entries={[...todayEntries].sort((a,b)=>(a.id||0)-(b.id||0))} onEdit={handleEdit} onDelete={handleDelete} onCheckout={handleCheckout} loading={loading} />
           </>}
 
           {/* ── STATS TAB ── */}
           {dashTab==="stats" && <>
-            <StatsCards entries={todayEntries} />
-            {loading ? <div className="empty-state"><Spinner size={26} /><div style={{marginTop:10}}>Loading…</div></div>
-              : <PeriodSummary entries={todayEntries} mode={calMode==="month"||calMode==="range"?"day":"day"} />}
+            {!statsUnlocked
+              ? <PasswordGate onUnlock={()=>setStatsUnlocked(true)} />
+              : loading ? <div className="empty-state"><Spinner size={26} /><div style={{marginTop:10}}>Loading…</div></div>
+              : <StatsDashboard entries={todayEntries} />}
           </>}
 
           {/* ── BIRTHDAYS TAB ── */}
