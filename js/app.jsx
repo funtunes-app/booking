@@ -543,8 +543,8 @@ function App() {
             ))}
           </div>
 
-          {/* Shared calendar filter for list & stats */}
-          {(dashTab==="list"||dashTab==="stats") && <div className="card card-pad filter-bar" style={{marginBottom:"var(--sp-4)"}}>
+          {/* Calendar filter for list, and for stats only after unlock */}
+          {(dashTab==="list"||(dashTab==="stats"&&statsUnlocked)) && <div className="card card-pad filter-bar" style={{marginBottom:"var(--sp-4)"}}>
             <CalendarFilter mode={calMode} date={filterDate}
               rangeStart={rangeStart} rangeEnd={rangeEnd}
               onModeChange={onCalModeChange} onDateChange={onCalDateChange}
