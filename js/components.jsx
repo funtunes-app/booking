@@ -318,7 +318,6 @@ const PasswordGate = ({onUnlock}) => {
   const [error,setError] = React.useState(false);
   const submit = () => {
     if (pw === STATS_PASSWORD) {
-      sessionStorage.setItem("stats_unlocked","1");
       onUnlock();
     } else { setError(true); setTimeout(()=>setError(false),1500); }
   };

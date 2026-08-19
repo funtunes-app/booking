@@ -68,7 +68,7 @@ function App() {
     const h = location.hash.replace("#","");
     return ["list","stats","birthdays"].includes(h) ? h : "list";
   });
-  const [statsUnlocked,setStatsUnlocked] = useState(()=>sessionStorage.getItem("stats_unlocked")==="1");
+  const [statsUnlocked,setStatsUnlocked] = useState(false);
   const [loading,setLoading] = useState(false);
   const [saving,setSaving] = useState(false);
   const [showSuccess,setShowSuccess] = useState(false);
@@ -125,13 +125,17 @@ function App() {
     fetchEntries(); checkBirthdaysCache();
     const onHash = () => {
       const h = location.hash.replace("#","");
-      if (["list","stats","birthdays"].includes(h)) setDashTab(h);
+      if (["list","stats","birthdays"].includes(h)) {
+        if (h !== "stats") setStatsUnlocked(false);
+        setDashTab(h);
+      }
     };
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
   },[]);
 
   function switchTab(tab) {
+    if (tab !== "stats") setStatsUnlocked(false);
     setDashTab(tab);
     location.hash = tab;
     if (tab === "birthdays") checkBirthdaysCache();
