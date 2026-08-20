@@ -57,12 +57,11 @@ const NumberStepper = ({value,onChange,min=1,max=10}) => (
 
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
-const STATUS_ORDER = ["not_contacted","warm","rejected","booking"];
+const STATUS_ORDER = ["not_contacted","warm","booking"];
 const STATUS_META = {
-  not_contacted: {label:"Not Contacted", dot:C.textLight, bg:`${C.textLight}18`, fg:C.textLight},
-  warm:          {label:"Warm",          dot:C.yellow,    bg:C.yellowSoft,       fg:"#8a6d00"},
-  rejected:      {label:"Rejected",      dot:C.danger,    bg:C.dangerSoft,       fg:C.danger},
-  booking:       {label:"Booking",       dot:C.green,     bg:C.greenSoft,        fg:C.green},
+  not_contacted: {label:"Not Contacted", dot:"#e57373", bg:"#fce4e4", fg:"#c62828"},
+  warm:          {label:"Contacted",     dot:C.green,   bg:C.greenSoft, fg:C.green},
+  booking:       {label:"Booked",        dot:C.accent,  bg:C.accentSoft,fg:C.accent},
 };
 
 const Dropdown = ({value,options,onChange,flex}) => {
@@ -142,92 +141,54 @@ const IconMenu = ({trigger,title,items,activeValue}) => {
   );
 };
 
-const initialStatus = (b) => b.status || (b.contacted ? "warm" : "not_contacted");
-
-const BirthdayCard = ({b, isToday, onSave}) => {
+const BirthdayMiniCard = ({b, onSave}) => {
   const [expanded, setExpanded] = React.useState(false);
   const [phone, setPhone] = React.useState(b.phone || "");
   const [notes, setNotes] = React.useState(b.notes || "");
-  const [status, setStatus] = React.useState(initialStatus(b));
+  const [status, setStatus] = React.useState(b.status || "not_contacted");
   const [saving, setSaving] = React.useState(false);
+  const meta = STATUS_META[status] || STATUS_META.not_contacted;
 
   React.useEffect(() => {
-    setPhone(b.phone || ""); setNotes(b.notes || ""); setStatus(initialStatus(b));
+    setPhone(b.phone || ""); setNotes(b.notes || ""); setStatus(b.status || "not_contacted");
   }, [b.key]);
 
-  const kidName = b.kidName || b.name || "—";
-  const meta = STATUS_META[status] || STATUS_META.not_contacted;
-  const dirty = phone !== (b.phone||"") || notes !== (b.notes||"") || status !== initialStatus(b);
-
-  // parentName is no longer edited here; `...b` carries the stored value
-  // through unchanged so saving does not blank it out.
-  const save = async () => {
+  const save = async (s) => {
+    const st = s || status;
+    if (s) setStatus(s);
     setSaving(true);
-    await onSave({ ...b, phone, notes, status });
-    setSaving(false);
-  };
-
-  const setStatusAndSave = async (s) => {
-    setStatus(s);
-    setSaving(true);
-    await onSave({ ...b, phone, notes, status: s });
+    await onSave({ ...b, phone, notes, status: st });
     setSaving(false);
   };
 
   return (
-    <div className="card" style={{
-      borderColor: status==="not_contacted" ? (isToday?C.pink+"55":C.border) : meta.dot+"55",
-      background: status==="not_contacted" ? (isToday?C.pinkSoft:C.card) : meta.bg,
-      overflow:"hidden", animation:"springIn .3s ease both", alignSelf:"start",
-    }}>
-      <div onClick={() => setExpanded(x=>!x)} style={{display:"flex",alignItems:"center",gap:11,padding:"10px 12px",cursor:"pointer"}}>
-        <div style={{width:38,height:38,borderRadius:10,background:isToday?C.pink:C.accentSoft,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",flexShrink:0,lineHeight:1}}>
-          <div style={{fontSize:15,fontWeight:900,color:isToday?"#fff":C.accent}}>{b.day}</div>
-          <div style={{fontSize:8,fontWeight:800,color:isToday?"#fff":C.accent,textTransform:"uppercase",marginTop:1}}>{MONTH_NAMES[b.month-1]?.slice(0,3)}</div>
-        </div>
-        <div className="row-body">
-          <div className="row-title">{kidName}{isToday && " 🎉"}</div>
-          <div className="row-sub">{b.phone||"No phone"}</div>
-        </div>
-        <div title={meta.label} style={{width:9,height:9,borderRadius:"50%",flexShrink:0,background:meta.dot,boxShadow:`0 0 0 3px ${meta.dot}25`}} />
-        <span style={{fontSize:10,color:C.textLight,flexShrink:0,transform:expanded?"rotate(180deg)":"none",transition:"transform .2s"}}>▼</span>
+    <div className={`bday-card bday-card--${status}`}>
+      <div className="bday-card-main" onClick={() => setExpanded(x => !x)}>
+        <span className="bday-card-dot" style={{background: meta.dot}} />
+        <span className="bday-card-name">{b.kidName || "—"}</span>
+        {b.phone && <span className="bday-card-phone">{b.phone}</span>}
       </div>
-
       {expanded && (
-        <div style={{padding:"0 12px 12px",display:"flex",flexDirection:"column",gap:10,borderTop:`1px solid ${C.border}`,paddingTop:12,marginTop:2}} onClick={e=>e.stopPropagation()}>
-          <div>
-            <div className="field-label">Phone</div>
-            <input className="fld" value={phone} onChange={e=>setPhone(e.target.value.replace(/\D/g,"").slice(0,10))} placeholder="Mobile number" type="tel" inputMode="numeric" />
+        <div className="bday-card-detail" onClick={e => e.stopPropagation()}>
+          <input className="fld" value={phone} onChange={e=>setPhone(e.target.value.replace(/\D/g,"").slice(0,10))} placeholder="Phone" type="tel" inputMode="numeric" />
+          <textarea className="fld" value={notes} onChange={e=>setNotes(e.target.value)} rows={2} placeholder="Notes…" style={{resize:"vertical"}} />
+          <div className="chips">
+            {STATUS_ORDER.map(s => <button key={s} type="button" className="chip chip-sm" onClick={()=>save(s)} style={{
+              borderColor:status===s?STATUS_META[s].dot:undefined,
+              background:status===s?STATUS_META[s].bg:undefined,
+              color:status===s?STATUS_META[s].fg:undefined,
+              fontWeight:status===s?800:600,
+            }}>
+              <span style={{width:7,height:7,borderRadius:"50%",background:STATUS_META[s].dot,flexShrink:0}} />
+              {STATUS_META[s].label}
+            </button>)}
           </div>
-
-          <div>
-            <div className="field-label">Call Notes</div>
-            <textarea className="fld" value={notes} onChange={e=>setNotes(e.target.value)} rows={2}
-              placeholder="e.g. Spoke to mom, interested, will confirm by Friday..." style={{resize:"vertical"}} />
-          </div>
-
-          <div>
-            <div className="field-label">Status</div>
-            <div className="chips">
-              {STATUS_ORDER.map(s => <button key={s} type="button" className="chip" onClick={()=>setStatusAndSave(s)} style={{
-                borderColor:status===s?STATUS_META[s].dot:undefined,
-                background:status===s?STATUS_META[s].bg:undefined,
-                color:status===s?STATUS_META[s].fg:undefined,
-                fontWeight:status===s?800:600,
-              }}>
-                <span style={{width:7,height:7,borderRadius:"50%",background:STATUS_META[s].dot,flexShrink:0}} />
-                {STATUS_META[s].label}
-              </button>)}
-            </div>
-            {status==="booking" && <div className="field-hint" style={{color:C.green}}>📋 Follow up: Sindhu</div>}
-          </div>
-
-          <div style={{display:"flex",gap:8,alignItems:"center"}}>
+          <div style={{display:"flex",gap:8}}>
             {phone && <a href={`tel:${phone}`} className="btn btn-sm" onClick={e=>e.stopPropagation()}
               style={{background:C.blueSoft,color:C.blue,borderColor:"transparent",textDecoration:"none"}}>📞 Call</a>}
-            {dirty && <button type="button" className="btn btn-sm btn-primary" onClick={save} disabled={saving} style={{marginLeft:"auto"}}>
-              {saving?"Saving…":"Save changes"}
-            </button>}
+            <button type="button" className="btn btn-sm btn-primary" onClick={()=>save()} disabled={saving} style={{marginLeft:"auto"}}>
+              {saving?"Saving…":"Save"}
+            </button>
           </div>
         </div>
       )}
@@ -235,28 +196,57 @@ const BirthdayCard = ({b, isToday, onSave}) => {
   );
 };
 
-const weekRangeLabel = (w) => `days ${(w-1)*7+1}–${Math.min(31,w*7)}`;
-const weekOfDay = (day) => Math.min(5, Math.ceil(Number(day)/7));
-
-const BirthdayList = ({birthdays,loading,weekFilter,onSave,onShowAll}) => {
+const BirthdayCalendar = ({birthdays, month, year, loading, onSave}) => {
   if (loading) return <div className="empty-state"><Spinner size={26} /><div style={{marginTop:10}}>Loading birthdays…</div></div>;
   if (!birthdays.length) return <div className="empty-state">🎈 No birthdays found for this month.</div>;
 
-  const filtered = weekFilter === "all" ? birthdays : birthdays.filter(b => weekOfDay(b.day) === weekFilter);
-  if (!filtered.length) return (
-    <div className="empty-state">
-      <div>🎈 No birthdays in {weekRangeLabel(weekFilter)}.</div>
-      <div style={{fontSize:12,margin:"6px 0 14px"}}>{birthdays.length} birthday{birthdays.length!==1?"s":""} this month overall.</div>
-      {onShowAll && <button type="button" className="btn btn-sm" onClick={onShowAll}>Show all this month</button>}
-    </div>
-  );
-
-  const now = new Date();
+  const today = new Date();
+  const isCurrentMonth = today.getMonth()+1 === month && today.getFullYear() === year;
+  const todayDay = isCurrentMonth ? today.getDate() : -1;
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const weeks = [];
+  for (let w = 0; w < 5; w++) {
+    const startDay = w * 7 + 1;
+    const endDay = Math.min((w + 1) * 7, daysInMonth);
+    if (startDay > daysInMonth) break;
+    const days = [];
+    let weekHasBirthdays = false;
+    for (let d = startDay; d <= endDay; d++) {
+      const dayBirthdays = birthdays.filter(b => b.day === d);
+      if (dayBirthdays.length) weekHasBirthdays = true;
+      days.push({ day: d, birthdays: dayBirthdays });
+    }
+    weeks.push({ week: w + 1, startDay, endDay, days, hasBirthdays: weekHasBirthdays });
+  }
 
   return (
-    <div className="birthdays-grid">
-      {filtered.map((b,i) => (
-        <BirthdayCard key={b.key || i} b={b} isToday={b.day === now.getDate()} onSave={onSave} />
+    <div className="bday-kanban">
+      {weeks.map(w => (
+        <div key={w.week} className={`bday-week-col${w.hasBirthdays?"":" bday-week-col--empty"}`}>
+          <div className="bday-week-header">
+            <span className="bday-week-label">W{w.week}</span>
+            <span className="bday-week-range">{w.startDay}–{w.endDay} {MONTH_NAMES[month-1]?.slice(0,3)}</span>
+          </div>
+          <div className="bday-week-body">
+            {w.days.map(d => {
+              if (!d.birthdays.length) return (
+                <div key={d.day} className={`bday-day-row${d.day===todayDay?" bday-day--today":""}`}>
+                  <div className="bday-day-num">{d.day}</div>
+                </div>
+              );
+              return (
+                <div key={d.day} className={`bday-day-row has-kids${d.day===todayDay?" bday-day--today":""}`}>
+                  <div className="bday-day-num">{d.day}{d.day===todayDay?" 🎉":""}</div>
+                  <div className="bday-day-cards">
+                    {d.birthdays.map((b, i) => (
+                      <BirthdayMiniCard key={b.key || i} b={b} onSave={onSave} />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       ))}
     </div>
   );

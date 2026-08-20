@@ -575,29 +575,22 @@ function App() {
           {/* ── BIRTHDAYS TAB ── */}
           {dashTab==="birthdays" && <>
             <div className="card card-pad" style={{marginBottom:"var(--sp-4)"}}>
-              <div style={{display:"flex",gap:"var(--gap)",marginBottom:12,flexWrap:"wrap"}}>
-                <div style={{display:"flex",gap:8,flex:"1 1 260px",minWidth:0}}>
+              <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+                <div style={{display:"flex",gap:8,flex:"1 1 220px",minWidth:0}}>
                   <Dropdown flex={1.5} value={birthdayMonth} onChange={changeMonth}
                     options={MONTH_NAMES.map((m,i)=>({value:i+1,label:m}))} />
                   <Dropdown flex={1} value={birthdayYear} onChange={changeYear}
                     options={[new Date().getFullYear()-1, new Date().getFullYear(), new Date().getFullYear()+1].map(y=>({value:y,label:String(y)}))} />
                 </div>
-                <div className="chips" style={{flex:"1 1 auto",alignItems:"center"}}>
-                  <button type="button" className={`chip${weekFilter==="all"?" is-on":""}`} onClick={()=>setWeekFilter("all")}>All</button>
-                  {[1,2,3,4,5].map(w=>(
-                    <button key={w} type="button" className={`chip${weekFilter===w?" is-on":""}`} onClick={()=>setWeekFilter(w)}>W{w}</button>
-                  ))}
+                <div style={{display:"flex",alignItems:"center",gap:8,marginLeft:"auto"}}>
+                  <span style={{fontSize:12,fontWeight:700,color:C.textMid}}>🎉 <strong style={{color:C.text}}>{birthdays.length}</strong></span>
+                  <span style={{fontSize:11,color:C.green,fontWeight:700}}>{birthdays.filter(b=>(b.status||"not_contacted")!=="not_contacted").length} contacted</span>
+                  <button className="btn btn-sm" onClick={openEnquiry}>+ Enquiry</button>
+                  <button className="btn btn-sm btn-icon" onClick={()=>fetchBirthdays()} disabled={birthdaysLoading} title="Refresh">↻</button>
                 </div>
               </div>
-              <div style={{display:"flex",alignItems:"center",gap:8,fontSize:12,color:C.textMid,fontWeight:600,borderTop:`1px solid ${C.border}`,paddingTop:11}}>
-                <span>🎉 <strong style={{color:C.text}}>{birthdays.length}</strong> birthday{birthdays.length!==1?"s":""} in {MONTH_NAMES[birthdayMonth-1]} {birthdayYear}</span>
-                <span style={{color:C.textLight}}>·</span>
-                <span style={{color:C.green}}>{birthdays.filter(b=>(b.status||(b.contacted?"warm":"not_contacted"))!=="not_contacted").length} contacted</span>
-                <button className="btn btn-sm" style={{marginLeft:"auto"}} onClick={openEnquiry}>+ Enquiry</button>
-                <button className="btn btn-sm btn-icon" onClick={()=>fetchBirthdays()} disabled={birthdaysLoading} title="Refresh" aria-label="Refresh">↻</button>
-              </div>
             </div>
-            <BirthdayList birthdays={birthdays} loading={birthdaysLoading} weekFilter={weekFilter} onSave={saveBirthdayCall} onShowAll={()=>setWeekFilter("all")} />
+            <BirthdayCalendar birthdays={birthdays} month={birthdayMonth} year={birthdayYear} loading={birthdaysLoading} onSave={saveBirthdayCall} />
           </>}
         </div>
 
