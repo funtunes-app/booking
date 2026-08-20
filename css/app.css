@@ -883,7 +883,8 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.35) sep
 }
 .live-col-name { flex: 2; }
 .live-col-time { flex: 1.5; }
-.live-col-amount { flex: 1.2; }
+.live-col-dur { flex: 0 0 70px; text-align: center; }
+.live-col-amount { flex: 1; text-align: right; }
 .live-col-actions { flex: 0 0 100px; text-align: right; }
 
 .live-row {
@@ -916,9 +917,9 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.35) sep
   animation: pulse-red 2s ease-in-out infinite;
 }
 .live-row-time--normal { color: var(--text-mid); }
-.live-row-dur {
-  font-size: 10px; font-weight: 800; color: inherit; opacity: .7;
-  margin-left: auto;
+.live-row-dur-col {
+  flex: 0 0 70px; text-align: center;
+  font-size: 12px; font-weight: 800; color: var(--text-mid);
 }
 
 @keyframes pulse-red {
@@ -926,7 +927,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.35) sep
   50% { opacity: .7; }
 }
 
-.live-row-amount { flex: 1.2; min-width: 80px; text-align: right; }
+.live-row-amount { flex: 1; min-width: 80px; text-align: right; }
 .live-row-total { font-size: 15px; font-weight: 800; color: var(--accent); }
 .live-row-split { display: block; font-size: 10px; color: var(--text-light); font-weight: 600; }
 
@@ -942,6 +943,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.35) sep
   .live-row { flex-wrap: wrap; }
   .live-row-main { flex: 1 1 100%; }
   .live-row-time { flex: 1 1 auto; }
+  .live-row-dur-col { flex: 0 0 auto; }
   .live-row-amount { flex: 0 0 auto; }
   .live-row-actions { margin-left: auto; }
 }

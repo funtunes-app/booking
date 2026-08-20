@@ -403,8 +403,8 @@ const LiveEntryRow = ({e, onEdit, onDelete, onCheckout, isCheckedOut, now}) => {
       </div>
       <div className={`live-row-time live-row-time--${timeStatus}`}>
         <span>⏱ {formatTime12Short(timeIn)} → {formatTime12Short(timeOut)}</span>
-        <span className="live-row-dur">{hours}h</span>
       </div>
+      <div className="live-row-dur-col">{hours}h</div>
       <div className="live-row-amount">
         <span className="live-row-total">₹{total.toLocaleString("en-IN")}</span>
         {splitStr && <span className="live-row-split">{splitStr}</span>}
@@ -462,6 +462,7 @@ const LiveEntryList = ({entries, onEdit, onDelete, onCheckout, loading}) => {
               <div className="live-list-header">
                 <span className="live-col-name">Name</span>
                 <span className="live-col-time">Playtime</span>
+                <span className="live-col-dur">Duration</span>
                 <span className="live-col-amount">Amount</span>
                 <span className="live-col-actions">Actions</span>
               </div>
