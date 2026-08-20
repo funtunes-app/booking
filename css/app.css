@@ -847,11 +847,36 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.35) sep
 /* =============================================================================
    Live Entry List
    ============================================================================= */
-.live-list { display: flex; flex-direction: column; gap: 0; }
+.live-list { display: flex; flex-direction: column; gap: 16px; }
+
+.live-date-group { }
+.live-date-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 14px;
+  font-size: 14px; font-weight: 800; color: var(--text);
+  background: var(--warm1);
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  border-bottom: 2px solid var(--border);
+}
+.live-date-header--today {
+  background: var(--accent-soft, #f3e8ff);
+  border-bottom-color: var(--accent);
+}
+.live-date-label { font-size: 15px; font-weight: 900; }
+.live-date-count { font-size: 11px; font-weight: 600; color: var(--text-light); }
+.live-date-today-badge {
+  font-size: 10px; font-weight: 800; text-transform: uppercase;
+  letter-spacing: .5px;
+  background: var(--accent); color: #fff;
+  padding: 2px 8px; border-radius: 10px;
+}
+.live-date-entries { }
+
 .live-list-header {
   display: none; padding: 8px 14px; font-size: 10px; font-weight: 800;
   text-transform: uppercase; letter-spacing: .5px; color: var(--text-light);
   border-bottom: 1px solid var(--border);
+  background: var(--card);
 }
 @media (min-width: 720px) {
   .live-list-header { display: flex; gap: 12px; align-items: center; }
@@ -868,9 +893,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.35) sep
   background: var(--card);
   transition: background .15s;
 }
-.live-row:first-of-type { border-radius: var(--r-lg) var(--r-lg) 0 0; }
 .live-row:last-child { border-bottom: none; border-radius: 0 0 var(--r-lg) var(--r-lg); }
-.live-row:only-of-type { border-radius: var(--r-lg); }
 .live-row:hover { background: var(--warm1); }
 .live-row--exceeded { background: #fff5f5; }
 .live-row--exceeded:hover { background: #ffeded; }

@@ -419,6 +419,8 @@ const LiveEntryRow = ({e, onEdit, onDelete, onCheckout, isCheckedOut, now}) => {
   );
 };
 
+const DAY_NAMES = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
 const LiveEntryList = ({entries, onEdit, onDelete, onCheckout, loading}) => {
   const [now, setNow] = React.useState(new Date());
   React.useEffect(() => {
@@ -430,18 +432,47 @@ const LiveEntryList = ({entries, onEdit, onDelete, onCheckout, loading}) => {
 
   if (loading) return <div className="empty-state"><Spinner size={26} /><div style={{marginTop:10}}>Loading entries…</div></div>;
   if (!entries.length) return <div className="empty-state">No entries yet — start with <strong style={{color:C.accent}}>New Entry</strong>.</div>;
+
+  const grouped = {};
+  entries.forEach(e => {
+    const d = e.date || "unknown";
+    if (!grouped[d]) grouped[d] = [];
+    grouped[d].push(e);
+  });
+  const sortedDates = Object.keys(grouped).sort();
+
+  const todayStr = now.toISOString().slice(0,10);
+
   return (
     <div className="live-list">
-      <div className="live-list-header">
-        <span className="live-col-name">Name</span>
-        <span className="live-col-time">Playtime</span>
-        <span className="live-col-amount">Amount</span>
-        <span className="live-col-actions">Actions</span>
-      </div>
-      {entries.map((e,i) => (
-        <LiveEntryRow key={e.id||i} e={e} onEdit={onEdit} onDelete={onDelete}
-          onCheckout={onCheckout} isCheckedOut={!!checkedOut[e.id]} now={now} />
-      ))}
+      {sortedDates.map(dateStr => {
+        const dateObj = new Date(dateStr + "T00:00:00");
+        const day = dateObj.getDate();
+        const dayName = DAY_NAMES[dateObj.getDay()];
+        const isToday = dateStr === todayStr;
+        const dateEntries = grouped[dateStr];
+        return (
+          <div key={dateStr} className="live-date-group">
+            <div className={`live-date-header${isToday ? " live-date-header--today" : ""}`}>
+              <span className="live-date-label">{day} - {dayName}</span>
+              <span className="live-date-count">{dateEntries.length} {dateEntries.length === 1 ? "entry" : "entries"}</span>
+              {isToday && <span className="live-date-today-badge">Today</span>}
+            </div>
+            <div className="live-date-entries">
+              <div className="live-list-header">
+                <span className="live-col-name">Name</span>
+                <span className="live-col-time">Playtime</span>
+                <span className="live-col-amount">Amount</span>
+                <span className="live-col-actions">Actions</span>
+              </div>
+              {dateEntries.map((e,i) => (
+                <LiveEntryRow key={e.id||i} e={e} onEdit={onEdit} onDelete={onDelete}
+                  onCheckout={onCheckout} isCheckedOut={!!checkedOut[e.id]} now={now} />
+              ))}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 };
