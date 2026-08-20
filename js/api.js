@@ -141,13 +141,65 @@ var api = {
     return { success: true, found: false };
   },
 
-  // Birthday & enquiry methods — stubbed until separate tables are set up
-  getBirthdays: async function () {
-    return { success: true, data: [] };
+  getBirthdays: async function (month) {
+    var mm = String(month).padStart(2, "0");
+    var { data, error } = await supabaseClient
+      .from("entries")
+      .select("customer_name, phone, dob")
+      .neq("dob", "")
+      .like("dob", "%-" + mm + "-%")
+      .order("created_at", { ascending: false });
+    if (error) return { success: false, error: error.message };
+
+    var seen = {};
+    var results = [];
+    (data || []).forEach(function(row) {
+      if (!row.dob || row.dob.length < 10) return;
+      var key = (row.customer_name || "").trim().toLowerCase() + "|" + row.dob;
+      if (seen[key]) return;
+      seen[key] = true;
+      var parts = row.dob.split("-");
+      results.push({
+        key: key,
+        kidName: row.customer_name || "",
+        phone: row.phone || "",
+        dob: row.dob,
+        day: parseInt(parts[2]) || 1,
+        month: parseInt(parts[1]) || month,
+        year: parseInt(parts[0]) || 2020,
+      });
+    });
+
+    results.sort(function(a, b) { return a.day - b.day; });
+
+    try {
+      var crm = JSON.parse(localStorage.getItem("funtunes_bday_crm") || "{}");
+      results.forEach(function(r) {
+        var saved = crm[r.key];
+        if (saved) {
+          r.status = saved.status || "not_contacted";
+          r.notes = saved.notes || "";
+          if (saved.phone) r.phone = saved.phone;
+        }
+      });
+    } catch(e) {}
+
+    return { success: true, data: results };
   },
 
-  updateBirthdayCall: async function () {
-    return { success: false, error: "Not yet migrated to Supabase" };
+  updateBirthdayCall: async function (record) {
+    try {
+      var crm = JSON.parse(localStorage.getItem("funtunes_bday_crm") || "{}");
+      crm[record.key] = {
+        status: record.status || "not_contacted",
+        notes: record.notes || "",
+        phone: record.phone || "",
+      };
+      localStorage.setItem("funtunes_bday_crm", JSON.stringify(crm));
+      return { success: true };
+    } catch(e) {
+      return { success: false, error: e.message };
+    }
   },
 
   addEnquiry: async function () {
