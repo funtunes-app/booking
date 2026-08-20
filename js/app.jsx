@@ -86,6 +86,9 @@ function App() {
   const [phoneLookupLoading,setPhoneLookupLoading] = useState(false);
   const [enquiry,setEnquiry] = useState(null);
   const [enquirySaving,setEnquirySaving] = useState(false);
+  const [expenses,setExpenses] = useState([]);
+  const [expensePopup,setExpensePopup] = useState(null);
+  const [expenseSaving,setExpenseSaving] = useState(false);
   const containerRef = useRef(null);
   const lastLookedUpPhone = useRef("");
 
@@ -206,21 +209,62 @@ function App() {
     } catch(e) { console.error("Save call:",e); showToastMsg("Could not save — check internet","error"); }
   }
 
+  async function handleSaveExpense() {
+    if (!expensePopup) return;
+    if (!expensePopup.amount || parseInt(expensePopup.amount)<=0) { showToastMsg("Enter an amount","error"); return; }
+    setExpenseSaving(true);
+    try {
+      const res = await api.addExpense({
+        date: expensePopup.date || filterDate,
+        amount: expensePopup.amount,
+        description: expensePopup.description || "",
+        category: expensePopup.category || "misc",
+      });
+      if (res.success) {
+        setExpenses(prev=>[res.data,...prev]);
+        setExpensePopup(null);
+        showToastMsg("Expense saved!","success");
+      } else showToastMsg("Save failed: "+(res.error||"unknown"),"error");
+    } catch(e) { console.error("Save expense:",e); showToastMsg("Could not save expense","error"); }
+    finally { setExpenseSaving(false); }
+  }
+
+  async function handleDeleteExpense(id) {
+    try {
+      const res = await api.deleteExpense(id);
+      if (res.success) { setExpenses(prev=>prev.filter(x=>x.id!==id)); showToastMsg("Deleted","success"); }
+      else showToastMsg("Delete failed: "+(res.error||"unknown"),"error");
+    } catch(e) { console.error("Delete expense:",e); showToastMsg("Could not delete","error"); }
+  }
+
   async function fetchEntries(date,mode,rs,re) {
     const d = date||filterDate, md = mode||calMode;
     setLoading(true);
     try {
-      let res;
+      let res, startDate, endDate;
       if (md === "range") {
         const s = rs||rangeStart, e2 = re||rangeEnd;
-        if (s && e2) res = await api.readDateRange(s, e2);
+        if (s && e2) { res = await api.readDateRange(s, e2); startDate=s; endDate=e2; }
         else { setLoading(false); return; }
       } else {
         const [y,m,dd] = d.split("-").map(Number);
         res = await api.readEntries(y,m,md==="month"?"all":dd);
+        if (md==="month") {
+          const mm=String(m).padStart(2,"0");
+          startDate=y+"-"+mm+"-01";
+          endDate=y+"-"+mm+"-"+String(new Date(y,m,0).getDate()).padStart(2,"0");
+        } else {
+          startDate=d; endDate=d;
+        }
       }
       if (res.success) setTodayEntries(res.data||[]);
       else showToastMsg("Error: "+(res.error||"unknown"),"error");
+      if (startDate && endDate) {
+        try {
+          const expRes = await api.readExpenses(startDate, endDate);
+          if (expRes.success) setExpenses(expRes.data||[]);
+        } catch(ex) { console.error("Expenses fetch:",ex); }
+      }
     } catch(e) { console.error("Fetch:",e); showToastMsg("Could not load entries","error"); }
     finally { setLoading(false); }
   }
@@ -629,11 +673,12 @@ function App() {
                       onRangeChange={onCalRangeChange} onToday={onCalToday} />
                     <div className="filter-bar-right">
                       {!loading && <span className="filter-bar-count">{todayEntries.length} entries</span>}
+                      <button className="btn btn-sm" onClick={()=>setExpensePopup({date:filterDate,amount:"",description:"",category:"misc"})}>+ Expense</button>
                       <button className="btn btn-sm btn-icon" onClick={()=>fetchEntries()} disabled={loading} title="Refresh">↻</button>
                     </div>
                   </div>
                   {loading ? <div className="empty-state"><Spinner size={26} /><div style={{marginTop:10}}>Loading…</div></div>
-                    : <StatsDashboard entries={todayEntries} />}
+                    : <StatsDashboard entries={todayEntries} expenses={expenses} onDeleteExpense={handleDeleteExpense} />}
                 </>}
             </>}
 
@@ -704,6 +749,42 @@ function App() {
             <button className="btn" onClick={()=>setEnquiry(null)} disabled={enquirySaving} style={{flex:"0 0 90px"}}>Cancel</button>
             <button className="btn btn-primary" onClick={saveEnquiry} disabled={enquirySaving} style={{flex:1}}>
               {enquirySaving?"Saving…":"Save enquiry"}
+            </button>
+          </div>
+        </div>
+      </div>}
+
+      {/* ══════════ EXPENSE POPUP ══════════ */}
+      {expensePopup && <div className="overlay" onClick={()=>!expenseSaving&&setExpensePopup(null)}>
+        <div className="modal" style={{maxWidth:400,textAlign:"left",padding:"20px"}} onClick={e=>e.stopPropagation()}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
+            <span className="card-title">+ New Expense</span>
+            <button className="btn btn-sm btn-icon" onClick={()=>setExpensePopup(null)} disabled={expenseSaving} aria-label="Close">✕</button>
+          </div>
+          <div className="form-grid">
+            <InputField label="Amount" icon="₹">
+              <input className="fld" value={expensePopup.amount} type="tel" inputMode="numeric" placeholder="e.g. 30" autoFocus
+                onChange={e=>setExpensePopup({...expensePopup,amount:e.target.value.replace(/\D/g,"")})} />
+            </InputField>
+            <InputField label="Category" icon="📂">
+              <select className="fld" value={expensePopup.category}
+                onChange={e=>setExpensePopup({...expensePopup,category:e.target.value})}>
+                {EXPENSE_CATEGORIES.map(c=><option key={c.value} value={c.value}>{c.label}</option>)}
+              </select>
+            </InputField>
+            <InputField label="Description" icon="📝" className="span-2">
+              <input className="fld" value={expensePopup.description} placeholder="e.g. Staff snacks"
+                onChange={e=>setExpensePopup({...expensePopup,description:e.target.value})} />
+            </InputField>
+            <InputField label="Date" icon="📅">
+              <input className="fld" value={expensePopup.date} type="date"
+                onChange={e=>setExpensePopup({...expensePopup,date:e.target.value})} />
+            </InputField>
+          </div>
+          <div style={{display:"flex",gap:8,marginTop:4}}>
+            <button className="btn" onClick={()=>setExpensePopup(null)} disabled={expenseSaving} style={{flex:"0 0 90px"}}>Cancel</button>
+            <button className="btn btn-primary" onClick={handleSaveExpense} disabled={expenseSaving} style={{flex:1}}>
+              {expenseSaving?"Saving…":"Save expense"}
             </button>
           </div>
         </div>
