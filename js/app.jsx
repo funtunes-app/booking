@@ -71,10 +71,6 @@ function App() {
     if (h === "list" || h === "stats") return "entries";
     return "entries";
   });
-  const [entriesView,setEntriesView] = useState(()=>{
-    const h = location.hash.replace("#","");
-    return h === "stats" ? "stats" : "list";
-  });
   const [sidebarOpen,setSidebarOpen] = useState(false);
   const [statsUnlocked,setStatsUnlocked] = useState(false);
   const [loading,setLoading] = useState(false);
@@ -135,10 +131,10 @@ function App() {
       const h = location.hash.replace("#","");
       if (SECTIONS.includes(h)) {
         setSection(h);
-        if (h !== "entries") setStatsUnlocked(false);
+        if (h !== "cash-register") setStatsUnlocked(false);
         if (h === "birthdays") checkBirthdaysCache();
-      } else if (h === "list") { setSection("entries"); setEntriesView("list"); }
-      else if (h === "stats") { setSection("entries"); setEntriesView("stats"); }
+      } else if (h === "list") { setSection("entries"); }
+      else if (h === "stats") { setSection("cash-register"); }
     };
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
@@ -146,15 +142,10 @@ function App() {
 
   function switchSection(s) {
     setSidebarOpen(false);
-    if (s !== "entries") setStatsUnlocked(false);
+    if (s !== "cash-register") setStatsUnlocked(false);
     setSection(s);
     location.hash = s;
     if (s === "birthdays") checkBirthdaysCache();
-  }
-
-  function switchEntriesView(v) {
-    if (v !== "stats") setStatsUnlocked(false);
-    setEntriesView(v);
   }
 
   function handleCheckout(entry) {
@@ -552,7 +543,7 @@ function App() {
           <div className="sidebar-nav">
             {[
               {key:"entries",icon:"🎟️",label:"Entries"},
-              {key:"cash-register",icon:"💰",label:"Cash Register",soon:true},
+              {key:"cash-register",icon:"💰",label:"Cash Register"},
               {key:"birthdays",icon:"🎂",label:"Birthdays CRM"},
               {key:"staff",icon:"👥",label:"Staff",soon:true},
               {key:"events",icon:"🎪",label:"Events",soon:true},
@@ -592,16 +583,7 @@ function App() {
           <div className="container page">
             {/* ── ENTRIES SECTION ── */}
             {section==="entries" && <>
-              {/* Sub-tabs: List / Stats */}
-              <div className="sub-tabs">
-                <button type="button" className={`sub-tab${entriesView==="list"?" is-on":""}`}
-                  onClick={()=>switchEntriesView("list")}>📋 List</button>
-                <button type="button" className={`sub-tab${entriesView==="stats"?" is-on":""}`}
-                  onClick={()=>switchEntriesView("stats")}>📊 Stats</button>
-              </div>
-
-              {/* Calendar filter (shared, but hidden behind password for stats) */}
-              {(entriesView==="list"||(entriesView==="stats"&&statsUnlocked)) && <div className="card card-pad filter-bar" style={{marginBottom:"var(--sp-4)"}}>
+              <div className="card card-pad filter-bar" style={{marginBottom:"var(--sp-4)"}}>
                 <CalendarFilter mode={calMode} date={filterDate}
                   rangeStart={rangeStart} rangeEnd={rangeEnd}
                   onModeChange={onCalModeChange} onDateChange={onCalDateChange}
@@ -610,20 +592,8 @@ function App() {
                   {!loading && <span className="filter-bar-count">{todayEntries.length} entries</span>}
                   <button className="btn btn-sm btn-icon" onClick={()=>fetchEntries()} disabled={loading} title="Refresh">↻</button>
                 </div>
-              </div>}
-
-              {/* List view */}
-              {entriesView==="list" && <>
-                <LiveEntryList entries={[...todayEntries].sort((a,b)=>(a.id||0)-(b.id||0))} onEdit={handleEdit} onDelete={handleDelete} onCheckout={handleCheckout} loading={loading} />
-              </>}
-
-              {/* Stats view (password gated) */}
-              {entriesView==="stats" && <>
-                {!statsUnlocked
-                  ? <PasswordGate onUnlock={()=>setStatsUnlocked(true)} />
-                  : loading ? <div className="empty-state"><Spinner size={26} /><div style={{marginTop:10}}>Loading…</div></div>
-                  : <StatsDashboard entries={todayEntries} />}
-              </>}
+              </div>
+              <LiveEntryList entries={[...todayEntries].sort((a,b)=>(a.id||0)-(b.id||0))} onEdit={handleEdit} onDelete={handleDelete} onCheckout={handleCheckout} loading={loading} />
             </>}
 
             {/* ── BIRTHDAYS CRM SECTION ── */}
@@ -654,12 +624,27 @@ function App() {
               <BirthdayList birthdays={birthdays} loading={birthdaysLoading} weekFilter={weekFilter} onSave={saveBirthdayCall} onShowAll={()=>setWeekFilter("all")} />
             </>}
 
+            {/* ── CASH REGISTER SECTION (Stats) ── */}
+            {section==="cash-register" && <>
+              {!statsUnlocked
+                ? <PasswordGate onUnlock={()=>setStatsUnlocked(true)} />
+                : <>
+                  <div className="card card-pad filter-bar" style={{marginBottom:"var(--sp-4)"}}>
+                    <CalendarFilter mode={calMode} date={filterDate}
+                      rangeStart={rangeStart} rangeEnd={rangeEnd}
+                      onModeChange={onCalModeChange} onDateChange={onCalDateChange}
+                      onRangeChange={onCalRangeChange} onToday={onCalToday} />
+                    <div className="filter-bar-right">
+                      {!loading && <span className="filter-bar-count">{todayEntries.length} entries</span>}
+                      <button className="btn btn-sm btn-icon" onClick={()=>fetchEntries()} disabled={loading} title="Refresh">↻</button>
+                    </div>
+                  </div>
+                  {loading ? <div className="empty-state"><Spinner size={26} /><div style={{marginTop:10}}>Loading…</div></div>
+                    : <StatsDashboard entries={todayEntries} />}
+                </>}
+            </>}
+
             {/* ── COMING SOON SECTIONS ── */}
-            {section==="cash-register" && <div className="coming-soon">
-              <div className="coming-soon-icon">💰</div>
-              <div className="coming-soon-title">Cash Register</div>
-              <div className="coming-soon-text">Track daily cash flow, expenses, and reconciliation. Coming soon!</div>
-            </div>}
             {section==="staff" && <div className="coming-soon">
               <div className="coming-soon-icon">👥</div>
               <div className="coming-soon-title">Staff Management</div>
