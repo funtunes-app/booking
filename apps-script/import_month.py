@@ -87,6 +87,71 @@ def parse_hours(val):
         return "1"
 
 
+def parse_timing(val):
+    """Parse time strings like '6.20-7.20', '5.50 PM-6.50 PM', '02:30 PM to 03:30 PM'."""
+    if not val:
+        return "", "", ""
+    s = str(val).strip()
+    if not s or s == "-":
+        return "", "", ""
+
+    parts = re.split(r'\s*(?:to|-)\s*', s, maxsplit=1)
+    if len(parts) != 2:
+        return "", "", s
+
+    def to_24h(t):
+        t = t.strip()
+        m2 = re.match(r'(\d{1,2})[.:](\d{2})\s*(AM|PM)', t, re.I)
+        if m2:
+            h = int(m2.group(1))
+            mi = m2.group(2)
+            ap = m2.group(3).upper()
+            if ap == "PM" and h != 12:
+                h += 12
+            if ap == "AM" and h == 12:
+                h = 0
+            return f"{h:02d}:{mi}"
+        m2 = re.match(r'(\d{1,2})[.:](\d{2})', t)
+        if m2:
+            h = int(m2.group(1))
+            mi = m2.group(2)
+            return f"{h:02d}:{mi}"
+        return ""
+
+    time_in = to_24h(parts[0])
+    time_out = to_24h(parts[1])
+
+    def fmt12(t24):
+        if not t24:
+            return ""
+        hh, mm = t24.split(":")
+        h = int(hh)
+        ap = "PM" if h >= 12 else "AM"
+        h = h % 12
+        if h == 0:
+            h = 12
+        return f"{h:02d}:{mm} {ap}"
+
+    timing_display = f"{fmt12(time_in)} to {fmt12(time_out)}" if time_in and time_out else s
+    return time_in, time_out, timing_display
+
+
+def parse_dob(val):
+    """Parse DOB — return empty string for '-', None, or empty. Don't default."""
+    if not val:
+        return ""
+    s = str(val).strip()
+    if s in ("-", "None", ""):
+        return ""
+    m = re.match(r"(\d{1,2})[./](\d{1,2})[./](\d{4})", s)
+    if m:
+        return f"{m.group(3)}-{m.group(2).zfill(2)}-{m.group(1).zfill(2)}"
+    m = re.match(r"(\d{4})-(\d{2})-(\d{2})", s)
+    if m:
+        return s[:10]
+    return s
+
+
 def sql_escape(s):
     return "'" + str(s).replace("'", "''") + "'"
 
@@ -127,8 +192,10 @@ def parse_sheet(ws):
         socks_mop = map_mop(socks_mop_raw)
         hours = parse_hours(hours_raw)
         phone = parse_phone(phone_raw)
-        dob = str(dob_raw).strip() if dob_raw else ""
-        timing = str(time_raw).strip() if time_raw else ""
+        dob = parse_dob(dob_raw)
+        time_in, time_out, timing = parse_timing(time_raw)
+
+        num_kids = 1
 
         play_upi = amount if mop == "UPI" else 0
         play_cash = amount if mop == "Cash" else 0
@@ -146,10 +213,10 @@ def parse_sheet(ws):
             "play_cash": play_cash,
             "socks_upi": socks_upi,
             "socks_cash": socks_cash,
-            "num_kids": 1,
+            "num_kids": num_kids,
             "hours": hours,
-            "time_in": "",
-            "time_out": "",
+            "time_in": time_in,
+            "time_out": time_out,
             "timing": timing,
             "phone": phone,
             "dob": dob,
@@ -176,7 +243,7 @@ def generate_sql(entries, sheet_name, out_path):
             f"{sql_escape(e['date'])}, {sql_escape(e['customer_name'])}, {e['amount']}, "
             f"{sql_escape(e['mop'])}, {e['socks']}, {sql_escape(e['socks_mop'])}, "
             f"{e['play_upi']}, {e['play_cash']}, {e['socks_upi']}, {e['socks_cash']}, "
-            f"1, {sql_escape(e['hours'])}, '', '', {sql_escape(e['timing'])}, "
+            f"1, {sql_escape(e['hours'])}, {sql_escape(e['time_in'])}, {sql_escape(e['time_out'])}, {sql_escape(e['timing'])}, "
             f"{sql_escape(e['phone'])}, {sql_escape(e['dob'])}, 'funzone');"
         )
     lines += ["", "COMMIT;", f"-- Total: {len(entries)} entries"]
