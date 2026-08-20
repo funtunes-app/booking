@@ -64,10 +64,18 @@ function App() {
   const [calMode,setCalMode] = useState("day");
   const [rangeStart,setRangeStart] = useState("");
   const [rangeEnd,setRangeEnd] = useState("");
-  const [dashTab,setDashTab] = useState(()=>{
+  const SECTIONS = ["entries","cash-register","birthdays","staff","events","marketing"];
+  const [section,setSection] = useState(()=>{
     const h = location.hash.replace("#","");
-    return ["list","stats","birthdays"].includes(h) ? h : "list";
+    if (SECTIONS.includes(h)) return h;
+    if (h === "list" || h === "stats") return "entries";
+    return "entries";
   });
+  const [entriesView,setEntriesView] = useState(()=>{
+    const h = location.hash.replace("#","");
+    return h === "stats" ? "stats" : "list";
+  });
+  const [sidebarOpen,setSidebarOpen] = useState(false);
   const [statsUnlocked,setStatsUnlocked] = useState(false);
   const [loading,setLoading] = useState(false);
   const [saving,setSaving] = useState(false);
@@ -125,20 +133,28 @@ function App() {
     fetchEntries(); checkBirthdaysCache();
     const onHash = () => {
       const h = location.hash.replace("#","");
-      if (["list","stats","birthdays"].includes(h)) {
-        if (h !== "stats") setStatsUnlocked(false);
-        setDashTab(h);
-      }
+      if (SECTIONS.includes(h)) {
+        setSection(h);
+        if (h !== "entries") setStatsUnlocked(false);
+        if (h === "birthdays") checkBirthdaysCache();
+      } else if (h === "list") { setSection("entries"); setEntriesView("list"); }
+      else if (h === "stats") { setSection("entries"); setEntriesView("stats"); }
     };
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
   },[]);
 
-  function switchTab(tab) {
-    if (tab !== "stats") setStatsUnlocked(false);
-    setDashTab(tab);
-    location.hash = tab;
-    if (tab === "birthdays") checkBirthdaysCache();
+  function switchSection(s) {
+    setSidebarOpen(false);
+    if (s !== "entries") setStatsUnlocked(false);
+    setSection(s);
+    location.hash = s;
+    if (s === "birthdays") checkBirthdaysCache();
+  }
+
+  function switchEntriesView(v) {
+    if (v !== "stats") setStatsUnlocked(false);
+    setEntriesView(v);
   }
 
   function handleCheckout(entry) {
@@ -467,7 +483,7 @@ function App() {
 
   function openBirthdays() {
     resetForm();
-    switchTab("birthdays");
+    switchSection("birthdays");
   }
 
   function setFormType(type) {
@@ -522,92 +538,151 @@ function App() {
           <button className="btn btn-block" onClick={resetForm}>📊 Go to dashboard</button>
         </div></div>}
 
-      {/* ══════════ HOME (List / Stats / Birthdays tabs) ══════════ */}
+      {/* ══════════ HOME — Sidebar + Main Content ══════════ */}
       {screen==="home" && <>
-        <header className="appbar">
-          <div className="container appbar-inner">
-            <div className="appbar-brand">
-              <img className="appbar-logo" src="icons/logo-header.png" alt="" />
-              <div style={{minWidth:0}}>
-                <div className="appbar-title">{CONFIG.APP_NAME}</div>
-                <div className="appbar-sub">{dateDisplay} · {timeDisplay}</div>
-              </div>
-            </div>
-            <div className="appbar-actions">
-              <button className="btn btn-sm btn-primary new-entry-inline" onClick={()=>startNewEntry("funzone")}>+ New Entry</button>
-            </div>
-          </div>
-        </header>
+        {/* Sidebar overlay (mobile) */}
+        {sidebarOpen && <div className="sidebar-overlay" onClick={()=>setSidebarOpen(false)} />}
 
-        <div className="container page">
-          <div className="tab-bar">
-            {[{value:"list",label:"List",icon:"📋"},{value:"stats",label:"Stats",icon:"📊"},{value:"birthdays",label:"Birthdays",icon:"🎂"}].map(t=>(
-              <button key={t.value} type="button" className={`tab-item${dashTab===t.value?" is-on":""}`}
-                onClick={()=>switchTab(t.value)}>{t.icon} {t.label}</button>
+        {/* Sidebar */}
+        <nav className={`sidebar${sidebarOpen?" is-open":""}`}>
+          <div className="sidebar-brand">
+            <img src="icons/logo-header.png" alt="" style={{width:32,height:32,borderRadius:8}} />
+            <span className="sidebar-brand-name">{CONFIG.APP_NAME}</span>
+          </div>
+          <div className="sidebar-nav">
+            {[
+              {key:"entries",icon:"🎟️",label:"Entries"},
+              {key:"cash-register",icon:"💰",label:"Cash Register",soon:true},
+              {key:"birthdays",icon:"🎂",label:"Birthdays CRM"},
+              {key:"staff",icon:"👥",label:"Staff",soon:true},
+              {key:"events",icon:"🎪",label:"Events",soon:true},
+              {key:"marketing",icon:"📢",label:"Marketing",soon:true},
+            ].map(item=>(
+              <button key={item.key} type="button"
+                className={`sidebar-item${section===item.key?" is-on":""}`}
+                onClick={()=>switchSection(item.key)}>
+                <span className="sidebar-item-icon">{item.icon}</span>
+                {item.label}
+                {item.soon && <span className="sidebar-item-badge">Soon</span>}
+              </button>
             ))}
           </div>
+          <div className="sidebar-footer">{dateDisplay} · {timeDisplay}</div>
+        </nav>
 
-          {/* Calendar filter for list, and for stats only after unlock */}
-          {(dashTab==="list"||(dashTab==="stats"&&statsUnlocked)) && <div className="card card-pad filter-bar" style={{marginBottom:"var(--sp-4)"}}>
-            <CalendarFilter mode={calMode} date={filterDate}
-              rangeStart={rangeStart} rangeEnd={rangeEnd}
-              onModeChange={onCalModeChange} onDateChange={onCalDateChange}
-              onRangeChange={onCalRangeChange} onToday={onCalToday} />
-            <div className="filter-bar-right">
-              {!loading && <span className="filter-bar-count">{todayEntries.length} entries</span>}
-              <button className="btn btn-sm btn-icon" onClick={()=>fetchEntries()} disabled={loading} title="Refresh">↻</button>
+        {/* Main content area */}
+        <div className="app-main">
+          <header className="appbar">
+            <div className="container appbar-inner">
+              <div className="appbar-brand">
+                <button type="button" className="sidebar-toggle" onClick={()=>setSidebarOpen(o=>!o)} aria-label="Menu">☰</button>
+                <div style={{minWidth:0}}>
+                  <div className="appbar-title">
+                    {{entries:"Entries","cash-register":"Cash Register",birthdays:"Birthdays CRM",staff:"Staff",events:"Events",marketing:"Marketing"}[section]}
+                  </div>
+                  <div className="appbar-sub">{dateDisplay} · {timeDisplay}</div>
+                </div>
+              </div>
+              <div className="appbar-actions">
+                {section==="entries" && <button className="btn btn-sm btn-primary new-entry-inline" onClick={()=>startNewEntry("funzone")}>+ New Entry</button>}
+              </div>
             </div>
+          </header>
+
+          <div className="container page">
+            {/* ── ENTRIES SECTION ── */}
+            {section==="entries" && <>
+              {/* Sub-tabs: List / Stats */}
+              <div className="sub-tabs">
+                <button type="button" className={`sub-tab${entriesView==="list"?" is-on":""}`}
+                  onClick={()=>switchEntriesView("list")}>📋 List</button>
+                <button type="button" className={`sub-tab${entriesView==="stats"?" is-on":""}`}
+                  onClick={()=>switchEntriesView("stats")}>📊 Stats</button>
+              </div>
+
+              {/* Calendar filter (shared, but hidden behind password for stats) */}
+              {(entriesView==="list"||(entriesView==="stats"&&statsUnlocked)) && <div className="card card-pad filter-bar" style={{marginBottom:"var(--sp-4)"}}>
+                <CalendarFilter mode={calMode} date={filterDate}
+                  rangeStart={rangeStart} rangeEnd={rangeEnd}
+                  onModeChange={onCalModeChange} onDateChange={onCalDateChange}
+                  onRangeChange={onCalRangeChange} onToday={onCalToday} />
+                <div className="filter-bar-right">
+                  {!loading && <span className="filter-bar-count">{todayEntries.length} entries</span>}
+                  <button className="btn btn-sm btn-icon" onClick={()=>fetchEntries()} disabled={loading} title="Refresh">↻</button>
+                </div>
+              </div>}
+
+              {/* List view */}
+              {entriesView==="list" && <>
+                <LiveEntryList entries={[...todayEntries].sort((a,b)=>(a.id||0)-(b.id||0))} onEdit={handleEdit} onDelete={handleDelete} onCheckout={handleCheckout} loading={loading} />
+              </>}
+
+              {/* Stats view (password gated) */}
+              {entriesView==="stats" && <>
+                {!statsUnlocked
+                  ? <PasswordGate onUnlock={()=>setStatsUnlocked(true)} />
+                  : loading ? <div className="empty-state"><Spinner size={26} /><div style={{marginTop:10}}>Loading…</div></div>
+                  : <StatsDashboard entries={todayEntries} />}
+              </>}
+            </>}
+
+            {/* ── BIRTHDAYS CRM SECTION ── */}
+            {section==="birthdays" && <>
+              <div className="card card-pad" style={{marginBottom:"var(--sp-4)"}}>
+                <div style={{display:"flex",gap:"var(--gap)",marginBottom:12,flexWrap:"wrap"}}>
+                  <div style={{display:"flex",gap:8,flex:"1 1 260px",minWidth:0}}>
+                    <Dropdown flex={1.5} value={birthdayMonth} onChange={changeMonth}
+                      options={MONTH_NAMES.map((m,i)=>({value:i+1,label:m}))} />
+                    <Dropdown flex={1} value={birthdayYear} onChange={changeYear}
+                      options={[new Date().getFullYear()-1, new Date().getFullYear(), new Date().getFullYear()+1].map(y=>({value:y,label:String(y)}))} />
+                  </div>
+                  <div className="chips" style={{flex:"1 1 auto",alignItems:"center"}}>
+                    <button type="button" className={`chip${weekFilter==="all"?" is-on":""}`} onClick={()=>setWeekFilter("all")}>All</button>
+                    {[1,2,3,4,5].map(w=>(
+                      <button key={w} type="button" className={`chip${weekFilter===w?" is-on":""}`} onClick={()=>setWeekFilter(w)}>W{w}</button>
+                    ))}
+                  </div>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:8,fontSize:12,color:C.textMid,fontWeight:600,borderTop:`1px solid ${C.border}`,paddingTop:11}}>
+                  <span>🎉 <strong style={{color:C.text}}>{birthdays.length}</strong> birthday{birthdays.length!==1?"s":""} in {MONTH_NAMES[birthdayMonth-1]} {birthdayYear}</span>
+                  <span style={{color:C.textLight}}>·</span>
+                  <span style={{color:C.green}}>{birthdays.filter(b=>(b.status||(b.contacted?"warm":"not_contacted"))!=="not_contacted").length} contacted</span>
+                  <button className="btn btn-sm" style={{marginLeft:"auto"}} onClick={openEnquiry}>+ Enquiry</button>
+                  <button className="btn btn-sm btn-icon" onClick={()=>fetchBirthdays()} disabled={birthdaysLoading} title="Refresh" aria-label="Refresh">↻</button>
+                </div>
+              </div>
+              <BirthdayList birthdays={birthdays} loading={birthdaysLoading} weekFilter={weekFilter} onSave={saveBirthdayCall} onShowAll={()=>setWeekFilter("all")} />
+            </>}
+
+            {/* ── COMING SOON SECTIONS ── */}
+            {section==="cash-register" && <div className="coming-soon">
+              <div className="coming-soon-icon">💰</div>
+              <div className="coming-soon-title">Cash Register</div>
+              <div className="coming-soon-text">Track daily cash flow, expenses, and reconciliation. Coming soon!</div>
+            </div>}
+            {section==="staff" && <div className="coming-soon">
+              <div className="coming-soon-icon">👥</div>
+              <div className="coming-soon-title">Staff Management</div>
+              <div className="coming-soon-text">Manage staff schedules, attendance, and payroll. Coming soon!</div>
+            </div>}
+            {section==="events" && <div className="coming-soon">
+              <div className="coming-soon-icon">🎪</div>
+              <div className="coming-soon-title">Events</div>
+              <div className="coming-soon-text">Plan and manage birthday parties, special events, and bookings. Coming soon!</div>
+            </div>}
+            {section==="marketing" && <div className="coming-soon">
+              <div className="coming-soon-icon">📢</div>
+              <div className="coming-soon-title">Marketing</div>
+              <div className="coming-soon-text">WhatsApp campaigns, offers, and customer engagement. Coming soon!</div>
+            </div>}
+          </div>
+
+          {/* New Entry (mobile floating action button) */}
+          {section==="entries" && <div className="new-entry-fab">
+            <button className="btn btn-primary btn-block btn-lg" onClick={()=>startNewEntry("funzone")} style={{boxShadow:`0 6px 22px ${C.accent}45`,animation:"slideUp .35s ease"}}>+ New Entry</button>
           </div>}
-
-          {/* ── LIST TAB ── */}
-          {dashTab==="list" && <>
-            <LiveEntryList entries={[...todayEntries].sort((a,b)=>(a.id||0)-(b.id||0))} onEdit={handleEdit} onDelete={handleDelete} onCheckout={handleCheckout} loading={loading} />
-          </>}
-
-          {/* ── STATS TAB ── */}
-          {dashTab==="stats" && <>
-            {!statsUnlocked
-              ? <PasswordGate onUnlock={()=>setStatsUnlocked(true)} />
-              : loading ? <div className="empty-state"><Spinner size={26} /><div style={{marginTop:10}}>Loading…</div></div>
-              : <StatsDashboard entries={todayEntries} />}
-          </>}
-
-          {/* ── BIRTHDAYS TAB ── */}
-          {dashTab==="birthdays" && <>
-            <div className="card card-pad" style={{marginBottom:"var(--sp-4)"}}>
-              <div style={{display:"flex",gap:"var(--gap)",marginBottom:12,flexWrap:"wrap"}}>
-                <div style={{display:"flex",gap:8,flex:"1 1 260px",minWidth:0}}>
-                  <Dropdown flex={1.5} value={birthdayMonth} onChange={changeMonth}
-                    options={MONTH_NAMES.map((m,i)=>({value:i+1,label:m}))} />
-                  <Dropdown flex={1} value={birthdayYear} onChange={changeYear}
-                    options={[new Date().getFullYear()-1, new Date().getFullYear(), new Date().getFullYear()+1].map(y=>({value:y,label:String(y)}))} />
-                </div>
-                <div className="chips" style={{flex:"1 1 auto",alignItems:"center"}}>
-                  <button type="button" className={`chip${weekFilter==="all"?" is-on":""}`} onClick={()=>setWeekFilter("all")}>All</button>
-                  {[1,2,3,4,5].map(w=>(
-                    <button key={w} type="button" className={`chip${weekFilter===w?" is-on":""}`} onClick={()=>setWeekFilter(w)}>W{w}</button>
-                  ))}
-                </div>
-              </div>
-              <div style={{display:"flex",alignItems:"center",gap:8,fontSize:12,color:C.textMid,fontWeight:600,borderTop:`1px solid ${C.border}`,paddingTop:11}}>
-                <span>🎉 <strong style={{color:C.text}}>{birthdays.length}</strong> birthday{birthdays.length!==1?"s":""} in {MONTH_NAMES[birthdayMonth-1]} {birthdayYear}</span>
-                <span style={{color:C.textLight}}>·</span>
-                <span style={{color:C.green}}>{birthdays.filter(b=>(b.status||(b.contacted?"warm":"not_contacted"))!=="not_contacted").length} contacted</span>
-                <button className="btn btn-sm" style={{marginLeft:"auto"}} onClick={openEnquiry}>+ Enquiry</button>
-                <button className="btn btn-sm btn-icon" onClick={()=>fetchBirthdays()} disabled={birthdaysLoading} title="Refresh" aria-label="Refresh">↻</button>
-              </div>
-            </div>
-            <BirthdayList birthdays={birthdays} loading={birthdaysLoading} weekFilter={weekFilter} onSave={saveBirthdayCall} onShowAll={()=>setWeekFilter("all")} />
-          </>}
-        </div>
-
-        {/* New Entry (mobile floating action button) */}
-        <div className="new-entry-fab">
-          <button className="btn btn-primary btn-block btn-lg" onClick={()=>startNewEntry("funzone")} style={{boxShadow:`0 6px 22px ${C.accent}45`,animation:"slideUp .35s ease"}}>+ New Entry</button>
         </div>
       </>}
-
-      {/* Birthdays screen removed — now lives inside the home tab bar */}
 
       {/* ══════════ BIRTHDAY ENQUIRY ══════════ */}
       {enquiry && <div className="overlay" onClick={()=>!enquirySaving&&setEnquiry(null)}>
