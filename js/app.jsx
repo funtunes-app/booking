@@ -229,7 +229,8 @@ function App() {
     finally { setExpenseSaving(false); }
   }
 
-  async function handleDeleteExpense(id) {
+  async function handleDeleteExpense(expenseOrId) {
+    const id = typeof expenseOrId === "object" ? expenseOrId.id : expenseOrId;
     try {
       const res = await api.deleteExpense(id);
       if (res.success) { setExpenses(prev=>prev.filter(x=>x.id!==id)); showToastMsg("Deleted","success"); }
