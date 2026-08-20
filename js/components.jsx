@@ -478,7 +478,83 @@ const LiveEntryList = ({entries, onEdit, onDelete, onCheckout, loading}) => {
   );
 };
 
-const StatsDashboard = ({entries}) => {
+const EXPENSE_CATEGORIES = [
+  {value:"snacks",label:"Snacks"},
+  {value:"supplies",label:"Supplies"},
+  {value:"maintenance",label:"Maintenance"},
+  {value:"transport",label:"Transport"},
+  {value:"misc",label:"Misc"},
+];
+
+const CashFlowSummary = ({entries, expenses}) => {
+  const totalUpi = entries.reduce((a,e) => a + (parseInt(e.playUpi)||0) + (parseInt(e.socksUpi)||0), 0);
+  const totalCash = entries.reduce((a,e) => a + (parseInt(e.playCash)||0) + (parseInt(e.socksCash)||0), 0);
+  const totalExpenses = expenses.reduce((a,e) => a + (parseInt(e.amount)||0), 0);
+  const netCash = totalCash - totalExpenses;
+  const f = (v) => `₹${v.toLocaleString("en-IN")}`;
+
+  return (
+    <div className="card card-pad cashflow-summary" style={{marginBottom:"var(--sp-4)"}}>
+      <div className="card-title" style={{marginBottom:12}}>💵 Cash Flow Summary</div>
+      <div className="cashflow-grid">
+        <div className="cashflow-item cashflow-item--in">
+          <div className="cashflow-icon">📱</div>
+          <div>
+            <div className="cashflow-label">UPI Received</div>
+            <div className="cashflow-value" style={{color:C.blue}}>{f(totalUpi)}</div>
+          </div>
+        </div>
+        <div className="cashflow-item cashflow-item--in">
+          <div className="cashflow-icon">💵</div>
+          <div>
+            <div className="cashflow-label">Cash Received</div>
+            <div className="cashflow-value" style={{color:C.green}}>{f(totalCash)}</div>
+          </div>
+        </div>
+        <div className="cashflow-item cashflow-item--out">
+          <div className="cashflow-icon">📤</div>
+          <div>
+            <div className="cashflow-label">Cash Expenses</div>
+            <div className="cashflow-value" style={{color:C.danger}}>{f(totalExpenses)}</div>
+          </div>
+        </div>
+        <div className="cashflow-item cashflow-item--net">
+          <div className="cashflow-icon">🏦</div>
+          <div>
+            <div className="cashflow-label">Net Cash in Hand</div>
+            <div className="cashflow-value" style={{color:netCash>=0?C.green:C.danger}}>{f(netCash)}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ExpenseList = ({expenses, onDelete}) => {
+  if (!expenses.length) return null;
+  const f = (v) => `₹${v.toLocaleString("en-IN")}`;
+  const catLabel = (c) => (EXPENSE_CATEGORIES.find(x=>x.value===c)||{}).label || c;
+  return (
+    <div className="card" style={{marginBottom:"var(--sp-4)"}}>
+      <div className="card-head"><div className="card-title">📤 Expenses</div></div>
+      <div className="expense-list">
+        {expenses.map((e,i) => (
+          <div key={e.id||i} className="expense-row">
+            <div className="expense-row-main">
+              <span className="expense-row-desc">{e.description || "—"}</span>
+              <span className="expense-row-cat">{catLabel(e.category)}</span>
+            </div>
+            <span className="expense-row-date">{(e.date||"").split("-").reverse().join("/")}</span>
+            <span className="expense-row-amt">{f(e.amount)}</span>
+            <button type="button" className="icon-btn danger" title="Delete" onClick={()=>onDelete(e)}>🗑️</button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const StatsDashboard = ({entries, expenses, onDeleteExpense}) => {
   const totalKids = entries.reduce((a,e) => a + (parseInt(e.numKids)||1), 0);
   const totalRevenue = entries.reduce((a,e) => a + (parseInt(e.amount)||0) + (parseInt(e.socks)||0), 0);
   const totalPlayUpi = entries.reduce((a,e) => a + (parseInt(e.playUpi)||0), 0);
@@ -490,13 +566,23 @@ const StatsDashboard = ({entries}) => {
   const totalUpi = totalPlayUpi + totalSocksUpi;
   const totalCash = totalPlayCash + totalSocksCash;
 
+  const allExpenses = expenses || [];
+  const totalExpenses = allExpenses.reduce((a,e) => a + (parseInt(e.amount)||0), 0);
+
   const grouped = {};
   entries.forEach(e => {
     const key = e.date || "unknown";
-    if (!grouped[key]) grouped[key] = {revenue:0,kids:0,count:0};
+    if (!grouped[key]) grouped[key] = {revenue:0,kids:0,count:0,upi:0,cash:0,expenses:0};
     grouped[key].revenue += (parseInt(e.amount)||0) + (parseInt(e.socks)||0);
     grouped[key].kids += parseInt(e.numKids)||1;
     grouped[key].count += 1;
+    grouped[key].upi += (parseInt(e.playUpi)||0) + (parseInt(e.socksUpi)||0);
+    grouped[key].cash += (parseInt(e.playCash)||0) + (parseInt(e.socksCash)||0);
+  });
+  allExpenses.forEach(e => {
+    const key = e.date || "unknown";
+    if (!grouped[key]) grouped[key] = {revenue:0,kids:0,count:0,upi:0,cash:0,expenses:0};
+    grouped[key].expenses += parseInt(e.amount)||0;
   });
   const sorted = Object.keys(grouped).sort();
   const rows = sorted.map(k => ({label:k.split("-").reverse().join("/"), ...grouped[k]}));
@@ -507,6 +593,8 @@ const StatsDashboard = ({entries}) => {
 
   return (
     <div className="stats-dash">
+      <CashFlowSummary entries={entries} expenses={allExpenses} />
+
       <div className="stats-dash-cards">
         <div className="scard scard--blue">
           <div className="scard-icon">👶</div>
@@ -568,15 +656,24 @@ const StatsDashboard = ({entries}) => {
         <div className="card-head"><div className="card-title">📊 Daily Breakdown</div></div>
         <div className="breakdown-table-wrap">
           <table className="breakdown-table">
-            <thead><tr><th>Date</th><th>Entries</th><th>Kids</th><th>Revenue</th></tr></thead>
+            <thead><tr><th>Date</th><th>Kids</th><th>UPI</th><th>Cash</th><th>Expenses</th><th>Net Cash</th></tr></thead>
             <tbody>
               {rows.map((r,i) => (
-                <tr key={i}><td>{r.label}</td><td>{r.count}</td><td>{r.kids}</td><td>{f(r.revenue)}</td></tr>
+                <tr key={i}>
+                  <td>{r.label}</td>
+                  <td>{r.kids}</td>
+                  <td style={{color:C.blue}}>{f(r.upi)}</td>
+                  <td style={{color:C.green}}>{f(r.cash)}</td>
+                  <td style={{color:r.expenses>0?C.danger:undefined}}>{r.expenses>0?f(r.expenses):"—"}</td>
+                  <td style={{fontWeight:800,color:r.cash-r.expenses>=0?C.green:C.danger}}>{f(r.cash - r.expenses)}</td>
+                </tr>
               ))}
             </tbody>
           </table>
         </div>
       </div>}
+
+      <ExpenseList expenses={allExpenses} onDelete={onDeleteExpense} />
     </div>
   );
 };

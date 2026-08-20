@@ -202,6 +202,38 @@ var api = {
     }
   },
 
+  readExpenses: async function (startDate, endDate) {
+    var query = supabaseClient.from("cash_expenses").select("*");
+    if (startDate === endDate) {
+      query = query.eq("date", startDate);
+    } else {
+      query = query.gte("date", startDate).lte("date", endDate);
+    }
+    var { data, error } = await query.order("created_at", { ascending: false });
+    if (error) return { success: false, error: error.message };
+    return { success: true, data: data || [] };
+  },
+
+  addExpense: async function (expense) {
+    var row = {
+      date: expense.date || new Date().toISOString().slice(0, 10),
+      amount: parseInt(expense.amount) || 0,
+      description: expense.description || "",
+      category: expense.category || "misc",
+    };
+    var { data, error } = await supabaseClient
+      .from("cash_expenses").insert(row).select();
+    if (error) return { success: false, error: error.message };
+    return { success: true, data: data && data[0] ? data[0] : null };
+  },
+
+  deleteExpense: async function (id) {
+    var { error } = await supabaseClient
+      .from("cash_expenses").delete().eq("id", id);
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  },
+
   addEnquiry: async function () {
     return { success: false, error: "Not yet migrated to Supabase" };
   },
