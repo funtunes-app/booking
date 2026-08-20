@@ -978,7 +978,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.35) sep
 .scard-body { flex: 1; min-width: 0; }
 .scard-value { font-size: 20px; font-weight: 900; color: var(--text); letter-spacing: -0.3px; line-height: 1.2; }
 .scard-label { font-size: 11px; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: .4px; margin-top: 2px; }
-.scard-split { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+.scard-split { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; margin-top: 8px; }
 .scard-tag {
   font-size: 10px; font-weight: 700; padding: 3px 8px;
   border-radius: 6px; white-space: nowrap;
