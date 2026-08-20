@@ -534,21 +534,30 @@ const ExpenseList = ({expenses, onDelete}) => {
   if (!expenses.length) return null;
   const f = (v) => `₹${v.toLocaleString("en-IN")}`;
   const catLabel = (c) => (EXPENSE_CATEGORIES.find(x=>x.value===c)||{}).label || c;
+  const total = expenses.reduce((s,e)=>s+(e.amount||0),0);
   return (
     <div className="card" style={{marginBottom:"var(--sp-4)"}}>
       <div className="card-head"><div className="card-title">📤 Expenses</div></div>
-      <div className="expense-list">
-        {expenses.map((e,i) => (
-          <div key={e.id||i} className="expense-row">
-            <div className="expense-row-main">
-              <span className="expense-row-desc">{e.description || "—"}</span>
-              <span className="expense-row-cat">{catLabel(e.category)}</span>
-            </div>
-            <span className="expense-row-date">{(e.date||"").split("-").reverse().join("/")}</span>
-            <span className="expense-row-amt">{f(e.amount)}</span>
-            <button type="button" className="icon-btn danger" title="Delete" onClick={()=>onDelete(e)}>🗑️</button>
-          </div>
-        ))}
+      <div className="breakdown-table-wrap">
+        <table className="breakdown-table">
+          <thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Amount</th><th></th></tr></thead>
+          <tbody>
+            {expenses.map((e,i) => (
+              <tr key={e.id||i}>
+                <td>{(e.date||"").split("-").reverse().join("/")}</td>
+                <td>{e.description || "—"}</td>
+                <td>{catLabel(e.category)}</td>
+                <td style={{color:C.danger,fontWeight:700}}>{f(e.amount)}</td>
+                <td style={{width:36,textAlign:"center"}}><button type="button" className="icon-btn danger" title="Delete" onClick={()=>onDelete(e)} style={{fontSize:14}}>🗑️</button></td>
+              </tr>
+            ))}
+            {expenses.length > 1 && <tr style={{fontWeight:800}}>
+              <td colSpan={3} style={{textAlign:"right"}}>Total</td>
+              <td style={{color:C.danger}}>{f(total)}</td>
+              <td></td>
+            </tr>}
+          </tbody>
+        </table>
       </div>
     </div>
   );
