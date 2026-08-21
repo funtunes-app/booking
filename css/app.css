@@ -1183,8 +1183,8 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.35) sep
 .home-fullscreen {
   min-height: 100dvh;
   display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  padding: 32px 20px;
+  align-items: center; justify-content: flex-start;
+  padding: 20vh 20px 32px;
   background: linear-gradient(160deg, var(--bg) 0%, var(--accent-soft) 100%);
 }
 .home-hero {
