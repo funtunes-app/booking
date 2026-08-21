@@ -64,7 +64,7 @@ function App() {
   const [calMode,setCalMode] = useState("day");
   const [rangeStart,setRangeStart] = useState("");
   const [rangeEnd,setRangeEnd] = useState("");
-  const SECTIONS = ["entries","cash-register","birthdays","staff","events","marketing"];
+  const SECTIONS = ["entries","cash-register","expenses","birthdays","staff","events","marketing"];
   const [section,setSection] = useState(()=>{
     const h = location.hash.replace("#","");
     if (SECTIONS.includes(h)) return h;
@@ -89,12 +89,19 @@ function App() {
   const [expenses,setExpenses] = useState([]);
   const [expensePopup,setExpensePopup] = useState(null);
   const [expenseSaving,setExpenseSaving] = useState(false);
+  const [monthlyExp,setMonthlyExp] = useState([]);
+  const [monthlyExpMonth,setMonthlyExpMonth] = useState(new Date().getMonth()+1);
+  const [monthlyExpYear,setMonthlyExpYear] = useState(new Date().getFullYear());
+  const [monthlyExpLoading,setMonthlyExpLoading] = useState(false);
+  const [monthlyExpPopup,setMonthlyExpPopup] = useState(null);
+  const [monthlyExpSaving,setMonthlyExpSaving] = useState(false);
   const [pnlOpen,setPnlOpen] = useState(false);
   const [pnlUnlocked,setPnlUnlocked] = useState(false);
   const [pnlMonth,setPnlMonth] = useState(new Date().getMonth()+1);
   const [pnlYear,setPnlYear] = useState(new Date().getFullYear());
   const [pnlEntries,setPnlEntries] = useState([]);
   const [pnlExpenses,setPnlExpenses] = useState([]);
+  const [pnlMonthlyExp,setPnlMonthlyExp] = useState([]);
   const [pnlLoading,setPnlLoading] = useState(false);
   const containerRef = useRef(null);
   const lastLookedUpPhone = useRef("");
@@ -141,7 +148,7 @@ function App() {
       const h = location.hash.replace("#","");
       if (SECTIONS.includes(h)) {
         setSection(h);
-        if (h !== "cash-register") setStatsUnlocked(false);
+        if (h !== "cash-register" && h !== "expenses") setStatsUnlocked(false);
         if (h === "birthdays") checkBirthdaysCache();
       } else if (h === "list") { setSection("entries"); }
       else if (h === "stats") { setSection("cash-register"); }
@@ -152,7 +159,7 @@ function App() {
 
   function switchSection(s) {
     setSidebarOpen(false);
-    if (s !== "cash-register") setStatsUnlocked(false);
+    if (s !== "cash-register" && s !== "expenses") setStatsUnlocked(false);
     setSection(s);
     location.hash = s;
     if (s === "birthdays") checkBirthdaysCache();
@@ -245,6 +252,50 @@ function App() {
     } catch(e) { console.error("Delete expense:",e); showToastMsg("Could not delete","error"); }
   }
 
+  async function fetchMonthlyExpenses(month, year) {
+    const m = month || monthlyExpMonth, y = year || monthlyExpYear;
+    setMonthlyExpLoading(true);
+    try {
+      const res = await api.readMonthlyExpenses(m, y);
+      if (res.success) setMonthlyExp(res.data || []);
+      else showToastMsg("Error: "+(res.error||"unknown"),"error");
+    } catch(e) { console.error("Monthly expenses fetch:",e); showToastMsg("Could not load expenses","error"); }
+    finally { setMonthlyExpLoading(false); }
+  }
+
+  function onMonthlyExpMonthChange(m) { setMonthlyExpMonth(m); fetchMonthlyExpenses(m, monthlyExpYear); }
+  function onMonthlyExpYearChange(y) { setMonthlyExpYear(y); fetchMonthlyExpenses(monthlyExpMonth, y); }
+
+  async function handleSaveMonthlyExpense() {
+    if (!monthlyExpPopup) return;
+    if (!monthlyExpPopup.amount || parseInt(monthlyExpPopup.amount) <= 0) { showToastMsg("Enter an amount","error"); return; }
+    setMonthlyExpSaving(true);
+    try {
+      const res = await api.addMonthlyExpense({
+        month: monthlyExpMonth,
+        year: monthlyExpYear,
+        category: monthlyExpPopup.category || "misc",
+        amount: monthlyExpPopup.amount,
+        description: monthlyExpPopup.description || "",
+      });
+      if (res.success) {
+        setMonthlyExp(prev => [res.data, ...prev]);
+        setMonthlyExpPopup(null);
+        showToastMsg("Expense saved!", "success");
+      } else showToastMsg("Save failed: "+(res.error||"unknown"),"error");
+    } catch(e) { console.error("Save monthly expense:",e); showToastMsg("Could not save","error"); }
+    finally { setMonthlyExpSaving(false); }
+  }
+
+  async function handleDeleteMonthlyExpense(expense) {
+    const id = typeof expense === "object" ? expense.id : expense;
+    try {
+      const res = await api.deleteMonthlyExpense(id);
+      if (res.success) { setMonthlyExp(prev => prev.filter(x => x.id !== id)); showToastMsg("Deleted","success"); }
+      else showToastMsg("Delete failed: "+(res.error||"unknown"),"error");
+    } catch(e) { console.error("Delete monthly expense:",e); showToastMsg("Could not delete","error"); }
+  }
+
   async function fetchPnl(month, year) {
     const m = month || pnlMonth, y = year || pnlYear;
     const mm = String(m).padStart(2,"0");
@@ -252,12 +303,14 @@ function App() {
     const endDate = y+"-"+mm+"-"+String(new Date(y,m,0).getDate()).padStart(2,"0");
     setPnlLoading(true);
     try {
-      const [entRes, expRes] = await Promise.all([
+      const [entRes, expRes, mExpRes] = await Promise.all([
         api.readDateRange(startDate, endDate),
         api.readExpenses(startDate, endDate),
+        api.readMonthlyExpenses(m, y),
       ]);
       if (entRes.success) setPnlEntries(entRes.data||[]);
       if (expRes.success) setPnlExpenses(expRes.data||[]);
+      if (mExpRes.success) setPnlMonthlyExp(mExpRes.data||[]);
     } catch(e) { console.error("P&L fetch:",e); showToastMsg("Could not load P&L data","error"); }
     finally { setPnlLoading(false); }
   }
@@ -618,6 +671,7 @@ function App() {
             {[
               {key:"entries",icon:"🎟️",label:"Entries"},
               {key:"cash-register",icon:"💰",label:"Cash Register"},
+              {key:"expenses",icon:"📋",label:"Monthly Expenses"},
               {key:"birthdays",icon:"🎂",label:"Birthdays CRM"},
               {key:"staff",icon:"👥",label:"Staff",soon:true},
               {key:"events",icon:"🎪",label:"Events",soon:true},
@@ -711,6 +765,19 @@ function App() {
                   {loading ? <div className="empty-state"><Spinner size={26} /><div style={{marginTop:10}}>Loading…</div></div>
                     : <StatsDashboard entries={todayEntries} expenses={expenses} onDeleteExpense={handleDeleteExpense} />}
                 </>}
+            </>}
+
+            {/* ── MONTHLY EXPENSES SECTION ── */}
+            {section==="expenses" && <>
+              {!statsUnlocked
+                ? <PasswordGate onUnlock={()=>{setStatsUnlocked(true);fetchMonthlyExpenses();}} />
+                : <MonthlyExpensesDashboard
+                    expenses={monthlyExp}
+                    month={monthlyExpMonth} year={monthlyExpYear}
+                    onChangeMonth={onMonthlyExpMonthChange} onChangeYear={onMonthlyExpYearChange}
+                    onAdd={()=>setMonthlyExpPopup({amount:"",category:"rent",description:""})}
+                    onDelete={handleDeleteMonthlyExpense}
+                    loading={monthlyExpLoading} />}
             </>}
 
             {/* ── COMING SOON SECTIONS ── */}
@@ -830,10 +897,45 @@ function App() {
           </div>
           {!pnlUnlocked
             ? <PasswordGate onUnlock={onPnlUnlock} />
-            : <PnLReport entries={pnlEntries} expenses={pnlExpenses}
+            : <PnLReport entries={pnlEntries} expenses={pnlExpenses} monthlyExpenses={pnlMonthlyExp}
                 month={pnlMonth} year={pnlYear}
                 onChangeMonth={onPnlMonthChange} onChangeYear={onPnlYearChange}
                 loading={pnlLoading} />}
+        </div>
+      </div>}
+
+      {/* ══════════ MONTHLY EXPENSE POPUP ══════════ */}
+      {monthlyExpPopup && <div className="overlay" onClick={()=>!monthlyExpSaving&&setMonthlyExpPopup(null)}>
+        <div className="modal" style={{maxWidth:400,textAlign:"left",padding:"20px"}} onClick={e=>e.stopPropagation()}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
+            <span className="card-title">+ Monthly Expense</span>
+            <button className="btn btn-sm btn-icon" onClick={()=>setMonthlyExpPopup(null)} disabled={monthlyExpSaving} aria-label="Close">✕</button>
+          </div>
+          <div style={{fontSize:12,color:C.textMid,fontWeight:600,marginBottom:12}}>
+            Adding to {MONTH_NAMES[(monthlyExpMonth||1)-1]} {monthlyExpYear}
+          </div>
+          <div className="form-grid">
+            <InputField label="Amount" icon="₹">
+              <input className="fld" value={monthlyExpPopup.amount} type="tel" inputMode="numeric" placeholder="e.g. 80000" autoFocus
+                onChange={e=>setMonthlyExpPopup({...monthlyExpPopup,amount:e.target.value.replace(/\D/g,"")})} />
+            </InputField>
+            <InputField label="Category" icon="📂">
+              <select className="fld" value={monthlyExpPopup.category}
+                onChange={e=>setMonthlyExpPopup({...monthlyExpPopup,category:e.target.value})}>
+                {MONTHLY_EXPENSE_CATEGORIES.map(c=><option key={c.value} value={c.value}>{c.label}</option>)}
+              </select>
+            </InputField>
+            <InputField label="Description" icon="📝" className="span-2">
+              <input className="fld" value={monthlyExpPopup.description} placeholder="e.g. Rent paid to George"
+                onChange={e=>setMonthlyExpPopup({...monthlyExpPopup,description:e.target.value})} />
+            </InputField>
+          </div>
+          <div style={{display:"flex",gap:8,marginTop:4}}>
+            <button className="btn" onClick={()=>setMonthlyExpPopup(null)} disabled={monthlyExpSaving} style={{flex:"0 0 90px"}}>Cancel</button>
+            <button className="btn btn-primary" onClick={handleSaveMonthlyExpense} disabled={monthlyExpSaving} style={{flex:1}}>
+              {monthlyExpSaving?"Saving…":"Save expense"}
+            </button>
+          </div>
         </div>
       </div>}
 

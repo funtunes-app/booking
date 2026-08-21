@@ -486,6 +486,85 @@ const EXPENSE_CATEGORIES = [
   {value:"misc",label:"Misc"},
 ];
 
+const MONTHLY_EXPENSE_CATEGORIES = [
+  {value:"rent",label:"Rent"},
+  {value:"maintenance",label:"Maintenance"},
+  {value:"eb",label:"EB (Electricity)"},
+  {value:"salary",label:"Salary"},
+  {value:"marketing",label:"Marketing"},
+  {value:"misc",label:"FT Monthly Expenses"},
+];
+
+const MonthlyExpensesDashboard = ({expenses, month, year, onChangeMonth, onChangeYear, onAdd, onDelete, loading}) => {
+  const f = (v) => `₹${(v||0).toLocaleString("en-IN")}`;
+  const catLabel = (c) => (MONTHLY_EXPENSE_CATEGORIES.find(x=>x.value===c)||{}).label || c;
+  const total = expenses.reduce((s,e)=>s+(e.amount||0),0);
+
+  const byCat = {};
+  MONTHLY_EXPENSE_CATEGORIES.forEach(c => { byCat[c.value] = 0; });
+  expenses.forEach(e => { byCat[e.category] = (byCat[e.category]||0) + (e.amount||0); });
+
+  const catColors = {rent:C.accent, maintenance:C.blue, eb:C.orange, salary:C.green, marketing:C.pink, misc:C.textMid};
+
+  return (
+    <div>
+      <div className="card card-pad filter-bar" style={{marginBottom:"var(--sp-4)"}}>
+        <div style={{display:"flex",gap:8,flex:"1 1 220px",minWidth:0}}>
+          <Dropdown flex={1.5} value={month} onChange={v=>onChangeMonth(parseInt(v))}
+            options={MONTH_NAMES.map((m,i)=>({value:i+1,label:m}))} />
+          <Dropdown flex={1} value={year} onChange={v=>onChangeYear(parseInt(v))}
+            options={[new Date().getFullYear()-1, new Date().getFullYear(), new Date().getFullYear()+1].map(y=>({value:y,label:String(y)}))} />
+        </div>
+        <div className="filter-bar-right">
+          {!loading && <span className="filter-bar-count">{expenses.length} items</span>}
+          <button className="btn btn-sm" onClick={onAdd}>+ Add Expense</button>
+        </div>
+      </div>
+
+      {loading ? <div className="empty-state"><Spinner size={26} /><div style={{marginTop:10}}>Loading…</div></div> : <>
+        <div className="cashflow-grid" style={{marginBottom:"var(--sp-4)"}}>
+          {MONTHLY_EXPENSE_CATEGORIES.map(cat => (
+            <div key={cat.value} className="cashflow-item">
+              <div className="cashflow-label">{cat.label}</div>
+              <div className="cashflow-value" style={{color:catColors[cat.value]||C.text,fontSize:18}}>{f(byCat[cat.value])}</div>
+            </div>
+          ))}
+        </div>
+
+        <div className="card" style={{marginBottom:"var(--sp-4)",textAlign:"center",padding:"16px"}}>
+          <div style={{fontSize:12,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:".4px",marginBottom:4}}>Total Monthly Expenses</div>
+          <div style={{fontSize:28,fontWeight:900,color:C.danger}}>{f(total)}</div>
+          <div style={{fontSize:11,color:C.textLight,fontWeight:600,marginTop:4}}>{MONTH_NAMES[(month||1)-1]} {year}</div>
+        </div>
+
+        {expenses.length > 0 ? <div className="card" style={{marginBottom:"var(--sp-4)"}}>
+          <div className="card-head"><div className="card-title">Expense Details</div></div>
+          <div className="breakdown-table-wrap">
+            <table className="breakdown-table">
+              <thead><tr><th>Category</th><th>Description</th><th>Amount</th><th></th></tr></thead>
+              <tbody>
+                {expenses.map((e,i) => (
+                  <tr key={e.id||i}>
+                    <td><span style={{display:"inline-block",width:8,height:8,borderRadius:4,background:catColors[e.category]||C.textMid,marginRight:6}}></span>{catLabel(e.category)}</td>
+                    <td>{e.description || "—"}</td>
+                    <td style={{color:C.danger,fontWeight:700}}>{f(e.amount)}</td>
+                    <td style={{width:36,textAlign:"center"}}><button type="button" className="icon-btn danger" title="Delete" onClick={()=>onDelete(e)} style={{fontSize:14}}>🗑️</button></td>
+                  </tr>
+                ))}
+                <tr style={{fontWeight:800,borderTop:"2px solid var(--border-strong)"}}>
+                  <td colSpan={2} style={{textAlign:"right"}}>Total</td>
+                  <td style={{color:C.danger}}>{f(total)}</td>
+                  <td></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div> : <div className="empty-state">No expenses recorded for {MONTH_NAMES[(month||1)-1]} {year}.</div>}
+      </>}
+    </div>
+  );
+};
+
 const CashFlowSummary = ({entries, expenses}) => {
   const totalUpi = entries.reduce((a,e) => a + (parseInt(e.playUpi)||0) + (parseInt(e.socksUpi)||0), 0);
   const totalCash = entries.reduce((a,e) => a + (parseInt(e.playCash)||0) + (parseInt(e.socksCash)||0), 0);
@@ -689,7 +768,7 @@ const StatsDashboard = ({entries, expenses, onDeleteExpense}) => {
 
 const SOCKS_COST_PER_PIECE = 7;
 
-const PnLReport = ({entries, expenses, month, year, onChangeMonth, onChangeYear, loading}) => {
+const PnLReport = ({entries, expenses, monthlyExpenses, month, year, onChangeMonth, onChangeYear, loading}) => {
   const f = (v) => `₹${Math.abs(v).toLocaleString("en-IN")}`;
   const totalPlayUpi = entries.reduce((s,e)=>s+(e.playUpi||0),0);
   const totalPlayCash = entries.reduce((s,e)=>s+(e.playCash||0),0);
@@ -698,17 +777,15 @@ const PnLReport = ({entries, expenses, month, year, onChangeMonth, onChangeYear,
   const totalSocksAmt = entries.reduce((s,e)=>s+(e.socks||0),0);
   const socksCount = CONFIG.SOCKS_RATE > 0 ? Math.round(totalSocksAmt / CONFIG.SOCKS_RATE) : 0;
   const socksCost = socksCount * SOCKS_COST_PER_PIECE;
-  const totalExpenses = expenses.reduce((s,e)=>s+(e.amount||0),0);
+  const totalCashExp = expenses.reduce((s,e)=>s+(e.amount||0),0);
+  const allMonthly = monthlyExpenses || [];
+  const catLabel = (c) => (MONTHLY_EXPENSE_CATEGORIES.find(x=>x.value===c)||{}).label || c;
+  const monthlyCatTotals = {};
+  allMonthly.forEach(e => { monthlyCatTotals[e.category] = (monthlyCatTotals[e.category]||0) + (e.amount||0); });
+  const totalMonthlyExp = allMonthly.reduce((s,e)=>s+(e.amount||0),0);
   const totalIncome = totalPlayUpi + totalPlayCash + totalSocksUpi + totalSocksCash;
-  const totalCosts = socksCost + totalExpenses;
+  const totalCosts = socksCost + totalCashExp + totalMonthlyExp;
   const profit = totalIncome - totalCosts;
-
-  const rows = [
-    {label:"Play Income (UPI)",   value:totalPlayUpi,   color:C.blue,   indent:false},
-    {label:"Play Income (Cash)",  value:totalPlayCash,  color:C.green,  indent:false},
-    {label:"Socks Income (UPI)",  value:totalSocksUpi,  color:C.blue,   indent:false},
-    {label:"Socks Income (Cash)", value:totalSocksCash, color:C.green,  indent:false},
-  ];
 
   return (
     <div>
@@ -726,12 +803,10 @@ const PnLReport = ({entries, expenses, month, year, onChangeMonth, onChangeYear,
           <div className="breakdown-table-wrap">
             <table className="breakdown-table">
               <tbody>
-                {rows.map((r,i) => (
-                  <tr key={i}>
-                    <td>{r.label}</td>
-                    <td style={{textAlign:"right",color:r.color,fontWeight:700}}>{f(r.value)}</td>
-                  </tr>
-                ))}
+                <tr><td>Play Income (UPI)</td><td style={{textAlign:"right",color:C.blue,fontWeight:700}}>{f(totalPlayUpi)}</td></tr>
+                <tr><td>Play Income (Cash)</td><td style={{textAlign:"right",color:C.green,fontWeight:700}}>{f(totalPlayCash)}</td></tr>
+                <tr><td>Socks Income (UPI)</td><td style={{textAlign:"right",color:C.blue,fontWeight:700}}>{f(totalSocksUpi)}</td></tr>
+                <tr><td>Socks Income (Cash)</td><td style={{textAlign:"right",color:C.green,fontWeight:700}}>{f(totalSocksCash)}</td></tr>
                 <tr style={{fontWeight:800,borderTop:"2px solid var(--border-strong)"}}>
                   <td>Total Revenue</td>
                   <td style={{textAlign:"right",color:C.green}}>{f(totalIncome)}</td>
@@ -751,9 +826,17 @@ const PnLReport = ({entries, expenses, month, year, onChangeMonth, onChangeYear,
                   <td style={{textAlign:"right",color:C.danger,fontWeight:700}}>{f(socksCost)}</td>
                 </tr>
                 <tr>
-                  <td>Cash Expenses</td>
-                  <td style={{textAlign:"right",color:C.danger,fontWeight:700}}>{f(totalExpenses)}</td>
+                  <td>Daily Cash Expenses</td>
+                  <td style={{textAlign:"right",color:C.danger,fontWeight:700}}>{f(totalCashExp)}</td>
                 </tr>
+                {MONTHLY_EXPENSE_CATEGORIES.map(cat => {
+                  const v = monthlyCatTotals[cat.value] || 0;
+                  if (v === 0) return null;
+                  return <tr key={cat.value}>
+                    <td>{cat.label}</td>
+                    <td style={{textAlign:"right",color:C.danger,fontWeight:700}}>{f(v)}</td>
+                  </tr>;
+                })}
                 <tr style={{fontWeight:800,borderTop:"2px solid var(--border-strong)"}}>
                   <td>Total Costs</td>
                   <td style={{textAlign:"right",color:C.danger}}>{f(totalCosts)}</td>

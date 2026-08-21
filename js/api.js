@@ -234,6 +234,48 @@ var api = {
     return { success: true };
   },
 
+  readMonthlyExpenses: async function (month, year) {
+    var { data, error } = await supabaseClient
+      .from("monthly_expenses").select("*")
+      .eq("month", month).eq("year", year)
+      .order("created_at", { ascending: false });
+    if (error) return { success: false, error: error.message };
+    return { success: true, data: data || [] };
+  },
+
+  addMonthlyExpense: async function (expense) {
+    var row = {
+      month: parseInt(expense.month),
+      year: parseInt(expense.year),
+      category: expense.category || "misc",
+      amount: parseInt(expense.amount) || 0,
+      description: expense.description || "",
+    };
+    var { data, error } = await supabaseClient
+      .from("monthly_expenses").insert(row).select();
+    if (error) return { success: false, error: error.message };
+    return { success: true, data: data && data[0] ? data[0] : null };
+  },
+
+  updateMonthlyExpense: async function (id, expense) {
+    var row = {
+      category: expense.category || "misc",
+      amount: parseInt(expense.amount) || 0,
+      description: expense.description || "",
+    };
+    var { data, error } = await supabaseClient
+      .from("monthly_expenses").update(row).eq("id", id).select();
+    if (error) return { success: false, error: error.message };
+    return { success: true, data: data && data[0] ? data[0] : null };
+  },
+
+  deleteMonthlyExpense: async function (id) {
+    var { error } = await supabaseClient
+      .from("monthly_expenses").delete().eq("id", id);
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  },
+
   addEnquiry: async function () {
     return { success: false, error: "Not yet migrated to Supabase" };
   },
