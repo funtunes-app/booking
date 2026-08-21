@@ -95,13 +95,8 @@ function App() {
   const [monthlyExpLoading,setMonthlyExpLoading] = useState(false);
   const [monthlyExpPopup,setMonthlyExpPopup] = useState(null);
   const [monthlyExpSaving,setMonthlyExpSaving] = useState(false);
-  const [pnlOpen,setPnlOpen] = useState(false);
-  const [pnlUnlocked,setPnlUnlocked] = useState(false);
-  const [pnlMonth,setPnlMonth] = useState(new Date().getMonth()+1);
-  const [pnlYear,setPnlYear] = useState(new Date().getFullYear());
   const [pnlEntries,setPnlEntries] = useState([]);
   const [pnlExpenses,setPnlExpenses] = useState([]);
-  const [pnlMonthlyExp,setPnlMonthlyExp] = useState([]);
   const [pnlLoading,setPnlLoading] = useState(false);
   const containerRef = useRef(null);
   const lastLookedUpPhone = useRef("");
@@ -297,28 +292,24 @@ function App() {
   }
 
   async function fetchPnl(month, year) {
-    const m = month || pnlMonth, y = year || pnlYear;
+    const m = month || monthlyExpMonth, y = year || monthlyExpYear;
     const mm = String(m).padStart(2,"0");
     const startDate = y+"-"+mm+"-01";
     const endDate = y+"-"+mm+"-"+String(new Date(y,m,0).getDate()).padStart(2,"0");
     setPnlLoading(true);
     try {
-      const [entRes, expRes, mExpRes] = await Promise.all([
+      const [entRes, expRes] = await Promise.all([
         api.readDateRange(startDate, endDate),
         api.readExpenses(startDate, endDate),
-        api.readMonthlyExpenses(m, y),
       ]);
       if (entRes.success) setPnlEntries(entRes.data||[]);
       if (expRes.success) setPnlExpenses(expRes.data||[]);
-      if (mExpRes.success) setPnlMonthlyExp(mExpRes.data||[]);
     } catch(e) { console.error("P&L fetch:",e); showToastMsg("Could not load P&L data","error"); }
     finally { setPnlLoading(false); }
   }
 
-  function openPnl() { setPnlOpen(true); if (pnlUnlocked) fetchPnl(); }
-  function onPnlUnlock() { setPnlUnlocked(true); fetchPnl(); }
-  function onPnlMonthChange(m) { setPnlMonth(m); fetchPnl(m, pnlYear); }
-  function onPnlYearChange(y) { setPnlYear(y); fetchPnl(pnlMonth, y); }
+  function onPnlSectionMonthChange(m) { setMonthlyExpMonth(m); fetchMonthlyExpenses(m, monthlyExpYear); fetchPnl(m, monthlyExpYear); }
+  function onPnlSectionYearChange(y) { setMonthlyExpYear(y); fetchMonthlyExpenses(monthlyExpMonth, y); fetchPnl(monthlyExpMonth, y); }
 
   async function fetchEntries(date,mode,rs,re) {
     const d = date||filterDate, md = mode||calMode;
@@ -671,7 +662,7 @@ function App() {
             {[
               {key:"entries",icon:"🎟️",label:"Entries"},
               {key:"cash-register",icon:"💰",label:"Cash Register"},
-              {key:"expenses",icon:"📋",label:"Monthly Expenses"},
+              {key:"expenses",icon:"📊",label:"Profit / Loss"},
               {key:"birthdays",icon:"🎂",label:"Birthdays CRM"},
               {key:"staff",icon:"👥",label:"Staff",soon:true},
               {key:"events",icon:"🎪",label:"Events",soon:true},
@@ -697,7 +688,7 @@ function App() {
                 <button type="button" className="sidebar-toggle" onClick={()=>setSidebarOpen(o=>!o)} aria-label="Menu">☰</button>
                 <div style={{minWidth:0}}>
                   <div className="appbar-title">
-                    {{entries:"Entries","cash-register":"Cash Register",birthdays:"Birthdays CRM",staff:"Staff",events:"Events",marketing:"Marketing"}[section]}
+                    {{entries:"Entries","cash-register":"Cash Register",expenses:"Profit / Loss",birthdays:"Birthdays CRM",staff:"Staff",events:"Events",marketing:"Marketing"}[section]}
                   </div>
                   <div className="appbar-sub">{dateDisplay} · {timeDisplay}</div>
                 </div>
@@ -757,7 +748,6 @@ function App() {
                       onRangeChange={onCalRangeChange} onToday={onCalToday} />
                     <div className="filter-bar-right">
                       {!loading && <span className="filter-bar-count">{todayEntries.length} entries</span>}
-                      <button className="btn btn-sm" onClick={openPnl}>P&L</button>
                       <button className="btn btn-sm" onClick={()=>setExpensePopup({date:filterDate,amount:"",description:"",category:"misc"})}>+ Expense</button>
                       <button className="btn btn-sm btn-icon" onClick={()=>fetchEntries()} disabled={loading} title="Refresh">↻</button>
                     </div>
@@ -767,17 +757,24 @@ function App() {
                 </>}
             </>}
 
-            {/* ── MONTHLY EXPENSES SECTION ── */}
+            {/* ── PROFIT / LOSS SECTION ── */}
             {section==="expenses" && <>
               {!statsUnlocked
-                ? <PasswordGate onUnlock={()=>{setStatsUnlocked(true);fetchMonthlyExpenses();}} />
-                : <MonthlyExpensesDashboard
+                ? <PasswordGate onUnlock={()=>{setStatsUnlocked(true);fetchMonthlyExpenses();fetchPnl();}} />
+                : <>
+                  <PnLReport entries={pnlEntries} expenses={pnlExpenses} monthlyExpenses={monthlyExp}
+                    month={monthlyExpMonth} year={monthlyExpYear}
+                    onChangeMonth={onPnlSectionMonthChange} onChangeYear={onPnlSectionYearChange}
+                    loading={pnlLoading||monthlyExpLoading} />
+                  <MonthlyExpensesDashboard
                     expenses={monthlyExp}
                     month={monthlyExpMonth} year={monthlyExpYear}
-                    onChangeMonth={onMonthlyExpMonthChange} onChangeYear={onMonthlyExpYearChange}
+                    onChangeMonth={onPnlSectionMonthChange} onChangeYear={onPnlSectionYearChange}
                     onAdd={()=>setMonthlyExpPopup({amount:"",category:"rent",description:""})}
                     onDelete={handleDeleteMonthlyExpense}
-                    loading={monthlyExpLoading} />}
+                    loading={monthlyExpLoading}
+                    hideFilter={true} />
+                </>}
             </>}
 
             {/* ── COMING SOON SECTIONS ── */}
@@ -888,21 +885,6 @@ function App() {
         </div>
       </div>}
 
-      {/* ══════════ P&L POPUP ══════════ */}
-      {pnlOpen && <div className="overlay" onClick={()=>setPnlOpen(false)}>
-        <div className="modal" style={{maxWidth:520,textAlign:"left",padding:"20px",maxHeight:"85vh",overflowY:"auto"}} onClick={e=>e.stopPropagation()}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
-            <span className="card-title">Profit & Loss</span>
-            <button className="btn btn-sm btn-icon" onClick={()=>setPnlOpen(false)} aria-label="Close">✕</button>
-          </div>
-          {!pnlUnlocked
-            ? <PasswordGate onUnlock={onPnlUnlock} />
-            : <PnLReport entries={pnlEntries} expenses={pnlExpenses} monthlyExpenses={pnlMonthlyExp}
-                month={pnlMonth} year={pnlYear}
-                onChangeMonth={onPnlMonthChange} onChangeYear={onPnlYearChange}
-                loading={pnlLoading} />}
-        </div>
-      </div>}
 
       {/* ══════════ MONTHLY EXPENSE POPUP ══════════ */}
       {monthlyExpPopup && <div className="overlay" onClick={()=>!monthlyExpSaving&&setMonthlyExpPopup(null)}>

@@ -495,7 +495,7 @@ const MONTHLY_EXPENSE_CATEGORIES = [
   {value:"misc",label:"FT Monthly Expenses"},
 ];
 
-const MonthlyExpensesDashboard = ({expenses, month, year, onChangeMonth, onChangeYear, onAdd, onDelete, loading}) => {
+const MonthlyExpensesDashboard = ({expenses, month, year, onChangeMonth, onChangeYear, onAdd, onDelete, loading, hideFilter}) => {
   const f = (v) => `₹${(v||0).toLocaleString("en-IN")}`;
   const catLabel = (c) => (MONTHLY_EXPENSE_CATEGORIES.find(x=>x.value===c)||{}).label || c;
   const total = expenses.reduce((s,e)=>s+(e.amount||0),0);
@@ -508,7 +508,7 @@ const MonthlyExpensesDashboard = ({expenses, month, year, onChangeMonth, onChang
 
   return (
     <div>
-      <div className="card card-pad filter-bar" style={{marginBottom:"var(--sp-4)"}}>
+      {!hideFilter && <div className="card card-pad filter-bar" style={{marginBottom:"var(--sp-4)"}}>
         <div style={{display:"flex",gap:8,flex:"1 1 220px",minWidth:0}}>
           <Dropdown flex={1.5} value={month} onChange={v=>onChangeMonth(parseInt(v))}
             options={MONTH_NAMES.map((m,i)=>({value:i+1,label:m}))} />
@@ -519,7 +519,10 @@ const MonthlyExpensesDashboard = ({expenses, month, year, onChangeMonth, onChang
           {!loading && <span className="filter-bar-count">{expenses.length} items</span>}
           <button className="btn btn-sm" onClick={onAdd}>+ Add Expense</button>
         </div>
-      </div>
+      </div>}
+      {hideFilter && <div style={{display:"flex",justifyContent:"flex-end",gap:8,marginBottom:"var(--sp-4)"}}>
+        <button className="btn btn-sm" onClick={onAdd}>+ Add Expense</button>
+      </div>}
 
       {loading ? <div className="empty-state"><Spinner size={26} /><div style={{marginTop:10}}>Loading…</div></div> : <>
         <div className="cashflow-grid" style={{marginBottom:"var(--sp-4)"}}>
