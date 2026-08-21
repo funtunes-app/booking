@@ -647,7 +647,7 @@ function App() {
       {screen==="home" && section==="home" && <div className="home-fullscreen">
         <div className="home-hero">
           <img src="icons/logo.png" alt={CONFIG.APP_NAME} className="home-logo" />
-          <p className="home-subtitle">Kids Indoor Play Zone — Staff Dashboard</p>
+          <p className="home-subtitle">Kids Indoor Play Zone — Ops</p>
         </div>
         <div className="home-grid">
           {[
