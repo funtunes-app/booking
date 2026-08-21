@@ -65,12 +65,7 @@ function App() {
   const [rangeStart,setRangeStart] = useState("");
   const [rangeEnd,setRangeEnd] = useState("");
   const SECTIONS = ["home","entries","cash-register","expenses","birthdays","staff","events","marketing"];
-  const [section,setSection] = useState(()=>{
-    const h = location.hash.replace("#","");
-    if (SECTIONS.includes(h)) return h;
-    if (h === "list" || h === "stats") return "entries";
-    return "home";
-  });
+  const [section,setSection] = useState("home");
   const [sidebarOpen,setSidebarOpen] = useState(false);
   const [statsUnlocked,setStatsUnlocked] = useState(false);
   const [loading,setLoading] = useState(false);
@@ -157,7 +152,7 @@ function App() {
     setSidebarOpen(false);
     if (s !== "cash-register" && s !== "expenses") setStatsUnlocked(false);
     setSection(s);
-    location.hash = s;
+    location.hash = s === "home" ? "" : s;
     if (s === "birthdays") checkBirthdaysCache();
   }
 
@@ -648,14 +643,37 @@ function App() {
           <button className="btn btn-block" onClick={resetForm}>📊 Go to dashboard</button>
         </div></div>}
 
+      {/* ══════════ FULL-SCREEN HOME LANDING ══════════ */}
+      {screen==="home" && section==="home" && <div className="home-fullscreen">
+        <div className="home-hero">
+          <img src="icons/logo.png" alt={CONFIG.APP_NAME} className="home-logo" />
+          <h1 className="home-title">{CONFIG.APP_NAME}</h1>
+          <p className="home-subtitle">Kids Indoor Play Zone — Staff Dashboard</p>
+        </div>
+        <div className="home-grid">
+          {[
+            {key:"entries",icon:"🎟️",label:"Entries",desc:"Log walk-ins, track play time, and manage daily customer entries."},
+            {key:"cash-register",icon:"💰",label:"Cash Register",desc:"View daily revenue, cash flow summary, UPI & cash breakdown."},
+            {key:"expenses",icon:"📊",label:"Profit / Loss",desc:"Track monthly expenses and see your profit & loss statement."},
+            {key:"birthdays",icon:"🎂",label:"Birthdays CRM",desc:"Birthday calendar, contact tracking, and party booking pipeline."},
+          ].map(item=>(
+            <button key={item.key} className="home-card" onClick={()=>switchSection(item.key)}>
+              <span className="home-card-icon">{item.icon}</span>
+              <span className="home-card-label">{item.label}</span>
+              <span className="home-card-desc">{item.desc}</span>
+            </button>
+          ))}
+        </div>
+      </div>}
+
       {/* ══════════ HOME — Sidebar + Main Content ══════════ */}
-      {screen==="home" && <>
+      {screen==="home" && section!=="home" && <>
         {/* Sidebar overlay (mobile) */}
         {sidebarOpen && <div className="sidebar-overlay" onClick={()=>setSidebarOpen(false)} />}
 
         {/* Sidebar */}
         <nav className={`sidebar${sidebarOpen?" is-open":""}`}>
-          <div className="sidebar-brand">
+          <div className="sidebar-brand" onClick={()=>switchSection("home")} style={{cursor:"pointer"}}>
             <img src="icons/logo-header.png" alt="" style={{width:32,height:32,borderRadius:8}} />
             <span className="sidebar-brand-name">{CONFIG.APP_NAME}</span>
           </div>
@@ -702,33 +720,6 @@ function App() {
           </header>
 
           <div className="container page">
-            {/* ── HOME SECTION ── */}
-            {section==="home" && <div className="home-page">
-              <div className="home-hero">
-                <img src="icons/logo.png" alt={CONFIG.APP_NAME} className="home-logo" />
-                <h1 className="home-title">{CONFIG.APP_NAME}</h1>
-                <p className="home-subtitle">Kids Indoor Play Zone — Staff Dashboard</p>
-              </div>
-              <div className="home-grid">
-                {[
-                  {key:"entries",icon:"🎟️",label:"Entries",desc:"Log walk-ins, track play time, and manage daily customer entries."},
-                  {key:"cash-register",icon:"💰",label:"Cash Register",desc:"View daily revenue, cash flow summary, UPI & cash breakdown."},
-                  {key:"expenses",icon:"📊",label:"Profit / Loss",desc:"Track monthly expenses and see your profit & loss statement."},
-                  {key:"birthdays",icon:"🎂",label:"Birthdays CRM",desc:"Birthday calendar, contact tracking, and party booking pipeline."},
-                  {key:"staff",icon:"👥",label:"Staff",desc:"Manage staff schedules, attendance, and payroll.",soon:true},
-                  {key:"events",icon:"🎪",label:"Events",desc:"Plan birthday parties, special events, and group bookings.",soon:true},
-                  {key:"marketing",icon:"📢",label:"Marketing",desc:"WhatsApp campaigns, offers, and customer engagement.",soon:true},
-                ].map(item=>(
-                  <button key={item.key} className={`home-card${item.soon?" home-card--soon":""}`} onClick={()=>switchSection(item.key)}>
-                    <span className="home-card-icon">{item.icon}</span>
-                    <span className="home-card-label">{item.label}</span>
-                    <span className="home-card-desc">{item.desc}</span>
-                    {item.soon && <span className="home-card-badge">Coming Soon</span>}
-                  </button>
-                ))}
-              </div>
-            </div>}
-
             {/* ── ENTRIES SECTION ── */}
             {section==="entries" && <>
               <div className="card card-pad filter-bar" style={{marginBottom:"var(--sp-4)"}}>
