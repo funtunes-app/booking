@@ -53,7 +53,7 @@ function formatHoursLabel(hours) {
 
 // ── Main App ──
 function App() {
-  const [screen,setScreen] = useState("form");
+  const [screen,setScreen] = useState("home");
   const [step,setStep] = useState(0);
   const [entryType,setEntryType] = useState("funzone");
   const [form,setFormState] = useState(getDefaultForm());
