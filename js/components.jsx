@@ -687,6 +687,98 @@ const StatsDashboard = ({entries, expenses, onDeleteExpense}) => {
   );
 };
 
+const SOCKS_COST_PER_PIECE = 7;
+
+const PnLReport = ({entries, expenses, month, year, onChangeMonth, onChangeYear, loading}) => {
+  const f = (v) => `₹${Math.abs(v).toLocaleString("en-IN")}`;
+  const totalPlayUpi = entries.reduce((s,e)=>s+(e.playUpi||0),0);
+  const totalPlayCash = entries.reduce((s,e)=>s+(e.playCash||0),0);
+  const totalSocksUpi = entries.reduce((s,e)=>s+(e.socksUpi||0),0);
+  const totalSocksCash = entries.reduce((s,e)=>s+(e.socksCash||0),0);
+  const totalSocksAmt = entries.reduce((s,e)=>s+(e.socks||0),0);
+  const socksCount = CONFIG.SOCKS_RATE > 0 ? Math.round(totalSocksAmt / CONFIG.SOCKS_RATE) : 0;
+  const socksCost = socksCount * SOCKS_COST_PER_PIECE;
+  const totalExpenses = expenses.reduce((s,e)=>s+(e.amount||0),0);
+  const totalIncome = totalPlayUpi + totalPlayCash + totalSocksUpi + totalSocksCash;
+  const totalCosts = socksCost + totalExpenses;
+  const profit = totalIncome - totalCosts;
+
+  const rows = [
+    {label:"Play Income (UPI)",   value:totalPlayUpi,   color:C.blue,   indent:false},
+    {label:"Play Income (Cash)",  value:totalPlayCash,  color:C.green,  indent:false},
+    {label:"Socks Income (UPI)",  value:totalSocksUpi,  color:C.blue,   indent:false},
+    {label:"Socks Income (Cash)", value:totalSocksCash, color:C.green,  indent:false},
+  ];
+
+  return (
+    <div>
+      <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:16,flexWrap:"wrap"}}>
+        <Dropdown flex={1.5} value={month} onChange={v=>onChangeMonth(parseInt(v))}
+          options={MONTH_NAMES.map((m,i)=>({value:i+1,label:m}))} />
+        <Dropdown flex={1} value={year} onChange={v=>onChangeYear(parseInt(v))}
+          options={[new Date().getFullYear()-1, new Date().getFullYear(), new Date().getFullYear()+1].map(y=>({value:y,label:String(y)}))} />
+      </div>
+
+      {loading ? <div className="empty-state"><Spinner size={26} /><div style={{marginTop:10}}>Loading…</div></div> :
+      <div>
+        <div className="card" style={{marginBottom:"var(--sp-4)"}}>
+          <div className="card-head"><div className="card-title">📥 Revenue</div></div>
+          <div className="breakdown-table-wrap">
+            <table className="breakdown-table">
+              <tbody>
+                {rows.map((r,i) => (
+                  <tr key={i}>
+                    <td>{r.label}</td>
+                    <td style={{textAlign:"right",color:r.color,fontWeight:700}}>{f(r.value)}</td>
+                  </tr>
+                ))}
+                <tr style={{fontWeight:800,borderTop:"2px solid var(--border-strong)"}}>
+                  <td>Total Revenue</td>
+                  <td style={{textAlign:"right",color:C.green}}>{f(totalIncome)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="card" style={{marginBottom:"var(--sp-4)"}}>
+          <div className="card-head"><div className="card-title">📤 Costs</div></div>
+          <div className="breakdown-table-wrap">
+            <table className="breakdown-table">
+              <tbody>
+                <tr>
+                  <td>Socks Procurement ({socksCount} pcs × ₹{SOCKS_COST_PER_PIECE})</td>
+                  <td style={{textAlign:"right",color:C.danger,fontWeight:700}}>{f(socksCost)}</td>
+                </tr>
+                <tr>
+                  <td>Cash Expenses</td>
+                  <td style={{textAlign:"right",color:C.danger,fontWeight:700}}>{f(totalExpenses)}</td>
+                </tr>
+                <tr style={{fontWeight:800,borderTop:"2px solid var(--border-strong)"}}>
+                  <td>Total Costs</td>
+                  <td style={{textAlign:"right",color:C.danger}}>{f(totalCosts)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="card pnl-result" style={{marginBottom:"var(--sp-4)",textAlign:"center",padding:"20px"}}>
+          <div style={{fontSize:13,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:".4px",marginBottom:6}}>
+            {profit >= 0 ? "Net Profit" : "Net Loss"}
+          </div>
+          <div style={{fontSize:32,fontWeight:900,color:profit>=0?C.green:C.danger}}>
+            {profit >= 0 ? "+" : "−"}{f(profit)}
+          </div>
+          <div style={{fontSize:12,color:C.textLight,fontWeight:600,marginTop:6}}>
+            {MONTH_NAMES[(month||1)-1]} {year} · {entries.length} entries
+          </div>
+        </div>
+      </div>}
+    </div>
+  );
+};
+
 const EntryList = ({entries,onEdit,onDelete,loading}) => {
   if (loading) return <div className="empty-state"><Spinner size={26} /><div style={{marginTop:10}}>Loading entries…</div></div>;
   if (!entries.length) return <div className="empty-state">No entries today yet — start with <strong style={{color:C.accent}}>New Entry</strong>.</div>;

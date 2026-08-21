@@ -89,6 +89,13 @@ function App() {
   const [expenses,setExpenses] = useState([]);
   const [expensePopup,setExpensePopup] = useState(null);
   const [expenseSaving,setExpenseSaving] = useState(false);
+  const [pnlOpen,setPnlOpen] = useState(false);
+  const [pnlUnlocked,setPnlUnlocked] = useState(false);
+  const [pnlMonth,setPnlMonth] = useState(new Date().getMonth()+1);
+  const [pnlYear,setPnlYear] = useState(new Date().getFullYear());
+  const [pnlEntries,setPnlEntries] = useState([]);
+  const [pnlExpenses,setPnlExpenses] = useState([]);
+  const [pnlLoading,setPnlLoading] = useState(false);
   const containerRef = useRef(null);
   const lastLookedUpPhone = useRef("");
 
@@ -237,6 +244,28 @@ function App() {
       else showToastMsg("Delete failed: "+(res.error||"unknown"),"error");
     } catch(e) { console.error("Delete expense:",e); showToastMsg("Could not delete","error"); }
   }
+
+  async function fetchPnl(month, year) {
+    const m = month || pnlMonth, y = year || pnlYear;
+    const mm = String(m).padStart(2,"0");
+    const startDate = y+"-"+mm+"-01";
+    const endDate = y+"-"+mm+"-"+String(new Date(y,m,0).getDate()).padStart(2,"0");
+    setPnlLoading(true);
+    try {
+      const [entRes, expRes] = await Promise.all([
+        api.readDateRange(startDate, endDate),
+        api.readExpenses(startDate, endDate),
+      ]);
+      if (entRes.success) setPnlEntries(entRes.data||[]);
+      if (expRes.success) setPnlExpenses(expRes.data||[]);
+    } catch(e) { console.error("P&L fetch:",e); showToastMsg("Could not load P&L data","error"); }
+    finally { setPnlLoading(false); }
+  }
+
+  function openPnl() { setPnlOpen(true); if (pnlUnlocked) fetchPnl(); }
+  function onPnlUnlock() { setPnlUnlocked(true); fetchPnl(); }
+  function onPnlMonthChange(m) { setPnlMonth(m); fetchPnl(m, pnlYear); }
+  function onPnlYearChange(y) { setPnlYear(y); fetchPnl(pnlMonth, y); }
 
   async function fetchEntries(date,mode,rs,re) {
     const d = date||filterDate, md = mode||calMode;
@@ -674,6 +703,7 @@ function App() {
                       onRangeChange={onCalRangeChange} onToday={onCalToday} />
                     <div className="filter-bar-right">
                       {!loading && <span className="filter-bar-count">{todayEntries.length} entries</span>}
+                      <button className="btn btn-sm" onClick={openPnl}>P&L</button>
                       <button className="btn btn-sm" onClick={()=>setExpensePopup({date:filterDate,amount:"",description:"",category:"misc"})}>+ Expense</button>
                       <button className="btn btn-sm btn-icon" onClick={()=>fetchEntries()} disabled={loading} title="Refresh">↻</button>
                     </div>
@@ -788,6 +818,22 @@ function App() {
               {expenseSaving?"Saving…":"Save expense"}
             </button>
           </div>
+        </div>
+      </div>}
+
+      {/* ══════════ P&L POPUP ══════════ */}
+      {pnlOpen && <div className="overlay" onClick={()=>setPnlOpen(false)}>
+        <div className="modal" style={{maxWidth:520,textAlign:"left",padding:"20px",maxHeight:"85vh",overflowY:"auto"}} onClick={e=>e.stopPropagation()}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
+            <span className="card-title">Profit & Loss</span>
+            <button className="btn btn-sm btn-icon" onClick={()=>setPnlOpen(false)} aria-label="Close">✕</button>
+          </div>
+          {!pnlUnlocked
+            ? <PasswordGate onUnlock={onPnlUnlock} />
+            : <PnLReport entries={pnlEntries} expenses={pnlExpenses}
+                month={pnlMonth} year={pnlYear}
+                onChangeMonth={onPnlMonthChange} onChangeYear={onPnlYearChange}
+                loading={pnlLoading} />}
         </div>
       </div>}
 
