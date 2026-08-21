@@ -647,20 +647,21 @@ function App() {
       {screen==="home" && section==="home" && <div className="home-fullscreen">
         <div className="home-hero">
           <img src="icons/logo.png" alt={CONFIG.APP_NAME} className="home-logo" />
-          <h1 className="home-title">{CONFIG.APP_NAME}</h1>
           <p className="home-subtitle">Kids Indoor Play Zone — Staff Dashboard</p>
         </div>
         <div className="home-grid">
           {[
-            {key:"entries",icon:"🎟️",label:"Entries",desc:"Log walk-ins, track play time, and manage daily customer entries."},
-            {key:"cash-register",icon:"💰",label:"Cash Register",desc:"View daily revenue, cash flow summary, UPI & cash breakdown."},
-            {key:"expenses",icon:"📊",label:"Profit / Loss",desc:"Track monthly expenses and see your profit & loss statement."},
-            {key:"birthdays",icon:"🎂",label:"Birthdays CRM",desc:"Birthday calendar, contact tracking, and party booking pipeline."},
+            {key:"entries",icon:"🎟️",label:"Entries",desc:"Log walk-ins & manage daily entries"},
+            {key:"cash-register",icon:"💰",label:"Cash Register",desc:"Revenue, UPI & cash breakdown"},
+            {key:"expenses",icon:"📊",label:"Profit / Loss",desc:"Monthly expenses & P&L statement"},
+            {key:"birthdays",icon:"🎂",label:"Birthdays CRM",desc:"Birthday calendar & bookings"},
           ].map(item=>(
             <button key={item.key} className="home-card" onClick={()=>switchSection(item.key)}>
               <span className="home-card-icon">{item.icon}</span>
-              <span className="home-card-label">{item.label}</span>
-              <span className="home-card-desc">{item.desc}</span>
+              <span className="home-card-text">
+                <div className="home-card-label">{item.label}</div>
+                <div className="home-card-desc">{item.desc}</div>
+              </span>
             </button>
           ))}
         </div>
