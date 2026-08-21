@@ -64,12 +64,12 @@ function App() {
   const [calMode,setCalMode] = useState("day");
   const [rangeStart,setRangeStart] = useState("");
   const [rangeEnd,setRangeEnd] = useState("");
-  const SECTIONS = ["entries","cash-register","expenses","birthdays","staff","events","marketing"];
+  const SECTIONS = ["home","entries","cash-register","expenses","birthdays","staff","events","marketing"];
   const [section,setSection] = useState(()=>{
     const h = location.hash.replace("#","");
     if (SECTIONS.includes(h)) return h;
     if (h === "list" || h === "stats") return "entries";
-    return "entries";
+    return "home";
   });
   const [sidebarOpen,setSidebarOpen] = useState(false);
   const [statsUnlocked,setStatsUnlocked] = useState(false);
@@ -145,7 +145,8 @@ function App() {
         setSection(h);
         if (h !== "cash-register" && h !== "expenses") setStatsUnlocked(false);
         if (h === "birthdays") checkBirthdaysCache();
-      } else if (h === "list") { setSection("entries"); }
+      } else if (!h || h === "home") { setSection("home"); }
+      else if (h === "list") { setSection("entries"); }
       else if (h === "stats") { setSection("cash-register"); }
     };
     window.addEventListener("hashchange", onHash);
@@ -660,6 +661,7 @@ function App() {
           </div>
           <div className="sidebar-nav">
             {[
+              {key:"home",icon:"🏠",label:"Home"},
               {key:"entries",icon:"🎟️",label:"Entries"},
               {key:"cash-register",icon:"💰",label:"Cash Register"},
               {key:"expenses",icon:"📊",label:"Profit / Loss"},
@@ -688,7 +690,7 @@ function App() {
                 <button type="button" className="sidebar-toggle" onClick={()=>setSidebarOpen(o=>!o)} aria-label="Menu">☰</button>
                 <div style={{minWidth:0}}>
                   <div className="appbar-title">
-                    {{entries:"Entries","cash-register":"Cash Register",expenses:"Profit / Loss",birthdays:"Birthdays CRM",staff:"Staff",events:"Events",marketing:"Marketing"}[section]}
+                    {{home:CONFIG.APP_NAME,entries:"Entries","cash-register":"Cash Register",expenses:"Profit / Loss",birthdays:"Birthdays CRM",staff:"Staff",events:"Events",marketing:"Marketing"}[section]}
                   </div>
                   <div className="appbar-sub">{dateDisplay} · {timeDisplay}</div>
                 </div>
@@ -700,6 +702,33 @@ function App() {
           </header>
 
           <div className="container page">
+            {/* ── HOME SECTION ── */}
+            {section==="home" && <div className="home-page">
+              <div className="home-hero">
+                <img src="icons/logo.png" alt={CONFIG.APP_NAME} className="home-logo" />
+                <h1 className="home-title">{CONFIG.APP_NAME}</h1>
+                <p className="home-subtitle">Kids Indoor Play Zone — Staff Dashboard</p>
+              </div>
+              <div className="home-grid">
+                {[
+                  {key:"entries",icon:"🎟️",label:"Entries",desc:"Log walk-ins, track play time, and manage daily customer entries."},
+                  {key:"cash-register",icon:"💰",label:"Cash Register",desc:"View daily revenue, cash flow summary, UPI & cash breakdown."},
+                  {key:"expenses",icon:"📊",label:"Profit / Loss",desc:"Track monthly expenses and see your profit & loss statement."},
+                  {key:"birthdays",icon:"🎂",label:"Birthdays CRM",desc:"Birthday calendar, contact tracking, and party booking pipeline."},
+                  {key:"staff",icon:"👥",label:"Staff",desc:"Manage staff schedules, attendance, and payroll.",soon:true},
+                  {key:"events",icon:"🎪",label:"Events",desc:"Plan birthday parties, special events, and group bookings.",soon:true},
+                  {key:"marketing",icon:"📢",label:"Marketing",desc:"WhatsApp campaigns, offers, and customer engagement.",soon:true},
+                ].map(item=>(
+                  <button key={item.key} className={`home-card${item.soon?" home-card--soon":""}`} onClick={()=>switchSection(item.key)}>
+                    <span className="home-card-icon">{item.icon}</span>
+                    <span className="home-card-label">{item.label}</span>
+                    <span className="home-card-desc">{item.desc}</span>
+                    {item.soon && <span className="home-card-badge">Coming Soon</span>}
+                  </button>
+                ))}
+              </div>
+            </div>}
+
             {/* ── ENTRIES SECTION ── */}
             {section==="entries" && <>
               <div className="card card-pad filter-bar" style={{marginBottom:"var(--sp-4)"}}>
