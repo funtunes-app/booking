@@ -413,7 +413,7 @@ function App() {
     if(step===0 && form.date && form.date < today) {
       setConfirmAction({
         message: "You're creating an entry for a past date (" + formatDateDDMMYYYY(form.date) + "). Continue?",
-        needsPassword: true,
+        needsPassword: false,
         confirmLabel: "Continue",
         onConfirm: doNext,
       });
