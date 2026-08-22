@@ -406,7 +406,21 @@ function App() {
     return !Object.keys(errs).length;
   };
 
-  const next = () => { if(validate(step)){setStep(s=>Math.min(s+1,LAST_STEP));containerRef.current?.scrollTo({top:0,behavior:"smooth"});} };
+  const doNext = () => { setStep(s=>Math.min(s+1,LAST_STEP));containerRef.current?.scrollTo({top:0,behavior:"smooth"}); };
+  const next = () => {
+    if(!validate(step)) return;
+    const today = new Date().toISOString().slice(0,10);
+    if(step===0 && form.date && form.date < today) {
+      setConfirmAction({
+        message: "You're creating an entry for a past date (" + formatDateDDMMYYYY(form.date) + "). Continue?",
+        needsPassword: true,
+        confirmLabel: "Continue",
+        onConfirm: doNext,
+      });
+      return;
+    }
+    doNext();
+  };
   const prev = () => setStep(s=>Math.max(s-1,0));
 
   function getPlayMopString() {
