@@ -916,6 +916,12 @@ const STAFF_ROLES = [
   {value:"Cleaner",label:"Cleaner"},
 ];
 
+const STAFF_SHIFTS = [
+  {value:"morning",label:"Morning (4 hrs)",hours:4},
+  {value:"evening",label:"Evening (6 hrs)",hours:6},
+  {value:"weekend",label:"Weekend",hours:8},
+];
+
 const ATT_STATUS = {
   present:  {label:"P", full:"Present",  color:C.green,  bg:C.greenSoft},
   absent:   {label:"A", full:"Absent",   color:C.danger, bg:C.dangerSoft},
@@ -923,22 +929,46 @@ const ATT_STATUS = {
   leave:    {label:"L", full:"Leave",    color:C.blue,   bg:C.blueSoft},
 };
 
+function calcStaffSalary(staff, summary) {
+  const presentDays = (summary.present || 0) + (summary.half_day || 0) * 0.5;
+  const paidLeave = Math.min(summary.leave || 0, staff.paid_holidays || 4);
+  const effectiveDays = presentDays + paidLeave;
+  const dailyRate = staff.pro_rata_base ? staff.pro_rata_base / 30 : 0;
+  const proRata = Math.round(dailyRate * effectiveDays);
+  const fixedPay = staff.fixed_pay || 0;
+  return { fixedPay, proRata, total: fixedPay + proRata, effectiveDays, paidLeave, dailyRate };
+}
+
 const StaffFormPopup = ({staff, onSave, onCancel, saving}) => {
   const [form, setForm] = React.useState({
     name: staff?.name || "",
     phone: staff?.phone || "",
     role: staff?.role || "Staff",
-    monthly_salary: staff?.monthly_salary ? String(staff.monthly_salary) : "",
+    shift: staff?.shift || "morning",
+    fixed_pay: staff?.fixed_pay ? String(staff.fixed_pay) : "",
+    pro_rata_base: staff?.pro_rata_base ? String(staff.pro_rata_base) : "",
+    hours_per_shift: staff?.hours_per_shift ? String(staff.hours_per_shift) : "4",
+    paid_holidays: staff?.paid_holidays != null ? String(staff.paid_holidays) : "4",
     join_date: staff?.join_date || "",
     active: staff?.active !== false,
   });
+  const onShiftChange = (v) => {
+    const s = STAFF_SHIFTS.find(x=>x.value===v);
+    setForm({...form, shift:v, hours_per_shift: s ? String(s.hours) : form.hours_per_shift,
+      pro_rata_base: v==="evening"?"7000":v==="morning"?"5000":form.pro_rata_base});
+  };
   const submit = () => {
     if (!form.name.trim()) return;
-    onSave({...form, monthly_salary: parseInt(form.monthly_salary)||0});
+    onSave({...form,
+      fixed_pay: parseInt(form.fixed_pay)||0,
+      pro_rata_base: parseInt(form.pro_rata_base)||0,
+      hours_per_shift: parseInt(form.hours_per_shift)||4,
+      paid_holidays: parseInt(form.paid_holidays)||0,
+    });
   };
   return (
     <div className="overlay" onClick={onCancel}>
-      <div className="modal" style={{maxWidth:420,textAlign:"left",padding:"20px"}} onClick={e=>e.stopPropagation()}>
+      <div className="modal" style={{maxWidth:460,textAlign:"left",padding:"20px"}} onClick={e=>e.stopPropagation()}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
           <span className="card-title">{staff ? "Edit Staff" : "+ Add Staff"}</span>
           <button className="btn btn-sm btn-icon" onClick={onCancel} disabled={saving} aria-label="Close">✕</button>
@@ -957,9 +987,22 @@ const StaffFormPopup = ({staff, onSave, onCancel, saving}) => {
               {STAFF_ROLES.map(r=><option key={r.value} value={r.value}>{r.label}</option>)}
             </select>
           </InputField>
-          <InputField label="Monthly Salary" icon="₹">
-            <input className="fld" value={form.monthly_salary} type="tel" inputMode="numeric" placeholder="e.g. 12000"
-              onChange={e=>setForm({...form, monthly_salary:e.target.value.replace(/\D/g,"")})} />
+          <InputField label="Shift" icon="🕐">
+            <select className="fld" value={form.shift} onChange={e=>onShiftChange(e.target.value)}>
+              {STAFF_SHIFTS.map(s=><option key={s.value} value={s.value}>{s.label}</option>)}
+            </select>
+          </InputField>
+          <InputField label="Fixed Pay (monthly)" icon="₹">
+            <input className="fld" value={form.fixed_pay} type="tel" inputMode="numeric" placeholder="e.g. 12000"
+              onChange={e=>setForm({...form, fixed_pay:e.target.value.replace(/\D/g,"")})} />
+          </InputField>
+          <InputField label="Pro Rata Base (/30)" icon="₹">
+            <input className="fld" value={form.pro_rata_base} type="tel" inputMode="numeric" placeholder="e.g. 7000"
+              onChange={e=>setForm({...form, pro_rata_base:e.target.value.replace(/\D/g,"")})} />
+          </InputField>
+          <InputField label="Paid Holidays/mo">
+            <input className="fld" value={form.paid_holidays} type="tel" inputMode="numeric" placeholder="4"
+              onChange={e=>setForm({...form, paid_holidays:e.target.value.replace(/\D/g,"")})} />
           </InputField>
           <InputField label="Join Date" icon="📅">
             <input className="fld" value={form.join_date} type="date"
@@ -1036,6 +1079,7 @@ const AttendanceMarker = ({staffList, date, attendance, onMark, saving}) => {
 };
 
 const StaffTimesheet = ({staffList, attendance, month, year}) => {
+  const f = (v)=>`₹${Math.round(v).toLocaleString("en-IN")}`;
   const daysInMonth = new Date(year, month, 0).getDate();
   const active = staffList.filter(s=>s.active!==false);
   const today = new Date();
@@ -1054,6 +1098,7 @@ const StaffTimesheet = ({staffList, attendance, month, year}) => {
   for (let d=1; d<=daysInMonth; d++) days.push(d);
 
   const summaries = {};
+  const salaries = {};
   active.forEach(s=>{
     const sum = {present:0,absent:0,half_day:0,leave:0};
     days.forEach(d=>{
@@ -1062,59 +1107,104 @@ const StaffTimesheet = ({staffList, attendance, month, year}) => {
       if (st && sum[st] !== undefined) sum[st]++;
     });
     summaries[s.id] = sum;
+    salaries[s.id] = calcStaffSalary(s, sum);
   });
 
+  const totalSalary = active.reduce((s,st)=>s+salaries[st.id].total,0);
+
   return (
-    <div className="card" style={{marginBottom:"var(--sp-4)"}}>
-      <div className="card-head"><div className="card-title">Timesheet — {MONTH_NAMES[month-1]} {year}</div></div>
-      <div className="timesheet-wrap">
-        <table className="timesheet-table">
-          <thead>
-            <tr>
-              <th className="timesheet-name-col">Staff</th>
-              {days.map(d=>{
-                const dateStr = year+"-"+mm+"-"+String(d).padStart(2,"0");
-                const dow = new Date(dateStr).getDay();
-                const isSun = dow === 0;
-                const isToday = dateStr === todayStr;
-                return <th key={d} className={`timesheet-day-col${isSun?" timesheet-sun":""}${isToday?" timesheet-today":""}`}>{d}</th>;
-              })}
-              <th className="timesheet-sum-col" style={{color:C.green}}>P</th>
-              <th className="timesheet-sum-col" style={{color:C.danger}}>A</th>
-              <th className="timesheet-sum-col" style={{color:C.orange}}>H</th>
-              <th className="timesheet-sum-col" style={{color:C.blue}}>L</th>
-            </tr>
-          </thead>
-          <tbody>
-            {active.map(s=>(
-              <tr key={s.id}>
-                <td className="timesheet-name-col">
-                  <span className="timesheet-avatar">{s.name.charAt(0).toUpperCase()}</span>
-                  <span className="timesheet-staff-name">{s.name}</span>
-                </td>
+    <div>
+      <div className="card" style={{marginBottom:"var(--sp-4)"}}>
+        <div className="card-head"><div className="card-title">Timesheet — {MONTH_NAMES[month-1]} {year}</div></div>
+        <div className="timesheet-wrap">
+          <table className="timesheet-table">
+            <thead>
+              <tr>
+                <th className="timesheet-name-col">Staff</th>
                 {days.map(d=>{
                   const dateStr = year+"-"+mm+"-"+String(d).padStart(2,"0");
-                  const st = attMap[s.id+"_"+dateStr];
                   const dow = new Date(dateStr).getDay();
                   const isSun = dow === 0;
                   const isToday = dateStr === todayStr;
-                  const meta = st ? ATT_STATUS[st] : null;
-                  return (
-                    <td key={d} className={`timesheet-cell${isSun?" timesheet-sun":""}${isToday?" timesheet-today":""}`}>
-                      {meta
-                        ? <span className="timesheet-dot" style={{background:meta.color,color:"#fff"}}>{meta.label}</span>
-                        : <span className="timesheet-empty">·</span>}
-                    </td>
-                  );
+                  return <th key={d} className={`timesheet-day-col${isSun?" timesheet-sun":""}${isToday?" timesheet-today":""}`}>{d}</th>;
                 })}
-                <td className="timesheet-sum-col" style={{color:C.green,fontWeight:700}}>{summaries[s.id].present}</td>
-                <td className="timesheet-sum-col" style={{color:C.danger,fontWeight:700}}>{summaries[s.id].absent}</td>
-                <td className="timesheet-sum-col" style={{color:C.orange,fontWeight:700}}>{summaries[s.id].half_day}</td>
-                <td className="timesheet-sum-col" style={{color:C.blue,fontWeight:700}}>{summaries[s.id].leave}</td>
+                <th className="timesheet-sum-col" style={{color:C.green}}>P</th>
+                <th className="timesheet-sum-col" style={{color:C.danger}}>A</th>
+                <th className="timesheet-sum-col" style={{color:C.orange}}>H</th>
+                <th className="timesheet-sum-col" style={{color:C.blue}}>L</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {active.map(s=>(
+                <tr key={s.id}>
+                  <td className="timesheet-name-col">
+                    <span className="timesheet-avatar">{s.name.charAt(0).toUpperCase()}</span>
+                    <span className="timesheet-staff-name">{s.name}</span>
+                  </td>
+                  {days.map(d=>{
+                    const dateStr = year+"-"+mm+"-"+String(d).padStart(2,"0");
+                    const st = attMap[s.id+"_"+dateStr];
+                    const dow = new Date(dateStr).getDay();
+                    const isSun = dow === 0;
+                    const isToday = dateStr === todayStr;
+                    const meta = st ? ATT_STATUS[st] : null;
+                    return (
+                      <td key={d} className={`timesheet-cell${isSun?" timesheet-sun":""}${isToday?" timesheet-today":""}`}>
+                        {meta
+                          ? <span className="timesheet-dot" style={{background:meta.color,color:"#fff"}}>{meta.label}</span>
+                          : <span className="timesheet-empty">·</span>}
+                      </td>
+                    );
+                  })}
+                  <td className="timesheet-sum-col" style={{color:C.green,fontWeight:700}}>{summaries[s.id].present}</td>
+                  <td className="timesheet-sum-col" style={{color:C.danger,fontWeight:700}}>{summaries[s.id].absent}</td>
+                  <td className="timesheet-sum-col" style={{color:C.orange,fontWeight:700}}>{summaries[s.id].half_day}</td>
+                  <td className="timesheet-sum-col" style={{color:C.blue,fontWeight:700}}>{summaries[s.id].leave}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="card" style={{marginBottom:"var(--sp-4)"}}>
+        <div className="card-head"><div className="card-title">Salary Calculation — {MONTH_NAMES[month-1]} {year}</div></div>
+        <div className="breakdown-table-wrap">
+          <table className="breakdown-table">
+            <thead>
+              <tr>
+                <th>Staff</th>
+                <th>Shift</th>
+                <th>Days Worked</th>
+                <th>Paid Leave</th>
+                <th>Fixed</th>
+                <th>Pro Rata</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {active.map(s=>{
+                const sal = salaries[s.id];
+                const shiftLabel = (STAFF_SHIFTS.find(x=>x.value===s.shift)||{}).label||s.shift;
+                return (
+                  <tr key={s.id}>
+                    <td style={{fontWeight:700}}>{s.name}</td>
+                    <td style={{fontSize:11,color:C.textMid}}>{shiftLabel}</td>
+                    <td>{sal.effectiveDays - sal.paidLeave}{sal.paidLeave>0?` + ${sal.paidLeave}L`:""}</td>
+                    <td>{sal.paidLeave}/{s.paid_holidays||0}</td>
+                    <td>{sal.fixedPay ? f(sal.fixedPay) : "—"}</td>
+                    <td>{sal.proRata ? f(sal.proRata) : "—"}<br/><span style={{fontSize:10,color:C.textLight}}>{s.pro_rata_base?`${f(s.pro_rata_base)}/30 = ${f(sal.dailyRate)}/day`:""}</span></td>
+                    <td style={{fontWeight:800,color:C.accent}}>{f(sal.total)}</td>
+                  </tr>
+                );
+              })}
+              <tr style={{fontWeight:800,borderTop:"2px solid var(--border-strong)"}}>
+                <td colSpan={6} style={{textAlign:"right"}}>Total Payroll</td>
+                <td style={{color:C.accent}}>{f(totalSalary)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
@@ -1128,21 +1218,25 @@ const StaffList = ({staffList, onEdit, onDelete}) => {
       <div className="card-head"><div className="card-title">Staff Members</div></div>
       <div className="breakdown-table-wrap">
         <table className="breakdown-table">
-          <thead><tr><th>Name</th><th>Role</th><th>Phone</th><th>Salary</th><th>Status</th><th></th></tr></thead>
+          <thead><tr><th>Name</th><th>Shift</th><th>Fixed</th><th>Pro Rata</th><th>Holidays</th><th>Status</th><th></th></tr></thead>
           <tbody>
-            {staffList.map(s=>(
-              <tr key={s.id} style={{opacity:s.active===false?0.5:1}}>
-                <td style={{fontWeight:700}}>{s.name}</td>
-                <td>{s.role}</td>
-                <td>{s.phone||"—"}</td>
-                <td style={{color:C.accent,fontWeight:700}}>{f(s.monthly_salary)}</td>
-                <td><span style={{fontSize:11,fontWeight:700,color:s.active!==false?C.green:C.textLight,background:s.active!==false?C.greenSoft:"var(--bg)",padding:"2px 8px",borderRadius:6}}>{s.active!==false?"Active":"Inactive"}</span></td>
-                <td style={{width:60,textAlign:"center"}}>
-                  <button type="button" className="icon-btn" title="Edit" onClick={()=>onEdit(s)} style={{fontSize:14}}>✏️</button>
-                  <button type="button" className="icon-btn danger" title="Delete" onClick={()=>onDelete(s)} style={{fontSize:14}}>🗑️</button>
-                </td>
-              </tr>
-            ))}
+            {staffList.map(s=>{
+              const shiftLabel = (STAFF_SHIFTS.find(x=>x.value===s.shift)||{}).label||s.shift;
+              return (
+                <tr key={s.id} style={{opacity:s.active===false?0.5:1}}>
+                  <td style={{fontWeight:700}}>{s.name}<div style={{fontSize:10,color:C.textLight}}>{s.role}{s.phone?" · "+s.phone:""}</div></td>
+                  <td style={{fontSize:11}}>{shiftLabel}</td>
+                  <td style={{color:C.accent,fontWeight:700}}>{s.fixed_pay?f(s.fixed_pay):"—"}</td>
+                  <td style={{color:C.blue,fontWeight:700}}>{s.pro_rata_base?f(s.pro_rata_base)+"/30":"—"}</td>
+                  <td>{s.paid_holidays||0} days</td>
+                  <td><span style={{fontSize:11,fontWeight:700,color:s.active!==false?C.green:C.textLight,background:s.active!==false?C.greenSoft:"var(--bg)",padding:"2px 8px",borderRadius:6}}>{s.active!==false?"Active":"Inactive"}</span></td>
+                  <td style={{width:60,textAlign:"center"}}>
+                    <button type="button" className="icon-btn" title="Edit" onClick={()=>onEdit(s)} style={{fontSize:14}}>✏️</button>
+                    <button type="button" className="icon-btn danger" title="Delete" onClick={()=>onDelete(s)} style={{fontSize:14}}>🗑️</button>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
