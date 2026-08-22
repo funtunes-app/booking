@@ -1083,6 +1083,9 @@ function App() {
                           {form.timeIn && <span>→ {formatTime12(computeTimeOut(form.timeIn,form.hours))}</span>}
                         </div>
                       </InputField>
+                      <InputField label="Date" icon="📅">
+                        <input className="fld" type="date" value={form.date} onChange={e=>set("date",e.target.value)} />
+                      </InputField>
 
                       <InputField label={isPlayArea?"Playtime Amount":"Amount"} icon="💰" error={errors.amount}>
                         <div style={{position:"relative"}}>
