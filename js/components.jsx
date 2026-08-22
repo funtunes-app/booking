@@ -259,6 +259,12 @@ const STATS_PASSWORD = "FunSamu5";
 const CalendarFilter = ({mode,date,rangeStart,rangeEnd,onModeChange,onDateChange,onRangeChange,onToday}) => {
   const today = new Date().toISOString().slice(0,10);
   const isToday = date === today;
+  const step = (dir) => {
+    const d = new Date(date);
+    if (mode === "day") d.setDate(d.getDate() + dir);
+    else if (mode === "month") d.setMonth(d.getMonth() + dir);
+    onDateChange(d.toISOString().slice(0,10));
+  };
   return (
     <div className="cal-filter">
       <div className="cal-filter-modes">
@@ -267,12 +273,19 @@ const CalendarFilter = ({mode,date,rangeStart,rangeEnd,onModeChange,onDateChange
             onClick={()=>onModeChange(m.v)}>{m.l}</button>
         ))}
       </div>
+      <span className="cal-filter-sep" />
       {mode==="day" && <>
+        <button type="button" className="cal-nav-btn" onClick={()=>step(-1)} aria-label="Previous day">‹</button>
         <input className="fld cal-filter-date" type="date" value={date} onChange={e=>onDateChange(e.target.value)} />
+        <button type="button" className="cal-nav-btn" onClick={()=>step(1)} aria-label="Next day">›</button>
         {!isToday && <button type="button" className="chip chip-sm" onClick={onToday}>Today</button>}
       </>}
-      {mode==="month" && <input className="fld cal-filter-date" type="month" value={date.slice(0,7)}
-        onChange={e=>onDateChange(e.target.value+"-01")} />}
+      {mode==="month" && <>
+        <button type="button" className="cal-nav-btn" onClick={()=>step(-1)} aria-label="Previous month">‹</button>
+        <input className="fld cal-filter-date" type="month" value={date.slice(0,7)}
+          onChange={e=>onDateChange(e.target.value+"-01")} />
+        <button type="button" className="cal-nav-btn" onClick={()=>step(1)} aria-label="Next month">›</button>
+      </>}
       {mode==="range" && <>
         <input className="fld cal-filter-date" type="date" value={rangeStart||""} onChange={e=>onRangeChange(e.target.value,rangeEnd)} />
         <span className="cal-filter-to">to</span>
