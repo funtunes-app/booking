@@ -94,6 +94,14 @@ function App() {
   const [pnlExpenses,setPnlExpenses] = useState([]);
   const [pnlLoading,setPnlLoading] = useState(false);
   const [confirmAction,setConfirmAction] = useState(null);
+  const [staffList,setStaffList] = useState([]);
+  const [staffAtt,setStaffAtt] = useState([]);
+  const [staffMonth,setStaffMonth] = useState(new Date().getMonth()+1);
+  const [staffYear,setStaffYear] = useState(new Date().getFullYear());
+  const [staffAttDate,setStaffAttDate] = useState(new Date().toISOString().slice(0,10));
+  const [staffLoading,setStaffLoading] = useState(false);
+  const [staffSaving,setStaffSaving] = useState(false);
+  const [staffPopup,setStaffPopup] = useState(null);
   const containerRef = useRef(null);
   const lastLookedUpPhone = useRef("");
 
@@ -141,6 +149,7 @@ function App() {
         setSection(h);
         if (h !== "cash-register" && h !== "expenses") setStatsUnlocked(false);
         if (h === "birthdays") checkBirthdaysCache();
+        if (h === "staff") fetchStaffData();
       } else if (!h || h === "home") { setSection("home"); }
       else if (h === "list") { setSection("entries"); }
       else if (h === "stats") { setSection("cash-register"); }
@@ -155,6 +164,7 @@ function App() {
     setSection(s);
     location.hash = s === "home" ? "" : s;
     if (s === "birthdays") checkBirthdaysCache();
+    if (s === "staff") fetchStaffData();
   }
 
   function handleCheckout(entry) {
@@ -323,6 +333,67 @@ function App() {
 
   function onPnlSectionMonthChange(m) { setMonthlyExpMonth(m); fetchMonthlyExpenses(m, monthlyExpYear); fetchPnl(m, monthlyExpYear); }
   function onPnlSectionYearChange(y) { setMonthlyExpYear(y); fetchMonthlyExpenses(monthlyExpMonth, y); fetchPnl(monthlyExpMonth, y); }
+
+  async function fetchStaffData(month, year) {
+    const m = month || staffMonth, y = year || staffYear;
+    setStaffLoading(true);
+    try {
+      const [staffRes, attRes] = await Promise.all([
+        api.readStaff(),
+        api.readAttendance(m, y),
+      ]);
+      if (staffRes.success) setStaffList(staffRes.data || []);
+      else showToastMsg("Error: "+(staffRes.error||"unknown"),"error");
+      if (attRes.success) setStaffAtt(attRes.data || []);
+    } catch(e) { console.error("Staff fetch:",e); showToastMsg("Could not load staff data","error"); }
+    finally { setStaffLoading(false); }
+  }
+
+  function onStaffMonthChange(m) { setStaffMonth(m); fetchStaffData(m, staffYear); }
+  function onStaffYearChange(y) { setStaffYear(y); fetchStaffData(staffMonth, y); }
+
+  async function handleAddStaff(data) {
+    setStaffSaving(true);
+    try {
+      const res = staffPopup?.id
+        ? await api.updateStaff(staffPopup.id, data)
+        : await api.addStaff(data);
+      if (res.success) {
+        showToastMsg(staffPopup?.id ? "Staff updated!" : "Staff added!", "success");
+        setStaffPopup(null);
+        fetchStaffData();
+      } else showToastMsg("Error: "+(res.error||"unknown"),"error");
+    } catch(e) { console.error("Save staff:",e); showToastMsg("Could not save","error"); }
+    finally { setStaffSaving(false); }
+  }
+
+  function handleDeleteStaff(staff) {
+    setConfirmAction({
+      message: "Delete " + staff.name + " from staff?",
+      needsPassword: true,
+      onConfirm: async () => {
+        try {
+          const res = await api.deleteStaff(staff.id);
+          if (res.success) { showToastMsg("Deleted","success"); fetchStaffData(); }
+          else showToastMsg("Error: "+(res.error||"unknown"),"error");
+        } catch(e) { console.error("Delete staff:",e); showToastMsg("Could not delete","error"); }
+      }
+    });
+  }
+
+  async function handleMarkAttendance(staffId, date, status) {
+    setStaffSaving(true);
+    try {
+      const res = await api.upsertAttendance({staff_id: staffId, date, status});
+      if (res.success) {
+        setStaffAtt(prev => {
+          const filtered = prev.filter(a => !(a.staff_id === staffId && a.date === date));
+          return [...filtered, res.data];
+        });
+      } else showToastMsg("Error: "+(res.error||"unknown"),"error");
+    } catch(e) { console.error("Mark attendance:",e); showToastMsg("Could not save","error"); }
+    finally { setStaffSaving(false); }
+  }
 
   async function fetchEntries(date,mode,rs,re) {
     const d = date||filterDate, md = mode||calMode;
@@ -709,6 +780,7 @@ function App() {
             {key:"cash-register",icon:"💰",label:"Cash Register",desc:"Revenue, UPI & cash breakdown"},
             {key:"expenses",icon:"📊",label:"Profit / Loss",desc:"Monthly expenses & P&L statement"},
             {key:"birthdays",icon:"🎂",label:"Birthdays CRM",desc:"Birthday calendar & bookings"},
+            {key:"staff",icon:"👥",label:"Staff",desc:"Attendance timesheet & salary tracker"},
           ].map(item=>(
             <button key={item.key} className="home-card" onClick={()=>switchSection(item.key)}>
               <span className="home-card-icon">{item.icon}</span>
@@ -739,7 +811,7 @@ function App() {
               {key:"cash-register",icon:"💰",label:"Cash Register"},
               {key:"expenses",icon:"📊",label:"Profit / Loss"},
               {key:"birthdays",icon:"🎂",label:"Birthdays CRM"},
-              {key:"staff",icon:"👥",label:"Staff",soon:true},
+              {key:"staff",icon:"👥",label:"Staff"},
               {key:"events",icon:"🎪",label:"Events",soon:true},
               {key:"marketing",icon:"📢",label:"Marketing",soon:true},
             ].map(item=>(
@@ -853,11 +925,15 @@ function App() {
             </>}
 
             {/* ── COMING SOON SECTIONS ── */}
-            {section==="staff" && <div className="coming-soon">
-              <div className="coming-soon-icon">👥</div>
-              <div className="coming-soon-title">Staff Management</div>
-              <div className="coming-soon-text">Manage staff schedules, attendance, and payroll. Coming soon!</div>
-            </div>}
+            {section==="staff" && <StaffDashboard
+              staffList={staffList} attendance={staffAtt}
+              month={staffMonth} year={staffYear}
+              attDate={staffAttDate}
+              onChangeMonth={onStaffMonthChange} onChangeYear={onStaffYearChange}
+              onChangeAttDate={setStaffAttDate}
+              onAddStaff={()=>setStaffPopup({})} onEditStaff={s=>setStaffPopup(s)} onDeleteStaff={handleDeleteStaff}
+              onMarkAttendance={handleMarkAttendance}
+              loading={staffLoading} saving={staffSaving} />}
             {section==="events" && <div className="coming-soon">
               <div className="coming-soon-icon">🎪</div>
               <div className="coming-soon-title">Events</div>
@@ -995,6 +1071,13 @@ function App() {
           </div>
         </div>
       </div>}
+
+      {/* ══════════ STAFF POPUP ══════════ */}
+      {staffPopup && <StaffFormPopup
+        staff={staffPopup.id ? staffPopup : null}
+        onSave={handleAddStaff}
+        onCancel={()=>setStaffPopup(null)}
+        saving={staffSaving} />}
 
       {/* ══════════ CONFIRM ACTION DIALOG ══════════ */}
       {confirmAction && <ConfirmDialog

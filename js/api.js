@@ -276,6 +276,87 @@ var api = {
     return { success: true };
   },
 
+  // ── Staff ──
+
+  readStaff: async function () {
+    var { data, error } = await supabaseClient
+      .from("staff").select("*").order("name");
+    if (error) return { success: false, error: error.message };
+    return { success: true, data: data || [] };
+  },
+
+  addStaff: async function (staff) {
+    var row = {
+      name: staff.name || "",
+      phone: staff.phone || "",
+      role: staff.role || "Staff",
+      monthly_salary: parseInt(staff.monthly_salary) || 0,
+      join_date: staff.join_date || null,
+      active: staff.active !== false,
+    };
+    var { data, error } = await supabaseClient
+      .from("staff").insert(row).select();
+    if (error) return { success: false, error: error.message };
+    return { success: true, data: data && data[0] ? data[0] : null };
+  },
+
+  updateStaff: async function (id, staff) {
+    var row = {
+      name: staff.name || "",
+      phone: staff.phone || "",
+      role: staff.role || "Staff",
+      monthly_salary: parseInt(staff.monthly_salary) || 0,
+      join_date: staff.join_date || null,
+      active: staff.active !== false,
+    };
+    var { data, error } = await supabaseClient
+      .from("staff").update(row).eq("id", id).select();
+    if (error) return { success: false, error: error.message };
+    return { success: true, data: data && data[0] ? data[0] : null };
+  },
+
+  deleteStaff: async function (id) {
+    var { error } = await supabaseClient.from("staff").delete().eq("id", id);
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  },
+
+  // ── Attendance ──
+
+  readAttendance: async function (month, year) {
+    var mm = String(month).padStart(2, "0");
+    var startDate = year + "-" + mm + "-01";
+    var lastDay = new Date(year, month, 0).getDate();
+    var endDate = year + "-" + mm + "-" + String(lastDay).padStart(2, "0");
+    var { data, error } = await supabaseClient
+      .from("staff_attendance").select("*")
+      .gte("date", startDate).lte("date", endDate)
+      .order("date");
+    if (error) return { success: false, error: error.message };
+    return { success: true, data: data || [] };
+  },
+
+  upsertAttendance: async function (record) {
+    var row = {
+      staff_id: parseInt(record.staff_id),
+      date: record.date,
+      status: record.status || "present",
+      check_in: record.check_in || "",
+      check_out: record.check_out || "",
+      notes: record.notes || "",
+    };
+    var { data, error } = await supabaseClient
+      .from("staff_attendance").upsert(row, { onConflict: "staff_id,date" }).select();
+    if (error) return { success: false, error: error.message };
+    return { success: true, data: data && data[0] ? data[0] : null };
+  },
+
+  deleteAttendance: async function (id) {
+    var { error } = await supabaseClient.from("staff_attendance").delete().eq("id", id);
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  },
+
   addEnquiry: async function () {
     return { success: false, error: "Not yet migrated to Supabase" };
   },

@@ -907,6 +907,284 @@ const PnLReport = ({entries, expenses, monthlyExpenses, month, year, onChangeMon
   );
 };
 
+// ── Staff Components ──
+
+const STAFF_ROLES = [
+  {value:"Staff",label:"Staff"},
+  {value:"Manager",label:"Manager"},
+  {value:"Helper",label:"Helper"},
+  {value:"Cleaner",label:"Cleaner"},
+];
+
+const ATT_STATUS = {
+  present:  {label:"P", full:"Present",  color:C.green,  bg:C.greenSoft},
+  absent:   {label:"A", full:"Absent",   color:C.danger, bg:C.dangerSoft},
+  half_day: {label:"H", full:"Half Day", color:C.orange, bg:C.orangeSoft},
+  leave:    {label:"L", full:"Leave",    color:C.blue,   bg:C.blueSoft},
+};
+
+const StaffFormPopup = ({staff, onSave, onCancel, saving}) => {
+  const [form, setForm] = React.useState({
+    name: staff?.name || "",
+    phone: staff?.phone || "",
+    role: staff?.role || "Staff",
+    monthly_salary: staff?.monthly_salary ? String(staff.monthly_salary) : "",
+    join_date: staff?.join_date || "",
+    active: staff?.active !== false,
+  });
+  const submit = () => {
+    if (!form.name.trim()) return;
+    onSave({...form, monthly_salary: parseInt(form.monthly_salary)||0});
+  };
+  return (
+    <div className="overlay" onClick={onCancel}>
+      <div className="modal" style={{maxWidth:420,textAlign:"left",padding:"20px"}} onClick={e=>e.stopPropagation()}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
+          <span className="card-title">{staff ? "Edit Staff" : "+ Add Staff"}</span>
+          <button className="btn btn-sm btn-icon" onClick={onCancel} disabled={saving} aria-label="Close">✕</button>
+        </div>
+        <div className="form-grid">
+          <InputField label="Name" icon="👤">
+            <input className="fld" value={form.name} placeholder="e.g. Ravi" autoFocus
+              onChange={e=>setForm({...form, name:e.target.value})} />
+          </InputField>
+          <InputField label="Phone" icon="📱">
+            <input className="fld" value={form.phone} type="tel" inputMode="numeric" placeholder="10-digit"
+              onChange={e=>setForm({...form, phone:e.target.value.replace(/\D/g,"").slice(0,10)})} />
+          </InputField>
+          <InputField label="Role" icon="🏷️">
+            <select className="fld" value={form.role} onChange={e=>setForm({...form, role:e.target.value})}>
+              {STAFF_ROLES.map(r=><option key={r.value} value={r.value}>{r.label}</option>)}
+            </select>
+          </InputField>
+          <InputField label="Monthly Salary" icon="₹">
+            <input className="fld" value={form.monthly_salary} type="tel" inputMode="numeric" placeholder="e.g. 12000"
+              onChange={e=>setForm({...form, monthly_salary:e.target.value.replace(/\D/g,"")})} />
+          </InputField>
+          <InputField label="Join Date" icon="📅">
+            <input className="fld" value={form.join_date} type="date"
+              onChange={e=>setForm({...form, join_date:e.target.value})} />
+          </InputField>
+          {staff && <InputField label="Status" icon="✅">
+            <select className="fld" value={form.active?"active":"inactive"} onChange={e=>setForm({...form, active:e.target.value==="active"})}>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </InputField>}
+        </div>
+        <div style={{display:"flex",gap:8,marginTop:4}}>
+          <button className="btn" onClick={onCancel} disabled={saving} style={{flex:"0 0 90px"}}>Cancel</button>
+          <button className="btn btn-primary" onClick={submit} disabled={saving||!form.name.trim()} style={{flex:1}}>
+            {saving?"Saving…":staff?"Update":"Add Staff"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const AttendanceMarker = ({staffList, date, attendance, onMark, saving}) => {
+  const dateAtt = {};
+  attendance.filter(a=>a.date===date).forEach(a=>{ dateAtt[a.staff_id]=a; });
+  const active = staffList.filter(s=>s.active!==false);
+  if (!active.length) return <div className="empty-state">Add staff members first.</div>;
+
+  return (
+    <div className="card" style={{marginBottom:"var(--sp-4)"}}>
+      <div className="card-head">
+        <div className="card-title">Mark Attendance — {date.split("-").reverse().join("/")}</div>
+      </div>
+      <div className="att-marker-list">
+        {active.map(s=>{
+          const cur = dateAtt[s.id];
+          const status = cur ? cur.status : null;
+          return (
+            <div key={s.id} className="att-marker-row">
+              <div className="att-marker-name">
+                <span className="att-marker-avatar">{s.name.charAt(0).toUpperCase()}</span>
+                <div>
+                  <div style={{fontWeight:700,fontSize:13}}>{s.name}</div>
+                  <div style={{fontSize:11,color:C.textLight}}>{s.role}</div>
+                </div>
+              </div>
+              <div className="att-marker-btns">
+                {Object.keys(ATT_STATUS).map(st=>{
+                  const meta = ATT_STATUS[st];
+                  const isOn = status === st;
+                  return (
+                    <button key={st} type="button" className="att-status-btn"
+                      disabled={saving}
+                      style={{
+                        background:isOn?meta.bg:"transparent",
+                        color:isOn?meta.color:C.textLight,
+                        borderColor:isOn?meta.color:"var(--border)",
+                        fontWeight:isOn?800:600,
+                      }}
+                      onClick={()=>onMark(s.id, date, st)}
+                      title={meta.full}>
+                      {meta.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+const StaffTimesheet = ({staffList, attendance, month, year}) => {
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const active = staffList.filter(s=>s.active!==false);
+  const today = new Date();
+  const todayStr = today.toISOString().slice(0,10);
+  const mm = String(month).padStart(2,"0");
+
+  const attMap = {};
+  attendance.forEach(a=>{
+    const key = a.staff_id + "_" + a.date;
+    attMap[key] = a.status;
+  });
+
+  if (!active.length) return <div className="empty-state">No staff members yet.</div>;
+
+  const days = [];
+  for (let d=1; d<=daysInMonth; d++) days.push(d);
+
+  const summaries = {};
+  active.forEach(s=>{
+    const sum = {present:0,absent:0,half_day:0,leave:0};
+    days.forEach(d=>{
+      const dateStr = year+"-"+mm+"-"+String(d).padStart(2,"0");
+      const st = attMap[s.id+"_"+dateStr];
+      if (st && sum[st] !== undefined) sum[st]++;
+    });
+    summaries[s.id] = sum;
+  });
+
+  return (
+    <div className="card" style={{marginBottom:"var(--sp-4)"}}>
+      <div className="card-head"><div className="card-title">Timesheet — {MONTH_NAMES[month-1]} {year}</div></div>
+      <div className="timesheet-wrap">
+        <table className="timesheet-table">
+          <thead>
+            <tr>
+              <th className="timesheet-name-col">Staff</th>
+              {days.map(d=>{
+                const dateStr = year+"-"+mm+"-"+String(d).padStart(2,"0");
+                const dow = new Date(dateStr).getDay();
+                const isSun = dow === 0;
+                const isToday = dateStr === todayStr;
+                return <th key={d} className={`timesheet-day-col${isSun?" timesheet-sun":""}${isToday?" timesheet-today":""}`}>{d}</th>;
+              })}
+              <th className="timesheet-sum-col" style={{color:C.green}}>P</th>
+              <th className="timesheet-sum-col" style={{color:C.danger}}>A</th>
+              <th className="timesheet-sum-col" style={{color:C.orange}}>H</th>
+              <th className="timesheet-sum-col" style={{color:C.blue}}>L</th>
+            </tr>
+          </thead>
+          <tbody>
+            {active.map(s=>(
+              <tr key={s.id}>
+                <td className="timesheet-name-col">
+                  <span className="timesheet-avatar">{s.name.charAt(0).toUpperCase()}</span>
+                  <span className="timesheet-staff-name">{s.name}</span>
+                </td>
+                {days.map(d=>{
+                  const dateStr = year+"-"+mm+"-"+String(d).padStart(2,"0");
+                  const st = attMap[s.id+"_"+dateStr];
+                  const dow = new Date(dateStr).getDay();
+                  const isSun = dow === 0;
+                  const isToday = dateStr === todayStr;
+                  const meta = st ? ATT_STATUS[st] : null;
+                  return (
+                    <td key={d} className={`timesheet-cell${isSun?" timesheet-sun":""}${isToday?" timesheet-today":""}`}>
+                      {meta
+                        ? <span className="timesheet-dot" style={{background:meta.color,color:"#fff"}}>{meta.label}</span>
+                        : <span className="timesheet-empty">·</span>}
+                    </td>
+                  );
+                })}
+                <td className="timesheet-sum-col" style={{color:C.green,fontWeight:700}}>{summaries[s.id].present}</td>
+                <td className="timesheet-sum-col" style={{color:C.danger,fontWeight:700}}>{summaries[s.id].absent}</td>
+                <td className="timesheet-sum-col" style={{color:C.orange,fontWeight:700}}>{summaries[s.id].half_day}</td>
+                <td className="timesheet-sum-col" style={{color:C.blue,fontWeight:700}}>{summaries[s.id].leave}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+const StaffList = ({staffList, onEdit, onDelete}) => {
+  const f = (v)=>`₹${(v||0).toLocaleString("en-IN")}`;
+  if (!staffList.length) return <div className="empty-state">No staff members yet. Add your first staff member.</div>;
+  return (
+    <div className="card" style={{marginBottom:"var(--sp-4)"}}>
+      <div className="card-head"><div className="card-title">Staff Members</div></div>
+      <div className="breakdown-table-wrap">
+        <table className="breakdown-table">
+          <thead><tr><th>Name</th><th>Role</th><th>Phone</th><th>Salary</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            {staffList.map(s=>(
+              <tr key={s.id} style={{opacity:s.active===false?0.5:1}}>
+                <td style={{fontWeight:700}}>{s.name}</td>
+                <td>{s.role}</td>
+                <td>{s.phone||"—"}</td>
+                <td style={{color:C.accent,fontWeight:700}}>{f(s.monthly_salary)}</td>
+                <td><span style={{fontSize:11,fontWeight:700,color:s.active!==false?C.green:C.textLight,background:s.active!==false?C.greenSoft:"var(--bg)",padding:"2px 8px",borderRadius:6}}>{s.active!==false?"Active":"Inactive"}</span></td>
+                <td style={{width:60,textAlign:"center"}}>
+                  <button type="button" className="icon-btn" title="Edit" onClick={()=>onEdit(s)} style={{fontSize:14}}>✏️</button>
+                  <button type="button" className="icon-btn danger" title="Delete" onClick={()=>onDelete(s)} style={{fontSize:14}}>🗑️</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+const StaffDashboard = ({staffList, attendance, month, year, attDate, onChangeMonth, onChangeYear, onChangeAttDate,
+  onAddStaff, onEditStaff, onDeleteStaff, onMarkAttendance, loading, saving}) => {
+  const [tab, setTab] = React.useState("timesheet");
+
+  return (
+    <div>
+      <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:16,flexWrap:"wrap"}}>
+        <div className="chips" style={{marginRight:"auto"}}>
+          {[{v:"timesheet",l:"Timesheet"},{v:"attendance",l:"Mark Attendance"},{v:"members",l:"Staff List"}].map(t=>(
+            <button key={t.v} type="button" className={`chip chip-sm${tab===t.v?" is-on":""}`} onClick={()=>setTab(t.v)}>{t.l}</button>
+          ))}
+        </div>
+        <Dropdown flex={0} value={month} onChange={v=>onChangeMonth(parseInt(v))}
+          options={MONTH_NAMES.map((m,i)=>({value:i+1,label:m}))} />
+        <Dropdown flex={0} value={year} onChange={v=>onChangeYear(parseInt(v))}
+          options={[new Date().getFullYear()-1, new Date().getFullYear(), new Date().getFullYear()+1].map(y=>({value:y,label:String(y)}))} />
+        {tab==="members" && <button className="btn btn-sm btn-primary" onClick={onAddStaff}>+ Add Staff</button>}
+      </div>
+
+      {loading ? <div className="empty-state"><Spinner size={26} /><div style={{marginTop:10}}>Loading…</div></div> : <>
+        {tab==="timesheet" && <StaffTimesheet staffList={staffList} attendance={attendance} month={month} year={year} />}
+        {tab==="attendance" && <>
+          <div style={{marginBottom:12}}>
+            <InputField label="Date" icon="📅">
+              <input className="fld" type="date" value={attDate} onChange={e=>onChangeAttDate(e.target.value)} style={{maxWidth:200}} />
+            </InputField>
+          </div>
+          <AttendanceMarker staffList={staffList} date={attDate} attendance={attendance} onMark={onMarkAttendance} saving={saving} />
+        </>}
+        {tab==="members" && <StaffList staffList={staffList} onEdit={onEditStaff} onDelete={onDeleteStaff} />}
+      </>}
+    </div>
+  );
+};
+
 const EntryList = ({entries,onEdit,onDelete,loading}) => {
   if (loading) return <div className="empty-state"><Spinner size={26} /><div style={{marginTop:10}}>Loading entries…</div></div>;
   if (!entries.length) return <div className="empty-state">No entries today yet — start with <strong style={{color:C.accent}}>New Entry</strong>.</div>;
