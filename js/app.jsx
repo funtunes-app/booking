@@ -93,6 +93,7 @@ function App() {
   const [pnlEntries,setPnlEntries] = useState([]);
   const [pnlExpenses,setPnlExpenses] = useState([]);
   const [pnlLoading,setPnlLoading] = useState(false);
+  const [confirmAction,setConfirmAction] = useState(null);
   const containerRef = useRef(null);
   const lastLookedUpPhone = useRef("");
 
@@ -234,13 +235,22 @@ function App() {
     finally { setExpenseSaving(false); }
   }
 
-  async function handleDeleteExpense(expenseOrId) {
-    const id = typeof expenseOrId === "object" ? expenseOrId.id : expenseOrId;
-    try {
-      const res = await api.deleteExpense(id);
-      if (res.success) { setExpenses(prev=>prev.filter(x=>x.id!==id)); showToastMsg("Deleted","success"); }
-      else showToastMsg("Delete failed: "+(res.error||"unknown"),"error");
-    } catch(e) { console.error("Delete expense:",e); showToastMsg("Could not delete","error"); }
+  function handleDeleteExpense(expenseOrId) {
+    const expense = typeof expenseOrId === "object" ? expenseOrId : {id: expenseOrId};
+    const id = expense.id;
+    const today = new Date().toISOString().slice(0,10);
+    const isPast = expense.date && expense.date !== today;
+    setConfirmAction({
+      message: "Delete this expense" + (expense.description ? " — " + expense.description : "") + "?",
+      needsPassword: isPast,
+      onConfirm: async () => {
+        try {
+          const res = await api.deleteExpense(id);
+          if (res.success) { setExpenses(prev=>prev.filter(x=>x.id!==id)); showToastMsg("Deleted","success"); }
+          else showToastMsg("Delete failed: "+(res.error||"unknown"),"error");
+        } catch(e) { console.error("Delete expense:",e); showToastMsg("Could not delete","error"); }
+      }
+    });
   }
 
   async function fetchMonthlyExpenses(month, year) {
@@ -278,13 +288,20 @@ function App() {
     finally { setMonthlyExpSaving(false); }
   }
 
-  async function handleDeleteMonthlyExpense(expense) {
-    const id = typeof expense === "object" ? expense.id : expense;
-    try {
-      const res = await api.deleteMonthlyExpense(id);
-      if (res.success) { setMonthlyExp(prev => prev.filter(x => x.id !== id)); showToastMsg("Deleted","success"); }
-      else showToastMsg("Delete failed: "+(res.error||"unknown"),"error");
-    } catch(e) { console.error("Delete monthly expense:",e); showToastMsg("Could not delete","error"); }
+  function handleDeleteMonthlyExpense(expense) {
+    const exp = typeof expense === "object" ? expense : {id: expense};
+    const id = exp.id;
+    setConfirmAction({
+      message: "Delete this monthly expense" + (exp.description ? " — " + exp.description : "") + "?",
+      needsPassword: true,
+      onConfirm: async () => {
+        try {
+          const res = await api.deleteMonthlyExpense(id);
+          if (res.success) { setMonthlyExp(prev => prev.filter(x => x.id !== id)); showToastMsg("Deleted","success"); }
+          else showToastMsg("Delete failed: "+(res.error||"unknown"),"error");
+        } catch(e) { console.error("Delete monthly expense:",e); showToastMsg("Could not delete","error"); }
+      }
+    });
   }
 
   async function fetchPnl(month, year) {
@@ -466,7 +483,7 @@ function App() {
     }
   }
 
-  function handleEdit(entry) {
+  function doEdit(entry) {
     setEditTarget(entry);
     lastLookedUpPhone.current = String(entry.phone||entry["Phone number"]||"");
     const timing = entry.timing||entry["Timing"]||"";
@@ -537,6 +554,21 @@ function App() {
     setStep(0); setScreen("form");
   }
 
+  function handleEdit(entry) {
+    const today = new Date().toISOString().slice(0,10);
+    const isPast = entry.date && entry.date !== today;
+    if (isPast) {
+      setConfirmAction({
+        message: "Edit this past entry" + (entry.customerName ? " for " + entry.customerName : "") + "?",
+        needsPassword: true,
+        confirmLabel: "Confirm",
+        onConfirm: () => doEdit(entry),
+      });
+    } else {
+      doEdit(entry);
+    }
+  }
+
   async function handleUpdateSubmit() {
     const timeOut = computeTimeOut(form.timeIn,form.hours);
     const pay = computePaymentCols();
@@ -552,14 +584,22 @@ function App() {
     finally{setSaving(false);resetForm();}
   }
 
-  async function handleDelete(entry) {
+  function handleDelete(entry) {
     if(!entry.id){showToastMsg("Cannot identify entry","error");return;}
-    setSaving(true);
-    try {
-      const res=await api.deleteEntry(entry.id);
-      if(res.success){showToastMsg("Deleted","info");fetchEntries();}else showToastMsg("Error: "+(res.error||"unknown"),"error");
-    } catch(e){console.error("Delete:",e);showToastMsg("Could not delete","error");}
-    finally{setSaving(false);}
+    const today = new Date().toISOString().slice(0,10);
+    const isPast = entry.date && entry.date !== today;
+    setConfirmAction({
+      message: "Delete this entry" + (entry.customerName ? " for " + entry.customerName : "") + "?",
+      needsPassword: isPast,
+      onConfirm: async () => {
+        setSaving(true);
+        try {
+          const res=await api.deleteEntry(entry.id);
+          if(res.success){showToastMsg("Deleted","info");fetchEntries();}else showToastMsg("Error: "+(res.error||"unknown"),"error");
+        } catch(e){console.error("Delete:",e);showToastMsg("Could not delete","error");}
+        finally{setSaving(false);}
+      }
+    });
   }
 
   function resetForm() {
@@ -941,6 +981,14 @@ function App() {
           </div>
         </div>
       </div>}
+
+      {/* ══════════ CONFIRM ACTION DIALOG ══════════ */}
+      {confirmAction && <ConfirmDialog
+        message={confirmAction.message}
+        needsPassword={confirmAction.needsPassword}
+        confirmLabel={confirmAction.confirmLabel}
+        onConfirm={()=>{confirmAction.onConfirm();setConfirmAction(null);}}
+        onCancel={()=>setConfirmAction(null)} />}
 
       {/* ══════════ FORM ══════════ */}
       {screen==="form" && <>

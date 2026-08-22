@@ -341,6 +341,35 @@ const PasswordGate = ({onUnlock}) => {
   );
 };
 
+const ConfirmDialog = ({message, needsPassword, onConfirm, onCancel, confirmLabel}) => {
+  const [pw, setPw] = React.useState("");
+  const [error, setError] = React.useState(false);
+  const submit = () => {
+    if (needsPassword && pw !== STATS_PASSWORD) { setError(true); setTimeout(()=>setError(false),1500); return; }
+    onConfirm();
+  };
+  return (
+    <div className="overlay" onClick={onCancel}>
+      <div className="modal" style={{maxWidth:360,textAlign:"center",padding:"24px 20px"}} onClick={e=>e.stopPropagation()}>
+        <div style={{fontSize:28,marginBottom:10}}>⚠️</div>
+        <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:6}}>{message}</div>
+        <div style={{fontSize:12,color:C.textMid,marginBottom:16}}>This action cannot be undone.</div>
+        {needsPassword && <>
+          <input className={`fld${error?" is-error":""}`} type="password" placeholder="Enter password to proceed"
+            value={pw} onChange={e=>{setPw(e.target.value);setError(false);}}
+            onKeyDown={e=>{if(e.key==="Enter")submit();}}
+            style={{textAlign:"center",marginBottom:8}} autoFocus />
+          {error && <div style={{fontSize:12,color:C.danger,fontWeight:700,marginBottom:8}}>Wrong password</div>}
+        </>}
+        <div style={{display:"flex",gap:8,marginTop:8}}>
+          <button className="btn" onClick={onCancel} style={{flex:1}}>Cancel</button>
+          <button className="btn btn-primary" onClick={submit} style={{flex:1,background:confirmLabel?C.accent:C.danger,borderColor:confirmLabel?C.accent:C.danger}}>{confirmLabel||"Delete"}</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const CHECKOUT_KEY = "funtunes_checkouts";
 
 function getCheckedOutIds() {
