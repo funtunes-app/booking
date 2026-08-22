@@ -1098,7 +1098,6 @@ const StaffTimesheet = ({staffList, attendance, month, year}) => {
   for (let d=1; d<=daysInMonth; d++) days.push(d);
 
   const summaries = {};
-  const salaries = {};
   active.forEach(s=>{
     const sum = {present:0,absent:0,half_day:0,leave:0};
     days.forEach(d=>{
@@ -1107,104 +1106,59 @@ const StaffTimesheet = ({staffList, attendance, month, year}) => {
       if (st && sum[st] !== undefined) sum[st]++;
     });
     summaries[s.id] = sum;
-    salaries[s.id] = calcStaffSalary(s, sum);
   });
 
-  const totalSalary = active.reduce((s,st)=>s+salaries[st.id].total,0);
-
   return (
-    <div>
-      <div className="card" style={{marginBottom:"var(--sp-4)"}}>
-        <div className="card-head"><div className="card-title">Timesheet — {MONTH_NAMES[month-1]} {year}</div></div>
-        <div className="timesheet-wrap">
-          <table className="timesheet-table">
-            <thead>
-              <tr>
-                <th className="timesheet-name-col">Staff</th>
+    <div className="card" style={{marginBottom:"var(--sp-4)"}}>
+      <div className="card-head"><div className="card-title">Timesheet — {MONTH_NAMES[month-1]} {year}</div></div>
+      <div className="timesheet-wrap">
+        <table className="timesheet-table">
+          <thead>
+            <tr>
+              <th className="timesheet-name-col">Staff</th>
+              {days.map(d=>{
+                const dateStr = year+"-"+mm+"-"+String(d).padStart(2,"0");
+                const dow = new Date(dateStr).getDay();
+                const isSun = dow === 0;
+                const isToday = dateStr === todayStr;
+                return <th key={d} className={`timesheet-day-col${isSun?" timesheet-sun":""}${isToday?" timesheet-today":""}`}>{d}</th>;
+              })}
+              <th className="timesheet-sum-col" style={{color:C.green}}>P</th>
+              <th className="timesheet-sum-col" style={{color:C.danger}}>A</th>
+              <th className="timesheet-sum-col" style={{color:C.orange}}>H</th>
+              <th className="timesheet-sum-col" style={{color:C.blue}}>L</th>
+            </tr>
+          </thead>
+          <tbody>
+            {active.map(s=>(
+              <tr key={s.id}>
+                <td className="timesheet-name-col">
+                  <span className="timesheet-avatar">{s.name.charAt(0).toUpperCase()}</span>
+                  <span className="timesheet-staff-name">{s.name}</span>
+                </td>
                 {days.map(d=>{
                   const dateStr = year+"-"+mm+"-"+String(d).padStart(2,"0");
+                  const st = attMap[s.id+"_"+dateStr];
                   const dow = new Date(dateStr).getDay();
                   const isSun = dow === 0;
                   const isToday = dateStr === todayStr;
-                  return <th key={d} className={`timesheet-day-col${isSun?" timesheet-sun":""}${isToday?" timesheet-today":""}`}>{d}</th>;
+                  const meta = st ? ATT_STATUS[st] : null;
+                  return (
+                    <td key={d} className={`timesheet-cell${isSun?" timesheet-sun":""}${isToday?" timesheet-today":""}`}>
+                      {meta
+                        ? <span className="timesheet-dot" style={{background:meta.color,color:"#fff"}}>{meta.label}</span>
+                        : <span className="timesheet-empty">·</span>}
+                    </td>
+                  );
                 })}
-                <th className="timesheet-sum-col" style={{color:C.green}}>P</th>
-                <th className="timesheet-sum-col" style={{color:C.danger}}>A</th>
-                <th className="timesheet-sum-col" style={{color:C.orange}}>H</th>
-                <th className="timesheet-sum-col" style={{color:C.blue}}>L</th>
+                <td className="timesheet-sum-col" style={{color:C.green,fontWeight:700}}>{summaries[s.id].present}</td>
+                <td className="timesheet-sum-col" style={{color:C.danger,fontWeight:700}}>{summaries[s.id].absent}</td>
+                <td className="timesheet-sum-col" style={{color:C.orange,fontWeight:700}}>{summaries[s.id].half_day}</td>
+                <td className="timesheet-sum-col" style={{color:C.blue,fontWeight:700}}>{summaries[s.id].leave}</td>
               </tr>
-            </thead>
-            <tbody>
-              {active.map(s=>(
-                <tr key={s.id}>
-                  <td className="timesheet-name-col">
-                    <span className="timesheet-avatar">{s.name.charAt(0).toUpperCase()}</span>
-                    <span className="timesheet-staff-name">{s.name}</span>
-                  </td>
-                  {days.map(d=>{
-                    const dateStr = year+"-"+mm+"-"+String(d).padStart(2,"0");
-                    const st = attMap[s.id+"_"+dateStr];
-                    const dow = new Date(dateStr).getDay();
-                    const isSun = dow === 0;
-                    const isToday = dateStr === todayStr;
-                    const meta = st ? ATT_STATUS[st] : null;
-                    return (
-                      <td key={d} className={`timesheet-cell${isSun?" timesheet-sun":""}${isToday?" timesheet-today":""}`}>
-                        {meta
-                          ? <span className="timesheet-dot" style={{background:meta.color,color:"#fff"}}>{meta.label}</span>
-                          : <span className="timesheet-empty">·</span>}
-                      </td>
-                    );
-                  })}
-                  <td className="timesheet-sum-col" style={{color:C.green,fontWeight:700}}>{summaries[s.id].present}</td>
-                  <td className="timesheet-sum-col" style={{color:C.danger,fontWeight:700}}>{summaries[s.id].absent}</td>
-                  <td className="timesheet-sum-col" style={{color:C.orange,fontWeight:700}}>{summaries[s.id].half_day}</td>
-                  <td className="timesheet-sum-col" style={{color:C.blue,fontWeight:700}}>{summaries[s.id].leave}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div className="card" style={{marginBottom:"var(--sp-4)"}}>
-        <div className="card-head"><div className="card-title">Salary Calculation — {MONTH_NAMES[month-1]} {year}</div></div>
-        <div className="breakdown-table-wrap">
-          <table className="breakdown-table">
-            <thead>
-              <tr>
-                <th>Staff</th>
-                <th>Shift</th>
-                <th>Days Worked</th>
-                <th>Paid Leave</th>
-                <th>Fixed</th>
-                <th>Pro Rata</th>
-                <th>Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {active.map(s=>{
-                const sal = salaries[s.id];
-                const shiftLabel = (STAFF_SHIFTS.find(x=>x.value===s.shift)||{}).label||s.shift;
-                return (
-                  <tr key={s.id}>
-                    <td style={{fontWeight:700}}>{s.name}</td>
-                    <td style={{fontSize:11,color:C.textMid}}>{shiftLabel}</td>
-                    <td>{sal.effectiveDays - sal.paidLeave}{sal.paidLeave>0?` + ${sal.paidLeave}L`:""}</td>
-                    <td>{sal.paidLeave}/{s.paid_holidays||0}</td>
-                    <td>{sal.fixedPay ? f(sal.fixedPay) : "—"}</td>
-                    <td>{sal.proRata ? f(sal.proRata) : "—"}<br/><span style={{fontSize:10,color:C.textLight}}>{s.pro_rata_base?`${f(s.pro_rata_base)}/30 = ${f(sal.dailyRate)}/day`:""}</span></td>
-                    <td style={{fontWeight:800,color:C.accent}}>{f(sal.total)}</td>
-                  </tr>
-                );
-              })}
-              <tr style={{fontWeight:800,borderTop:"2px solid var(--border-strong)"}}>
-                <td colSpan={6} style={{textAlign:"right"}}>Total Payroll</td>
-                <td style={{color:C.accent}}>{f(totalSalary)}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
@@ -1244,36 +1198,203 @@ const StaffList = ({staffList, onEdit, onDelete}) => {
   );
 };
 
-const StaffDashboard = ({staffList, attendance, month, year, attDate, onChangeMonth, onChangeYear, onChangeAttDate,
-  onAddStaff, onEditStaff, onDeleteStaff, onMarkAttendance, loading, saving}) => {
-  const [tab, setTab] = React.useState("timesheet");
+const StaffSection = ({staffList, attendance, month, year, onChangeMonth, onChangeYear,
+  onAddStaff, onEditStaff, onDeleteStaff, loading}) => {
+  const [tab, setTab] = React.useState("members");
 
   return (
     <div>
       <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:16,flexWrap:"wrap"}}>
         <div className="chips" style={{marginRight:"auto"}}>
-          {[{v:"timesheet",l:"Timesheet"},{v:"attendance",l:"Mark Attendance"},{v:"members",l:"Staff List"}].map(t=>(
+          {[{v:"members",l:"Staff List"},{v:"salary",l:"Salary"}].map(t=>(
             <button key={t.v} type="button" className={`chip chip-sm${tab===t.v?" is-on":""}`} onClick={()=>setTab(t.v)}>{t.l}</button>
           ))}
         </div>
-        <Dropdown flex={0} value={month} onChange={v=>onChangeMonth(parseInt(v))}
-          options={MONTH_NAMES.map((m,i)=>({value:i+1,label:m}))} />
-        <Dropdown flex={0} value={year} onChange={v=>onChangeYear(parseInt(v))}
-          options={[new Date().getFullYear()-1, new Date().getFullYear(), new Date().getFullYear()+1].map(y=>({value:y,label:String(y)}))} />
+        {tab==="salary" && <>
+          <Dropdown flex={0} value={month} onChange={v=>onChangeMonth(parseInt(v))}
+            options={MONTH_NAMES.map((m,i)=>({value:i+1,label:m}))} />
+          <Dropdown flex={0} value={year} onChange={v=>onChangeYear(parseInt(v))}
+            options={[new Date().getFullYear()-1, new Date().getFullYear(), new Date().getFullYear()+1].map(y=>({value:y,label:String(y)}))} />
+        </>}
         {tab==="members" && <button className="btn btn-sm btn-primary" onClick={onAddStaff}>+ Add Staff</button>}
       </div>
 
       {loading ? <div className="empty-state"><Spinner size={26} /><div style={{marginTop:10}}>Loading…</div></div> : <>
-        {tab==="timesheet" && <StaffTimesheet staffList={staffList} attendance={attendance} month={month} year={year} />}
-        {tab==="attendance" && <>
-          <div style={{marginBottom:12}}>
-            <InputField label="Date" icon="📅">
-              <input className="fld" type="date" value={attDate} onChange={e=>onChangeAttDate(e.target.value)} style={{maxWidth:200}} />
-            </InputField>
-          </div>
-          <AttendanceMarker staffList={staffList} date={attDate} attendance={attendance} onMark={onMarkAttendance} saving={saving} />
-        </>}
         {tab==="members" && <StaffList staffList={staffList} onEdit={onEditStaff} onDelete={onDeleteStaff} />}
+        {tab==="salary" && <StaffSalaryTable staffList={staffList} attendance={attendance} month={month} year={year} />}
+      </>}
+    </div>
+  );
+};
+
+const StaffSalaryTable = ({staffList, attendance, month, year}) => {
+  const f = (v)=>`₹${Math.round(v).toLocaleString("en-IN")}`;
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const active = staffList.filter(s=>s.active!==false);
+  const mm = String(month).padStart(2,"0");
+
+  const attMap = {};
+  attendance.forEach(a=>{ attMap[a.staff_id + "_" + a.date] = a.status; });
+
+  if (!active.length) return <div className="empty-state">No staff members yet.</div>;
+
+  const days = [];
+  for (let d=1; d<=daysInMonth; d++) days.push(d);
+
+  const summaries = {};
+  const salaries = {};
+  active.forEach(s=>{
+    const sum = {present:0,absent:0,half_day:0,leave:0};
+    days.forEach(d=>{
+      const dateStr = year+"-"+mm+"-"+String(d).padStart(2,"0");
+      const st = attMap[s.id+"_"+dateStr];
+      if (st && sum[st] !== undefined) sum[st]++;
+    });
+    summaries[s.id] = sum;
+    salaries[s.id] = calcStaffSalary(s, sum);
+  });
+
+  const totalSalary = active.reduce((s,st)=>s+salaries[st.id].total,0);
+
+  return (
+    <div className="card" style={{marginBottom:"var(--sp-4)"}}>
+      <div className="card-head"><div className="card-title">Salary Calculation — {MONTH_NAMES[month-1]} {year}</div></div>
+      <div className="breakdown-table-wrap">
+        <table className="breakdown-table">
+          <thead>
+            <tr>
+              <th>Staff</th>
+              <th>Shift</th>
+              <th>P</th><th>A</th><th>H</th><th>L</th>
+              <th>Eff. Days</th>
+              <th>Fixed</th>
+              <th>Pro Rata</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {active.map(s=>{
+              const sal = salaries[s.id];
+              const sum = summaries[s.id];
+              const shiftLabel = (STAFF_SHIFTS.find(x=>x.value===s.shift)||{}).label||s.shift;
+              return (
+                <tr key={s.id}>
+                  <td style={{fontWeight:700}}>{s.name}</td>
+                  <td style={{fontSize:11,color:C.textMid}}>{shiftLabel}</td>
+                  <td style={{color:C.green,fontWeight:700}}>{sum.present}</td>
+                  <td style={{color:C.danger,fontWeight:700}}>{sum.absent}</td>
+                  <td style={{color:C.orange,fontWeight:700}}>{sum.half_day}</td>
+                  <td style={{color:C.blue,fontWeight:700}}>{sum.leave}</td>
+                  <td>{sal.effectiveDays}{sal.paidLeave>0?<span style={{fontSize:10,color:C.blue}}> ({sal.paidLeave}L paid)</span>:""}</td>
+                  <td>{sal.fixedPay ? f(sal.fixedPay) : "—"}</td>
+                  <td>{sal.proRata ? f(sal.proRata) : "—"}<br/><span style={{fontSize:10,color:C.textLight}}>{s.pro_rata_base?`${f(s.pro_rata_base)}/30`:""}</span></td>
+                  <td style={{fontWeight:800,color:C.accent}}>{f(sal.total)}</td>
+                </tr>
+              );
+            })}
+            <tr style={{fontWeight:800,borderTop:"2px solid var(--border-strong)"}}>
+              <td colSpan={9} style={{textAlign:"right"}}>Total Payroll</td>
+              <td style={{color:C.accent}}>{f(totalSalary)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+const AttendanceWidget = ({staffList, date, attendance, onMark, onChangeDate, saving}) => {
+  const [open, setOpen] = React.useState(false);
+  const dateAtt = {};
+  attendance.filter(a=>a.date===date).forEach(a=>{ dateAtt[a.staff_id]=a; });
+  const active = staffList.filter(s=>s.active!==false);
+  if (!active.length) return null;
+
+  const marked = active.filter(s=>dateAtt[s.id]).length;
+
+  return (
+    <div className="card" style={{marginBottom:"var(--sp-4)"}}>
+      <div className="card-head" style={{cursor:"pointer"}} onClick={()=>setOpen(o=>!o)}>
+        <div style={{display:"flex",alignItems:"center",gap:8,flex:1}}>
+          <div className="card-title" style={{margin:0}}>Mark Attendance</div>
+          <span style={{fontSize:11,color:C.textLight,background:"var(--bg)",padding:"2px 8px",borderRadius:10}}>
+            {marked}/{active.length} marked
+          </span>
+        </div>
+        <span style={{fontSize:14,color:C.textLight,transition:"transform .2s",transform:open?"rotate(180deg)":"rotate(0)"}}>{open?"▲":"▼"}</span>
+      </div>
+      {open && <div style={{padding:"12px 16px"}}>
+        <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:12,flexWrap:"wrap"}}>
+          <input className="fld" type="date" value={date} onChange={e=>onChangeDate(e.target.value)}
+            style={{maxWidth:160,fontSize:13,padding:"6px 10px"}} />
+          <span style={{fontSize:12,color:C.textMid}}>{date.split("-").reverse().join("/")}</span>
+        </div>
+        <div className="att-marker-list">
+          {active.map(s=>{
+            const cur = dateAtt[s.id];
+            const status = cur ? cur.status : null;
+            const checkIn = cur ? cur.check_in : "";
+            const checkOut = cur ? cur.check_out : "";
+            return (
+              <div key={s.id} className="att-widget-row">
+                <div className="att-marker-name" style={{minWidth:90,flex:"0 0 auto"}}>
+                  <span className="att-marker-avatar" style={{width:26,height:26,fontSize:11}}>{s.name.charAt(0).toUpperCase()}</span>
+                  <span style={{fontWeight:700,fontSize:12}}>{s.name}</span>
+                </div>
+                <div className="att-marker-btns" style={{gap:4}}>
+                  {Object.keys(ATT_STATUS).map(st=>{
+                    const meta = ATT_STATUS[st];
+                    const isOn = status === st;
+                    return (
+                      <button key={st} type="button" className="att-status-btn"
+                        disabled={saving}
+                        style={{
+                          background:isOn?meta.bg:"transparent",
+                          color:isOn?meta.color:C.textLight,
+                          borderColor:isOn?meta.color:"var(--border)",
+                          fontWeight:isOn?800:600,
+                          minWidth:28,height:28,fontSize:11,padding:"0 4px",
+                        }}
+                        onClick={()=>onMark(s.id, date, st)}
+                        title={meta.full}>
+                        {meta.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div style={{display:"flex",gap:4,alignItems:"center",flex:"0 0 auto"}}>
+                  <input className="fld" type="time" value={checkIn} placeholder="In"
+                    style={{width:75,fontSize:11,padding:"4px 6px"}}
+                    onChange={e=>onMark(s.id, date, status||"present", e.target.value, checkOut)} />
+                  <span style={{fontSize:10,color:C.textLight}}>to</span>
+                  <input className="fld" type="time" value={checkOut} placeholder="Out"
+                    style={{width:75,fontSize:11,padding:"4px 6px"}}
+                    onChange={e=>onMark(s.id, date, status||"present", checkIn, e.target.value)} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>}
+    </div>
+  );
+};
+
+const AttendanceSection = ({staffList, attendance, month, year, attDate,
+  onChangeMonth, onChangeYear, onChangeAttDate, onMarkAttendance, loading, saving}) => {
+  return (
+    <div>
+      <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:16,flexWrap:"wrap"}}>
+        <Dropdown flex={0} value={month} onChange={v=>onChangeMonth(parseInt(v))}
+          options={MONTH_NAMES.map((m,i)=>({value:i+1,label:m}))} />
+        <Dropdown flex={0} value={year} onChange={v=>onChangeYear(parseInt(v))}
+          options={[new Date().getFullYear()-1, new Date().getFullYear(), new Date().getFullYear()+1].map(y=>({value:y,label:String(y)}))} />
+      </div>
+
+      {loading ? <div className="empty-state"><Spinner size={26} /><div style={{marginTop:10}}>Loading…</div></div> : <>
+        <AttendanceWidget staffList={staffList} date={attDate} attendance={attendance}
+          onMark={onMarkAttendance} onChangeDate={onChangeAttDate} saving={saving} />
+        <StaffTimesheet staffList={staffList} attendance={attendance} month={month} year={year} />
       </>}
     </div>
   );

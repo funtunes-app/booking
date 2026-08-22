@@ -64,7 +64,7 @@ function App() {
   const [calMode,setCalMode] = useState("day");
   const [rangeStart,setRangeStart] = useState("");
   const [rangeEnd,setRangeEnd] = useState("");
-  const SECTIONS = ["home","entries","cash-register","expenses","birthdays","staff","events","marketing"];
+  const SECTIONS = ["home","entries","cash-register","expenses","birthdays","staff","attendance","events","marketing"];
   const [section,setSection] = useState("home");
   const [sidebarOpen,setSidebarOpen] = useState(false);
   const [statsUnlocked,setStatsUnlocked] = useState(false);
@@ -147,9 +147,9 @@ function App() {
       const h = location.hash.replace("#","");
       if (SECTIONS.includes(h)) {
         setSection(h);
-        if (h !== "cash-register" && h !== "expenses") setStatsUnlocked(false);
+        if (h !== "cash-register" && h !== "expenses" && h !== "staff") setStatsUnlocked(false);
         if (h === "birthdays") checkBirthdaysCache();
-        if (h === "staff") fetchStaffData();
+        if (h === "staff" || h === "attendance") fetchStaffData();
       } else if (!h || h === "home") { setSection("home"); }
       else if (h === "list") { setSection("entries"); }
       else if (h === "stats") { setSection("cash-register"); }
@@ -160,11 +160,11 @@ function App() {
 
   function switchSection(s) {
     setSidebarOpen(false);
-    if (s !== "cash-register" && s !== "expenses") setStatsUnlocked(false);
+    if (s !== "cash-register" && s !== "expenses" && s !== "staff") setStatsUnlocked(false);
     setSection(s);
     location.hash = s === "home" ? "" : s;
     if (s === "birthdays") checkBirthdaysCache();
-    if (s === "staff") fetchStaffData();
+    if (s === "staff" || s === "attendance") fetchStaffData();
   }
 
   function handleCheckout(entry) {
@@ -381,10 +381,13 @@ function App() {
     });
   }
 
-  async function handleMarkAttendance(staffId, date, status) {
+  async function handleMarkAttendance(staffId, date, status, checkIn, checkOut) {
     setStaffSaving(true);
     try {
-      const res = await api.upsertAttendance({staff_id: staffId, date, status});
+      const record = {staff_id: staffId, date, status};
+      if (checkIn !== undefined) record.check_in = checkIn;
+      if (checkOut !== undefined) record.check_out = checkOut;
+      const res = await api.upsertAttendance(record);
       if (res.success) {
         setStaffAtt(prev => {
           const filtered = prev.filter(a => !(a.staff_id === staffId && a.date === date));
@@ -780,7 +783,8 @@ function App() {
             {key:"cash-register",icon:"💰",label:"Cash Register",desc:"Revenue, UPI & cash breakdown"},
             {key:"expenses",icon:"📊",label:"Profit / Loss",desc:"Monthly expenses & P&L statement"},
             {key:"birthdays",icon:"🎂",label:"Birthdays CRM",desc:"Birthday calendar & bookings"},
-            {key:"staff",icon:"👥",label:"Staff",desc:"Attendance timesheet & salary tracker"},
+            {key:"staff",icon:"👥",label:"Staff",desc:"Staff list & salary tracker"},
+            {key:"attendance",icon:"📋",label:"Attendance",desc:"Daily attendance & timesheet"},
           ].map(item=>(
             <button key={item.key} className="home-card" onClick={()=>switchSection(item.key)}>
               <span className="home-card-icon">{item.icon}</span>
@@ -812,6 +816,7 @@ function App() {
               {key:"expenses",icon:"📊",label:"Profit / Loss"},
               {key:"birthdays",icon:"🎂",label:"Birthdays CRM"},
               {key:"staff",icon:"👥",label:"Staff"},
+              {key:"attendance",icon:"📋",label:"Attendance"},
               {key:"events",icon:"🎪",label:"Events",soon:true},
               {key:"marketing",icon:"📢",label:"Marketing",soon:true},
             ].map(item=>(
@@ -835,7 +840,7 @@ function App() {
                 <button type="button" className="sidebar-toggle" onClick={()=>setSidebarOpen(o=>!o)} aria-label="Menu">☰</button>
                 <div style={{minWidth:0}}>
                   <div className="appbar-title">
-                    {{home:CONFIG.APP_NAME,entries:"Entries","cash-register":"Cash Register",expenses:"Profit / Loss",birthdays:"Birthdays CRM",staff:"Staff",events:"Events",marketing:"Marketing"}[section]}
+                    {{home:CONFIG.APP_NAME,entries:"Entries","cash-register":"Cash Register",expenses:"Profit / Loss",birthdays:"Birthdays CRM",staff:"Staff",attendance:"Attendance",events:"Events",marketing:"Marketing"}[section]}
                   </div>
                   <div className="appbar-sub">{dateDisplay} · {timeDisplay}</div>
                 </div>
@@ -925,13 +930,22 @@ function App() {
             </>}
 
             {/* ── COMING SOON SECTIONS ── */}
-            {section==="staff" && <StaffDashboard
+            {section==="staff" && <>
+              {!statsUnlocked
+                ? <PasswordGate onUnlock={()=>{setStatsUnlocked(true);fetchStaffData();}} />
+                : <StaffSection
+                    staffList={staffList} attendance={staffAtt}
+                    month={staffMonth} year={staffYear}
+                    onChangeMonth={onStaffMonthChange} onChangeYear={onStaffYearChange}
+                    onAddStaff={()=>setStaffPopup({})} onEditStaff={s=>setStaffPopup(s)} onDeleteStaff={handleDeleteStaff}
+                    loading={staffLoading} />}
+            </>}
+            {section==="attendance" && <AttendanceSection
               staffList={staffList} attendance={staffAtt}
               month={staffMonth} year={staffYear}
               attDate={staffAttDate}
               onChangeMonth={onStaffMonthChange} onChangeYear={onStaffYearChange}
               onChangeAttDate={setStaffAttDate}
-              onAddStaff={()=>setStaffPopup({})} onEditStaff={s=>setStaffPopup(s)} onDeleteStaff={handleDeleteStaff}
               onMarkAttendance={handleMarkAttendance}
               loading={staffLoading} saving={staffSaving} />}
             {section==="events" && <div className="coming-soon">

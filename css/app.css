@@ -1320,10 +1320,17 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.35) sep
 .timesheet-empty { color: var(--border-strong); font-size: 14px; }
 .timesheet-cell { padding: 4px 1px !important; }
 
+.att-widget-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 0; border-bottom: 1px solid var(--border);
+}
+.att-widget-row:last-child { border-bottom: none; }
+
 @media (max-width: 639px) {
   .att-marker-row { flex-wrap: wrap; }
   .att-marker-btns { width: 100%; justify-content: flex-end; }
   .att-status-btn { flex: 1; }
+  .att-widget-row { flex-wrap: wrap; }
 }
 
 @media (prefers-reduced-motion: reduce) {
