@@ -1,22 +1,26 @@
 // =============================================================================
-// FunTunes Shared Components
-// Layout/spacing lives in css/app.css; this file keeps only dynamic styling.
+// FunTunes Hi-Fi Components
 // =============================================================================
 
 const C = {
-  bg:"#f7f4fb", card:"#ffffff",
-  accent:"#7B2D8E", accentSoft:"#f4eaf9", accentDark:"#5a1d6b", accentLight:"#a855f7",
-  green:"#3f9c47", greenSoft:"#e9f5ea",
+  bg:"#f4f1f9", card:"#ffffff",
+  accent:"#7c3fc4", accentSoft:"#f6f1fc", accentDark:"#5d2a99", accentLight:"#9a63dd",
+  deep:"#4e2b73", deepest:"#3f1f6b",
+  green:"#1f9e7e", greenSoft:"#e4f7f1", green2:"#5ef0cf", green3:"#33c9a6",
   blue:"#2E86DE", blueSoft:"#e8f1fc",
   pink:"#E84393", pinkSoft:"#fde8f3",
   orange:"#F39C12", orangeSoft:"#fef5e0",
   yellow:"#F4B400", yellowSoft:"#fef8e6",
-  text:"#1a1a2e", textMid:"#52526e", textLight:"#8a8aa6",
-  border:"#e6e0ee", borderStrong:"#d6cce2",
-  danger:"#e04b3c", dangerSoft:"#fdecea",
-  warm1:"#faf7fd",
-  shadowLift:"0 12px 34px rgba(26,16,40,.16)",
+  text:"#2a2036", textMid:"#7d7493", textLight:"#8b83a0",
+  muted:"#6b6280", muted2:"#a099b5",
+  border:"#e6dff2", borderStrong:"#ded5ee",
+  danger:"#c2607a", dangerSoft:"#fdf4f6",
+  purplePill:"#6d3f9c", purpleGlow:"rgba(139,82,204,0.1)",
 };
+
+const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+const STATS_PIN = "5284";
 
 const Spinner = ({size=18,color=C.accent}) => (
   <div style={{width:size,height:size,border:`2.5px solid ${color}30`,borderTopColor:color,borderRadius:"50%",animation:"spin .7s linear infinite",display:"inline-block"}} />
@@ -49,147 +53,237 @@ const ChipSelect = ({options,value,onChange}) => (
 
 const NumberStepper = ({value,onChange,min=1,max=10}) => (
   <div className="stepper">
-    <button type="button" onClick={()=>onChange(Math.max(min,value-1))} disabled={value<=min}>−</button>
-    <div className="stepper-value">{value}</div>
-    <button type="button" onClick={()=>onChange(Math.min(max,value+1))} disabled={value>=max}>+</button>
+    <button type="button" className="stepper-btn" onClick={()=>onChange(Math.max(min,value-1))} disabled={value<=min}>−</button>
+    <span className="stepper-val">{value}</span>
+    <button type="button" className="stepper-btn" onClick={()=>onChange(Math.min(max,value+1))} disabled={value>=max}>+</button>
   </div>
 );
 
-const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const Dropdown = ({value,options,onChange,flex}) => (
+  <select className="fld" style={flex?{flex}:undefined} value={value}
+    onChange={e=>onChange(e.target.value)}>
+    {options.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}
+  </select>
+);
 
-const STATUS_ORDER = ["not_contacted","warm","booking"];
-const STATUS_META = {
-  not_contacted: {label:"Not Contacted", dot:"#e57373", bg:"#fce4e4", fg:"#c62828"},
-  warm:          {label:"Contacted",     dot:C.green,   bg:C.greenSoft, fg:C.green},
-  booking:       {label:"Booked",        dot:C.accent,  bg:C.accentSoft,fg:C.accent},
-};
-
-const Dropdown = ({value,options,onChange,flex}) => {
+const IconMenu = ({trigger,title,activeValue,items}) => {
   const [open,setOpen] = React.useState(false);
-  const ref = React.useRef(null);
-
-  React.useEffect(() => {
-    if (!open) return;
-    const onOutside = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    const onEsc = (e) => { if (e.key === "Escape") setOpen(false); };
-    document.addEventListener("mousedown", onOutside);
-    document.addEventListener("touchstart", onOutside);
-    document.addEventListener("keydown", onEsc);
-    return () => {
-      document.removeEventListener("mousedown", onOutside);
-      document.removeEventListener("touchstart", onOutside);
-      document.removeEventListener("keydown", onEsc);
-    };
-  }, [open]);
-
-  const selected = options.find(o => o.value === value);
-
   return (
-    <div ref={ref} style={{position:"relative",flex:flex||1,minWidth:0}}>
-      <button type="button" className="fld" onClick={()=>setOpen(o=>!o)} style={{
-        display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,
-        cursor:"pointer",textAlign:"left",
-        borderColor:open?C.accent:undefined,
-        boxShadow:open?`0 0 0 3px rgba(123,45,142,.13)`:undefined,
-      }}>
-        <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{selected?selected.label:""}</span>
-        <span style={{fontSize:10,color:C.textLight,flexShrink:0,transform:open?"rotate(180deg)":"none",transition:"transform .2s"}}>▼</span>
-      </button>
-      {open && <div className="dropdown-panel">
-        {options.map(o => <div key={o.value} className={`dropdown-opt${o.value===value?" is-on":""}`}
-          onClick={()=>{onChange(o.value);setOpen(false);}}
-        >{o.label}</div>)}
-      </div>}
+    <div style={{position:"relative"}}>
+      <button className="btn btn-sm" onClick={()=>setOpen(!open)} title={title}>{trigger}</button>
+      {open && <>
+        <div style={{position:"fixed",inset:0,zIndex:90}} onClick={()=>setOpen(false)} />
+        <div className="ft-more-menu" style={{position:"absolute",right:0,top:"calc(100% + 6px)",zIndex:91}}>
+          {items.map(it=>(
+            <button key={it.value} className={`ft-more-item${activeValue===it.value?" ft-more-item--active":""}`}
+              onClick={()=>{it.onSelect();setOpen(false);}}>
+              <span>{it.icon}</span>{it.label}
+            </button>
+          ))}
+        </div>
+      </>}
     </div>
   );
 };
 
-// Icon button that opens a small menu — keeps secondary navigation out of the
-// way instead of spending header space on a permanent switcher.
-const IconMenu = ({trigger,title,items,activeValue}) => {
-  const [open,setOpen] = React.useState(false);
-  const ref = React.useRef(null);
+// ── SVG Tab Icons ──
 
-  React.useEffect(() => {
-    if (!open) return;
-    const onOutside = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    const onEsc = (e) => { if (e.key === "Escape") setOpen(false); };
-    document.addEventListener("mousedown", onOutside);
-    document.addEventListener("touchstart", onOutside);
-    document.addEventListener("keydown", onEsc);
-    return () => {
-      document.removeEventListener("mousedown", onOutside);
-      document.removeEventListener("touchstart", onOutside);
-      document.removeEventListener("keydown", onEsc);
-    };
-  }, [open]);
+const TabIconToday = ({active}) => (
+  <svg width="21" height="21" viewBox="0 0 20 20" fill="none" stroke={active?"#5d2a99":"#a099b5"} strokeWidth="1.8">
+    <rect x="3" y="8" width="14" height="9" rx="1.5"/><path d="M3 8l7-5 7 5"/>
+  </svg>
+);
+const TabIconEntries = ({active}) => (
+  <svg width="21" height="21" viewBox="0 0 20 20" fill="none" stroke={active?"#5d2a99":"#a099b5"} strokeWidth="1.7">
+    <rect x="2.5" y="6" width="15" height="8" rx="2"/><path d="M7 6v8"/>
+  </svg>
+);
+const TabIconBirthdays = ({active}) => (
+  <svg width="21" height="21" viewBox="0 0 20 20" fill="none" stroke={active?"#5d2a99":"#a099b5"} strokeWidth="1.7">
+    <rect x="3.5" y="8" width="13" height="8" rx="2"/><circle cx="10" cy="4.5" r="1.5"/>
+  </svg>
+);
+const TabIconMore = ({active}) => (
+  <svg width="21" height="21" viewBox="0 0 20 20" fill="none" stroke={active?"#5d2a99":"#a099b5"} strokeWidth="1.7">
+    <path d="M4 6h12M4 10h12M4 14h12"/>
+  </svg>
+);
+const ShieldIcon = () => (
+  <svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="#6d3f9c" strokeWidth="1.6">
+    <path d="M10 2.6l6 2.4v4.4c0 3.4-2.4 6.2-6 7.4-3.6-1.2-6-4-6-7.4V5l6-2.4z"/>
+    <path d="M7.6 10.2l1.7 1.7 3.3-3.4"/>
+  </svg>
+);
 
-  return (
-    <div ref={ref} style={{position:"relative"}}>
-      <button type="button" className="btn btn-sm btn-icon" title={title} aria-label={title}
-        aria-haspopup="menu" aria-expanded={open} onClick={()=>setOpen(o=>!o)}>{trigger}</button>
-      {open && <div className="menu" role="menu">
-        {items.map((it,i) => it.separator
-          ? <div key={"sep"+i} className="menu-sep" />
-          : <button key={it.value||i} type="button" role="menuitem"
-              className={`menu-item${it.value!=null&&it.value===activeValue?" is-on":""}`}
-              onClick={()=>{ setOpen(false); it.onSelect(); }}>
-              {it.icon && <span>{it.icon}</span>}{it.label}
-            </button>)}
-      </div>}
-    </div>
-  );
-};
+// ── PIN Pad (replaces PasswordGate) ──
 
-const BirthdayMiniCard = ({b, onSave}) => {
-  const [expanded, setExpanded] = React.useState(false);
-  const [phone, setPhone] = React.useState(b.phone || "");
-  const [notes, setNotes] = React.useState(b.notes || "");
-  const [status, setStatus] = React.useState(b.status || "not_contacted");
-  const [saving, setSaving] = React.useState(false);
-  const meta = STATUS_META[status] || STATUS_META.not_contacted;
+const PinPad = ({onUnlock}) => {
+  const [digits, setDigits] = React.useState([]);
+  const [error, setError] = React.useState(false);
 
-  React.useEffect(() => {
-    setPhone(b.phone || ""); setNotes(b.notes || ""); setStatus(b.status || "not_contacted");
-  }, [b.key]);
+  const addDigit = (d) => {
+    if (digits.length >= 4) return;
+    const next = [...digits, d];
+    setDigits(next);
+    if (next.length === 4) {
+      const pin = next.join("");
+      if (pin === STATS_PIN) {
+        setTimeout(() => onUnlock(), 200);
+      } else {
+        setError(true);
+        setTimeout(() => { setDigits([]); setError(false); }, 600);
+      }
+    }
+  };
 
-  const save = async (s) => {
-    const st = s || status;
-    if (s) setStatus(s);
-    setSaving(true);
-    await onSave({ ...b, phone, notes, status: st });
-    setSaving(false);
+  const removeLast = () => {
+    setDigits(d => d.slice(0, -1));
+    setError(false);
   };
 
   return (
-    <div className={`bday-card bday-card--${status}`}>
-      <div className="bday-card-main" onClick={() => setExpanded(x => !x)}>
-        <span className="bday-card-dot" style={{background: meta.dot}} />
-        <span className="bday-card-name">{b.kidName || "—"}</span>
-        {b.phone && <span className="bday-card-phone">{b.phone}</span>}
+    <div className="ft-pin-overlay">
+      <div className="ft-pin-sheet">
+        <div className="ft-pin-shield">
+          <svg width="32" height="32" viewBox="0 0 20 20" fill="none" stroke="#6d3f9c" strokeWidth="1.4">
+            <path d="M10 2.6l6 2.4v4.4c0 3.4-2.4 6.2-6 7.4-3.6-1.2-6-4-6-7.4V5l6-2.4z"/>
+            <path d="M7.6 10.2l1.7 1.7 3.3-3.4"/>
+          </svg>
+        </div>
+        <div className="ft-pin-title">Admin access</div>
+        <div className="ft-pin-sub">Enter 4-digit PIN</div>
+        <div className={`ft-pin-dots${error?" ft-pin-error":""}`}>
+          {[0,1,2,3].map(i => (
+            <div key={i} className={`ft-pin-dot${i < digits.length ? " ft-pin-dot--filled" : ""}`} />
+          ))}
+        </div>
+        <div className="ft-pin-grid">
+          {[1,2,3,4,5,6,7,8,9].map(n => (
+            <button key={n} className="ft-pin-key" onClick={() => addDigit(n)}>{n}</button>
+          ))}
+          <div className="ft-pin-key ft-pin-key--empty"></div>
+          <button className="ft-pin-key" onClick={() => addDigit(0)}>0</button>
+          <button className="ft-pin-key ft-pin-key--del" onClick={removeLast}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 002-2V6a2 2 0 00-2-2z"/><line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/></svg>
+          </button>
+        </div>
+        <div className="ft-pin-note">Unlocked for this shift only</div>
       </div>
-      {expanded && (
-        <div className="bday-card-detail" onClick={e => e.stopPropagation()}>
-          <input className="fld" value={phone} onChange={e=>setPhone(e.target.value.replace(/\D/g,"").slice(0,10))} placeholder="Phone" type="tel" inputMode="numeric" />
-          <textarea className="fld" value={notes} onChange={e=>setNotes(e.target.value)} rows={2} placeholder="Notes…" style={{resize:"vertical"}} />
-          <div className="chips">
-            {STATUS_ORDER.map(s => <button key={s} type="button" className="chip chip-sm" onClick={()=>save(s)} style={{
-              borderColor:status===s?STATUS_META[s].dot:undefined,
-              background:status===s?STATUS_META[s].bg:undefined,
-              color:status===s?STATUS_META[s].fg:undefined,
-              fontWeight:status===s?800:600,
-            }}>
-              <span style={{width:7,height:7,borderRadius:"50%",background:STATUS_META[s].dot,flexShrink:0}} />
-              {STATUS_META[s].label}
-            </button>)}
+    </div>
+  );
+};
+
+const PasswordGate = ({onUnlock}) => <PinPad onUnlock={onUnlock} />;
+
+// ── Confirm Dialog ──
+
+const ConfirmDialog = ({message, needsPassword, confirmLabel, onConfirm, onCancel}) => {
+  const [pin, setPin] = React.useState([]);
+  const [pinError, setPinError] = React.useState(false);
+
+  const handleConfirm = () => {
+    if (needsPassword) {
+      const p = pin.join("");
+      if (p !== STATS_PIN) { setPinError(true); setTimeout(()=>{setPin([]);setPinError(false);},600); return; }
+    }
+    onConfirm();
+  };
+
+  const addDigit = (d) => {
+    if (pin.length >= 4) return;
+    setPin([...pin, d]);
+  };
+
+  return (
+    <div className="ft-confirm-overlay" onClick={onCancel}>
+      <div className="ft-confirm-dialog" onClick={e => e.stopPropagation()}>
+        <div className="ft-confirm-msg">{message}</div>
+        {needsPassword && (
+          <div style={{marginBottom:16}}>
+            <div style={{fontSize:12,color:C.textMid,fontWeight:600,marginBottom:8,textAlign:"center"}}>Enter admin PIN</div>
+            <div className={`ft-pin-dots${pinError?" ft-pin-error":""}`} style={{marginBottom:12}}>
+              {[0,1,2,3].map(i => (
+                <div key={i} className={`ft-pin-dot${i < pin.length ? " ft-pin-dot--filled" : ""}`} />
+              ))}
+            </div>
+            <div className="ft-pin-grid ft-pin-grid--sm">
+              {[1,2,3,4,5,6,7,8,9].map(n => (
+                <button key={n} className="ft-pin-key ft-pin-key--sm" onClick={() => addDigit(n)}>{n}</button>
+              ))}
+              <div></div>
+              <button className="ft-pin-key ft-pin-key--sm" onClick={() => addDigit(0)}>0</button>
+              <button className="ft-pin-key ft-pin-key--sm" onClick={() => setPin(p=>p.slice(0,-1))}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 002-2V6a2 2 0 00-2-2z"/><line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/></svg>
+              </button>
+            </div>
           </div>
-          <div style={{display:"flex",gap:8}}>
-            {phone && <a href={`tel:${phone}`} className="btn btn-sm" onClick={e=>e.stopPropagation()}
-              style={{background:C.blueSoft,color:C.blue,borderColor:"transparent",textDecoration:"none"}}>📞 Call</a>}
-            <button type="button" className="btn btn-sm btn-primary" onClick={()=>save()} disabled={saving} style={{marginLeft:"auto"}}>
-              {saving?"Saving…":"Save"}
+        )}
+        <div style={{display:"flex",gap:8}}>
+          <button className="ft-btn-secondary" style={{flex:1}} onClick={onCancel}>Cancel</button>
+          <button className="ft-btn-primary" style={{flex:1}} onClick={handleConfirm}>{confirmLabel||"Confirm"}</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── Birthday Components ──
+
+const BirthdayMiniCard = ({record, onSave}) => {
+  const [status, setStatus] = React.useState(record.status || "not_contacted");
+  const [notes, setNotes] = React.useState(record.notes || "");
+  const [editing, setEditing] = React.useState(false);
+
+  const save = (s, n) => {
+    const updated = {...record, status:s, notes:n};
+    onSave(updated);
+  };
+
+  const statusColors = {
+    not_contacted: {bg:"#f6f1fc", color:C.textMid, label:"Not contacted"},
+    warm: {bg:"#fef8e6", color:C.orange, label:"Warm lead"},
+    booking: {bg:"#e4f7f1", color:C.green, label:"Booking"},
+  };
+  const meta = statusColors[status] || statusColors.not_contacted;
+  const initial = (record.kidName||record.parentName||"?").charAt(0).toUpperCase();
+
+  return (
+    <div className="ft-bday-card">
+      <div className="ft-bday-card-top">
+        <div className="ft-bday-avatar">{initial}</div>
+        <div className="ft-bday-info">
+          <div className="ft-bday-name">{record.kidName || "—"}</div>
+          <div className="ft-bday-parent">{record.parentName ? `Parent: ${record.parentName}` : ""}</div>
+          <div className="ft-bday-date">{record.day ? `${record.day} ${MONTH_NAMES[(record.month||1)-1]}` : ""}</div>
+        </div>
+        <span className="ft-bday-badge" style={{background:meta.bg, color:meta.color}}>{meta.label}</span>
+      </div>
+      <div className="ft-bday-actions">
+        {record.phone && (
+          <a href={`tel:${record.phone}`} className="ft-bday-call">
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 3a1 1 0 011-1h3.28a1 1 0 01.95.68l1 3a1 1 0 01-.27 1l-1.5 1.5a11 11 0 005.36 5.36l1.5-1.5a1 1 0 011-.27l3 1a1 1 0 01.68.95V17a1 1 0 01-1 1A16 16 0 012 3z"/></svg>
+            Call
+          </a>
+        )}
+        <div className="ft-bday-status-btns">
+          {["not_contacted","warm","booking"].map(s => (
+            <button key={s} className={`ft-chip${status===s?" ft-chip--active":""}`}
+              style={status===s?{background:statusColors[s].bg,color:statusColors[s].color,borderColor:statusColors[s].color}:{}}
+              onClick={()=>{setStatus(s);save(s,notes);}}>
+              {statusColors[s].label}
             </button>
-          </div>
+          ))}
+        </div>
+        <button className="ft-chip" onClick={()=>setEditing(!editing)}>
+          {editing ? "Close" : "Notes"}
+        </button>
+      </div>
+      {editing && (
+        <div style={{padding:"0 16px 14px"}}>
+          <textarea className="fld" rows={2} value={notes} placeholder="Add a note..."
+            style={{fontSize:12,resize:"vertical"}}
+            onChange={e => setNotes(e.target.value)}
+            onBlur={() => save(status, notes)} />
         </div>
       )}
     </div>
@@ -197,283 +291,166 @@ const BirthdayMiniCard = ({b, onSave}) => {
 };
 
 const BirthdayCalendar = ({birthdays, month, year, loading, onSave}) => {
-  if (loading) return <div className="empty-state"><Spinner size={26} /><div style={{marginTop:10}}>Loading birthdays…</div></div>;
-  if (!birthdays.length) return <div className="empty-state">🎈 No birthdays found for this month.</div>;
+  if (loading) return <div className="ft-empty"><Spinner size={24} /><div style={{marginTop:10}}>Loading birthdays...</div></div>;
+  if (!birthdays.length) return <div className="ft-empty">No birthdays found for {MONTH_NAMES[(month||1)-1]} {year}.</div>;
 
-  const today = new Date();
-  const isCurrentMonth = today.getMonth()+1 === month && today.getFullYear() === year;
-  const todayDay = isCurrentMonth ? today.getDate() : -1;
-  const daysInMonth = new Date(year, month, 0).getDate();
-  const weeks = [];
-  for (let w = 0; w < 5; w++) {
-    const startDay = w * 7 + 1;
-    const endDay = Math.min((w + 1) * 7, daysInMonth);
-    if (startDay > daysInMonth) break;
-    const days = [];
-    let weekHasBirthdays = false;
-    for (let d = startDay; d <= endDay; d++) {
-      const dayBirthdays = birthdays.filter(b => b.day === d);
-      if (dayBirthdays.length) weekHasBirthdays = true;
-      days.push({ day: d, birthdays: dayBirthdays });
-    }
-    weeks.push({ week: w + 1, startDay, endDay, days, hasBirthdays: weekHasBirthdays });
-  }
+  const weeks = {};
+  birthdays.forEach(b => {
+    const w = b.day ? Math.ceil(b.day / 7) : 0;
+    if (!weeks[w]) weeks[w] = [];
+    weeks[w].push(b);
+  });
 
   return (
-    <div className="bday-kanban">
-      {weeks.map(w => (
-        <div key={w.week} className={`bday-week-col${w.hasBirthdays?"":" bday-week-col--empty"}`}>
-          <div className="bday-week-header">
-            <span className="bday-week-label">W{w.week}</span>
-            <span className="bday-week-range">{w.startDay}–{w.endDay} {MONTH_NAMES[month-1]?.slice(0,3)}</span>
-          </div>
-          <div className="bday-week-body">
-            {w.days.map(d => {
-              if (!d.birthdays.length) return (
-                <div key={d.day} className={`bday-day-row${d.day===todayDay?" bday-day--today":""}`}>
-                  <div className="bday-day-num">{d.day}</div>
-                </div>
-              );
-              return (
-                <div key={d.day} className={`bday-day-row has-kids${d.day===todayDay?" bday-day--today":""}`}>
-                  <div className="bday-day-num">{d.day}{d.day===todayDay?" 🎉":""}</div>
-                  <div className="bday-day-cards">
-                    {d.birthdays.map((b, i) => (
-                      <BirthdayMiniCard key={b.key || i} b={b} onSave={onSave} />
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+    <div className="ft-bday-list">
+      {Object.keys(weeks).sort((a,b)=>a-b).map(w => (
+        <div key={w}>
+          <div className="ft-bday-week-label">Week {w}</div>
+          {weeks[w].map((b,i) => <BirthdayMiniCard key={b.key||i} record={b} onSave={onSave} />)}
         </div>
       ))}
     </div>
   );
 };
 
-// ── Dashboard Components ──
+// ── Calendar Filter ──
 
-const STATS_PASSWORD = "FunSamu5";
-
-const CalendarFilter = ({mode,date,rangeStart,rangeEnd,onModeChange,onDateChange,onRangeChange,onToday}) => {
-  const today = new Date().toISOString().slice(0,10);
-  const isToday = date === today;
-  const step = (dir) => {
-    const d = new Date(date);
-    if (mode === "day") d.setDate(d.getDate() + dir);
-    else if (mode === "month") d.setMonth(d.getMonth() + dir);
-    onDateChange(d.toISOString().slice(0,10));
-  };
+const CalendarFilter = ({mode, date, rangeStart, rangeEnd, onModeChange, onDateChange, onRangeChange, onToday}) => {
   return (
-    <div className="cal-filter">
-      <div className="cal-filter-modes">
-        {[{v:"day",l:"Day"},{v:"month",l:"Month"},{v:"range",l:"Range"}].map(m => (
-          <button key={m.v} type="button" className={`chip chip-sm${mode===m.v?" is-on":""}`}
-            onClick={()=>onModeChange(m.v)}>{m.l}</button>
+    <div className="ft-filter">
+      <div className="ft-seg">
+        {[{v:"day",l:"Day"},{v:"month",l:"Month"},{v:"range",l:"Range"}].map(t => (
+          <button key={t.v} className={`ft-seg-item${mode===t.v?" ft-seg-item--active":""}`}
+            onClick={() => onModeChange(t.v)}>{t.l}</button>
         ))}
       </div>
-      <span className="cal-filter-sep" />
-      {mode==="day" && <>
-        <button type="button" className="cal-nav-btn" onClick={()=>step(-1)} aria-label="Previous day">‹</button>
-        <input className="fld cal-filter-date" type="date" value={date} onChange={e=>onDateChange(e.target.value)} />
-        <button type="button" className="cal-nav-btn" onClick={()=>step(1)} aria-label="Next day">›</button>
-        {!isToday && <button type="button" className="chip chip-sm" onClick={onToday}>Today</button>}
-      </>}
-      {mode==="month" && <>
-        <button type="button" className="cal-nav-btn" onClick={()=>step(-1)} aria-label="Previous month">‹</button>
-        <input className="fld cal-filter-date" type="month" value={date.slice(0,7)}
-          onChange={e=>onDateChange(e.target.value+"-01")} />
-        <button type="button" className="cal-nav-btn" onClick={()=>step(1)} aria-label="Next month">›</button>
-      </>}
-      {mode==="range" && <>
-        <input className="fld cal-filter-date" type="date" value={rangeStart||""} onChange={e=>onRangeChange(e.target.value,rangeEnd)} />
-        <span className="cal-filter-to">to</span>
-        <input className="fld cal-filter-date" type="date" value={rangeEnd||""} onChange={e=>onRangeChange(rangeStart,e.target.value)} />
-      </>}
-    </div>
-  );
-};
-
-const BarChart = ({data,labelKey,valueKey,color,height=180,prefix=""}) => {
-  if (!data||!data.length) return <div className="empty-state">No data to chart.</div>;
-  const max = Math.max(...data.map(d=>d[valueKey]),1);
-  return (
-    <div className="bar-chart" style={{height}}>
-      <div className="bar-chart-bars">
-        {data.map((d,i) => {
-          const pct = (d[valueKey]/max)*100;
-          return (
-            <div key={i} className="bar-chart-col">
-              <div className="bar-chart-val">{prefix}{d[valueKey].toLocaleString("en-IN")}</div>
-              <div className="bar-chart-bar" style={{height:`${Math.max(pct,2)}%`,background:color||C.accent}} />
-              <div className="bar-chart-label">{d[labelKey]}</div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
-
-const PasswordGate = ({onUnlock}) => {
-  const [pw,setPw] = React.useState("");
-  const [error,setError] = React.useState(false);
-  const submit = () => {
-    if (pw === STATS_PASSWORD) {
-      onUnlock();
-    } else { setError(true); setTimeout(()=>setError(false),1500); }
-  };
-  return (
-    <div className="password-gate">
-      <div className="card card-pad password-card">
-        <div style={{fontSize:32,marginBottom:12}}>🔒</div>
-        <div className="card-title" style={{marginBottom:4}}>Stats Dashboard</div>
-        <div style={{fontSize:12,color:C.textLight,fontWeight:600,marginBottom:16}}>Enter password to view stats</div>
-        <input className={`fld${error?" is-error":""}`} type="password" placeholder="Password"
-          value={pw} onChange={e=>{setPw(e.target.value);setError(false);}}
-          onKeyDown={e=>{if(e.key==="Enter")submit();}}
-          style={{textAlign:"center",marginBottom:12}} />
-        {error && <div style={{fontSize:12,color:C.danger,fontWeight:700,marginBottom:8}}>Wrong password</div>}
-        <button className="btn btn-primary btn-block" onClick={submit}>Unlock</button>
-      </div>
-    </div>
-  );
-};
-
-const ConfirmDialog = ({message, needsPassword, onConfirm, onCancel, confirmLabel}) => {
-  const [pw, setPw] = React.useState("");
-  const [error, setError] = React.useState(false);
-  const submit = () => {
-    if (needsPassword && pw !== STATS_PASSWORD) { setError(true); setTimeout(()=>setError(false),1500); return; }
-    onConfirm();
-  };
-  return (
-    <div className="overlay" onClick={onCancel}>
-      <div className="modal" style={{maxWidth:360,textAlign:"center",padding:"24px 20px"}} onClick={e=>e.stopPropagation()}>
-        <div style={{fontSize:28,marginBottom:10}}>⚠️</div>
-        <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:6}}>{message}</div>
-        <div style={{fontSize:12,color:C.textMid,marginBottom:16}}>This action cannot be undone.</div>
-        {needsPassword && <>
-          <input className={`fld${error?" is-error":""}`} type="password" placeholder="Enter password to proceed"
-            value={pw} onChange={e=>{setPw(e.target.value);setError(false);}}
-            onKeyDown={e=>{if(e.key==="Enter")submit();}}
-            style={{textAlign:"center",marginBottom:8}} autoFocus />
-          {error && <div style={{fontSize:12,color:C.danger,fontWeight:700,marginBottom:8}}>Wrong password</div>}
+      <div className="ft-filter-controls">
+        {mode !== "range" && (
+          <input className="fld" type="date" value={date} onChange={e => onDateChange(e.target.value)}
+            style={{maxWidth:160,fontSize:12}} />
+        )}
+        {mode === "range" && <>
+          <input className="fld" type="date" value={rangeStart||""} onChange={e => onRangeChange(e.target.value, rangeEnd)}
+            style={{maxWidth:140,fontSize:12}} />
+          <span style={{fontSize:11,color:C.textMid}}>to</span>
+          <input className="fld" type="date" value={rangeEnd||""} onChange={e => onRangeChange(rangeStart, e.target.value)}
+            style={{maxWidth:140,fontSize:12}} />
         </>}
-        <div style={{display:"flex",gap:8,marginTop:8}}>
-          <button className="btn" onClick={onCancel} style={{flex:1}}>Cancel</button>
-          <button className="btn btn-primary" onClick={submit} style={{flex:1,background:confirmLabel?C.accent:C.danger,borderColor:confirmLabel?C.accent:C.danger}}>{confirmLabel||"Delete"}</button>
+        <button className="ft-chip" onClick={onToday}>Today</button>
+      </div>
+    </div>
+  );
+};
+
+// ── Checkout Tracking ──
+
+const CHECKOUT_KEY = "funtunes_checkouts";
+
+function isCheckedOut(id) {
+  try { const d = JSON.parse(localStorage.getItem(CHECKOUT_KEY)||"{}"); return !!d[id]; } catch(e) { return false; }
+}
+function setCheckedOut(id) {
+  try { const d = JSON.parse(localStorage.getItem(CHECKOUT_KEY)||"{}"); d[id] = Date.now(); localStorage.setItem(CHECKOUT_KEY, JSON.stringify(d)); } catch(e) {}
+}
+function parseTime24ToMinutes(t) {
+  if (!t) return 0;
+  const p = t.split(":").map(Number);
+  return (p[0]||0)*60 + (p[1]||0);
+}
+function formatTime12Short(t) {
+  if (!t) return "";
+  const [h,m] = t.split(":").map(Number);
+  const ampm = h >= 12 ? "PM" : "AM";
+  const hr = h % 12 || 12;
+  return `${hr}:${String(m).padStart(2,"0")} ${ampm}`;
+}
+
+// ── Entry Card (replaces LiveEntryRow table row) ──
+
+const EntryCard = ({entry, onEdit, onDelete, onCheckout}) => {
+  const name = entry.customerName || entry["Customer name"] || "—";
+  const amt = parseInt(entry.amount || entry["Amount"] || 0);
+  const socksAmt = parseInt(entry.socks || entry["Socks"] || 0);
+  const mop = entry.mop || entry["MOP"] || "";
+  const kids = parseInt(entry.numKids || entry["No of kids"] || 1);
+  const typeKey = entry.entryType || entry["Entry Type"] || "funzone";
+  const timing = entry.timing || entry["Timing"] || "";
+  const phone = entry.phone || entry["Phone number"] || "";
+  const timeIn = entry.timeIn || "";
+  const timeOut = entry.timeOut || "";
+  const hours = parseFloat(entry.hours || entry["Hours"] || 0);
+  const id = entry.id;
+
+  const checkedOut = id ? isCheckedOut(id) : false;
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const isToday = (entry.date || "") === now.toISOString().slice(0, 10);
+  const inMin = parseTime24ToMinutes(timeIn);
+  const outMin = parseTime24ToMinutes(timeOut);
+  const isActive = isToday && !checkedOut && timeIn && timeOut && nowMin >= inMin && nowMin < outMin;
+  const isExceeded = isToday && !checkedOut && timeIn && timeOut && nowMin >= outMin && outMin > 0;
+
+  const total = amt + socksAmt;
+  const typeIcons = {funzone:"🎪", birthday:"🎂", event:"🎪", daycare:"👶"};
+
+  const progressPct = isActive && outMin > inMin
+    ? Math.min(100, Math.round(((nowMin - inMin) / (outMin - inMin)) * 100))
+    : isExceeded ? 100 : 0;
+
+  const mopBadges = [];
+  const pu = parseInt(entry.playUpi || 0), pc = parseInt(entry.playCash || 0);
+  const su = parseInt(entry.socksUpi || 0), sc = parseInt(entry.socksCash || 0);
+  if (pu + su > 0) mopBadges.push({label: `UPI ₹${(pu+su).toLocaleString("en-IN")}`, type: "upi"});
+  if (pc + sc > 0) mopBadges.push({label: `Cash ₹${(pc+sc).toLocaleString("en-IN")}`, type: "cash"});
+
+  return (
+    <div className={`ft-entry-card${isActive?" ft-entry-card--active":""}${isExceeded?" ft-entry-card--exceeded":""}${checkedOut?" ft-entry-card--done":""}`}>
+      <div className="ft-entry-card-top">
+        <div className="ft-entry-icon">{typeIcons[typeKey] || "🎪"}</div>
+        <div className="ft-entry-info">
+          <div className="ft-entry-name">{name}{kids > 1 ? ` (${kids} kids)` : ""}</div>
+          <div className="ft-entry-meta">
+            {timing && <span>{timing}</span>}
+            {phone && <span>{phone}</span>}
+          </div>
+        </div>
+        <div className="ft-entry-amount">₹{total.toLocaleString("en-IN")}</div>
+      </div>
+      {(isActive || isExceeded) && (
+        <div className="ft-entry-progress">
+          <div className="ft-entry-progress-bar">
+            <div className="ft-entry-progress-fill" style={{width:`${progressPct}%`,background:isExceeded?"var(--ft-danger)":"var(--ft-green)"}} />
+          </div>
+          <span className="ft-entry-progress-label">
+            {isExceeded ? "Time exceeded" : `${progressPct}% · ends ${formatTime12Short(timeOut)}`}
+          </span>
+        </div>
+      )}
+      <div className="ft-entry-card-bottom">
+        <div className="ft-entry-badges">
+          {mopBadges.map((b,i) => (
+            <span key={i} className={`ft-entry-mop ft-entry-mop--${b.type}`}>{b.label}</span>
+          ))}
+        </div>
+        <div className="ft-entry-actions">
+          {isActive && !checkedOut && onCheckout && (
+            <button className="ft-chip ft-chip--green" onClick={() => onCheckout(entry)}>Checkout</button>
+          )}
+          <button className="ft-entry-act-btn" onClick={() => onEdit(entry)} title="Edit">
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2"><path d="M13.5 3.5l3 3L7 16H4v-3L13.5 3.5z"/></svg>
+          </button>
+          <button className="ft-entry-act-btn ft-entry-act-btn--danger" onClick={() => onDelete(entry)} title="Delete">
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 5l10 10M15 5L5 15"/></svg>
+          </button>
         </div>
       </div>
     </div>
   );
 };
 
-const CHECKOUT_KEY = "funtunes_checkouts";
-
-function getCheckedOutIds() {
-  try {
-    const raw = localStorage.getItem(CHECKOUT_KEY);
-    if (!raw) return {};
-    const data = JSON.parse(raw);
-    const today = new Date().toISOString().slice(0,10);
-    if (data._date !== today) return {};
-    return data;
-  } catch(e) { return {}; }
-}
-
-function setCheckedOut(id) {
-  const data = getCheckedOutIds();
-  data._date = new Date().toISOString().slice(0,10);
-  data[id] = true;
-  localStorage.setItem(CHECKOUT_KEY, JSON.stringify(data));
-}
-
-function parseTime24ToMinutes(t) {
-  if (!t || t.indexOf(":") === -1) return null;
-  const parts = t.split(":");
-  return parseInt(parts[0]) * 60 + parseInt(parts[1]);
-}
-
-function formatTime12Short(t24) {
-  if (!t24 || t24.indexOf(":") === -1) return "";
-  const [hStr,mStr] = t24.split(":");
-  let h = parseInt(hStr);
-  const ap = h >= 12 ? "p" : "a";
-  h = h % 12; if (h === 0) h = 12;
-  return `${h}:${mStr}${ap}`;
-}
-
-const LiveEntryRow = ({e, onEdit, onDelete, onCheckout, isCheckedOut, now}) => {
-  const name = e.customerName || "—";
-  const dob = e.dob || "";
-  const timeIn = e.timeIn || "";
-  const timeOut = e.timeOut || "";
-  const hours = e.hours || "1";
-  const amt = parseInt(e.amount) || 0;
-  const socks = parseInt(e.socks) || 0;
-  const total = amt + socks;
-  const playUpi = parseInt(e.playUpi) || 0;
-  const playCash = parseInt(e.playCash) || 0;
-  const socksUpi = parseInt(e.socksUpi) || 0;
-  const socksCash = parseInt(e.socksCash) || 0;
-  const upiTotal = playUpi + socksUpi;
-  const cashTotal = playCash + socksCash;
-
-  const nowMins = now.getHours() * 60 + now.getMinutes();
-  const outMins = parseTime24ToMinutes(timeOut);
-  const entryDate = e.date || "";
-  const todayStr = now.toISOString().slice(0,10);
-  const isToday = entryDate === todayStr;
-
-  let timeStatus = "normal";
-  if (isToday && timeIn && outMins !== null && !isCheckedOut) {
-    timeStatus = nowMins < outMins ? "active" : "exceeded";
-  }
-
-  const splitParts = [];
-  if (upiTotal > 0) splitParts.push(`UPI ₹${upiTotal.toLocaleString("en-IN")}`);
-  if (cashTotal > 0) splitParts.push(`Cash ₹${cashTotal.toLocaleString("en-IN")}`);
-  const splitStr = splitParts.length ? ` (${splitParts.join(" + ")})` : "";
-
-  return (
-    <div className={`live-row${timeStatus==="exceeded"?" live-row--exceeded":""}`}>
-      <div className="live-row-main">
-        <div className="live-row-name">{name}</div>
-        {dob && <span className="live-row-dob">DOB: {dob}</span>}
-      </div>
-      <div className={`live-row-time live-row-time--${timeStatus}`}>
-        <span>⏱ {formatTime12Short(timeIn)} → {formatTime12Short(timeOut)}</span>
-      </div>
-      <div className="live-row-dur-col">{hours}h</div>
-      <div className="live-row-amount">
-        <span className="live-row-total">₹{total.toLocaleString("en-IN")}</span>
-        {splitStr && <span className="live-row-split">{splitStr}</span>}
-      </div>
-      <div className="live-row-actions">
-        {isToday && !isCheckedOut && timeIn && <button type="button" className={`icon-btn${timeStatus==="exceeded"?" icon-btn--alert":""}`} title="Checkout" onClick={()=>onCheckout(e)}>🚪</button>}
-        {isCheckedOut && <span className="live-row-done" title="Checked out">✅</span>}
-        <button type="button" className="icon-btn" title="Edit" onClick={()=>onEdit(e)}>✏️</button>
-        <button type="button" className="icon-btn danger" title="Delete" onClick={()=>onDelete(e)}>🗑️</button>
-      </div>
-    </div>
-  );
-};
-
-const DAY_NAMES = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-
 const LiveEntryList = ({entries, onEdit, onDelete, onCheckout, loading}) => {
-  const [now, setNow] = React.useState(new Date());
-  React.useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 30000);
-    return () => clearInterval(id);
-  }, []);
-
-  const checkedOut = getCheckedOutIds();
-
-  if (loading) return <div className="empty-state"><Spinner size={26} /><div style={{marginTop:10}}>Loading entries…</div></div>;
-  if (!entries.length) return <div className="empty-state">No entries yet — start with <strong style={{color:C.accent}}>New Entry</strong>.</div>;
+  if (loading) return <div className="ft-empty"><Spinner size={24} /><div style={{marginTop:10}}>Loading entries...</div></div>;
+  if (!entries.length) return <div className="ft-empty">No entries yet — tap <strong style={{color:C.accent}}>New booking</strong> to start.</div>;
 
   const grouped = {};
   entries.forEach(e => {
@@ -481,134 +458,102 @@ const LiveEntryList = ({entries, onEdit, onDelete, onCheckout, loading}) => {
     if (!grouped[d]) grouped[d] = [];
     grouped[d].push(e);
   });
-  const sortedDates = Object.keys(grouped).sort();
-
-  const todayStr = now.toISOString().slice(0,10);
+  const dates = Object.keys(grouped).sort().reverse();
 
   return (
-    <div className="live-list">
-      {sortedDates.map(dateStr => {
-        const dateObj = new Date(dateStr + "T00:00:00");
-        const day = dateObj.getDate();
-        const dayName = DAY_NAMES[dateObj.getDay()];
-        const isToday = dateStr === todayStr;
-        const dateEntries = grouped[dateStr];
-        return (
-          <div key={dateStr} className="live-date-group">
-            <div className={`live-date-header${isToday ? " live-date-header--today" : ""}`}>
-              <span className="live-date-label">{day} - {dayName}</span>
-              <span className="live-date-count">{dateEntries.length} {dateEntries.length === 1 ? "entry" : "entries"}</span>
-              {isToday && <span className="live-date-today-badge">Today</span>}
+    <div className="ft-entry-list">
+      {dates.map(d => (
+        <div key={d}>
+          {dates.length > 1 && (
+            <div className="ft-entry-date-label">
+              {d.split("-").reverse().join("/")} · {grouped[d].length} {grouped[d].length===1?"entry":"entries"}
             </div>
-            <div className="live-date-entries">
-              <div className="live-list-header">
-                <span className="live-col-name">Name</span>
-                <span className="live-col-time">Playtime</span>
-                <span className="live-col-dur">Duration</span>
-                <span className="live-col-amount">Amount</span>
-                <span className="live-col-actions">Actions</span>
-              </div>
-              {dateEntries.map((e,i) => (
-                <LiveEntryRow key={e.id||i} e={e} onEdit={onEdit} onDelete={onDelete}
-                  onCheckout={onCheckout} isCheckedOut={!!checkedOut[e.id]} now={now} />
-              ))}
-            </div>
-          </div>
-        );
-      })}
+          )}
+          {grouped[d].map((e, i) => (
+            <EntryCard key={e.id || i} entry={e} onEdit={onEdit} onDelete={onDelete} onCheckout={onCheckout} />
+          ))}
+        </div>
+      ))}
     </div>
   );
 };
 
+const EntryList = ({entries, onEdit, onDelete, loading}) => {
+  return <LiveEntryList entries={entries} onEdit={onEdit} onDelete={onDelete} loading={loading} />;
+};
+
+// ── Expense Categories ──
+
 const EXPENSE_CATEGORIES = [
-  {value:"snacks",label:"Snacks"},
+  {value:"snacks",label:"Snacks & Drinks"},
+  {value:"cleaning",label:"Cleaning"},
+  {value:"repairs",label:"Repairs"},
   {value:"supplies",label:"Supplies"},
-  {value:"maintenance",label:"Maintenance"},
   {value:"transport",label:"Transport"},
-  {value:"misc",label:"Misc"},
+  {value:"misc",label:"Miscellaneous"},
 ];
 
 const MONTHLY_EXPENSE_CATEGORIES = [
   {value:"rent",label:"Rent"},
-  {value:"maintenance",label:"Maintenance"},
-  {value:"eb",label:"EB (Electricity)"},
   {value:"salary",label:"Salary"},
+  {value:"electricity",label:"Electricity"},
+  {value:"water",label:"Water"},
+  {value:"internet",label:"Internet"},
+  {value:"insurance",label:"Insurance"},
+  {value:"maintenance",label:"Maintenance"},
   {value:"marketing",label:"Marketing"},
-  {value:"misc",label:"FT Monthly Expenses"},
+  {value:"misc",label:"Miscellaneous"},
 ];
+
+// ── Monthly Expenses Dashboard ──
 
 const MonthlyExpensesDashboard = ({expenses, month, year, onChangeMonth, onChangeYear, onAdd, onDelete, loading, hideFilter}) => {
   const f = (v) => `₹${(v||0).toLocaleString("en-IN")}`;
-  const catLabel = (c) => (MONTHLY_EXPENSE_CATEGORIES.find(x=>x.value===c)||{}).label || c;
   const total = expenses.reduce((s,e)=>s+(e.amount||0),0);
-
-  const byCat = {};
-  MONTHLY_EXPENSE_CATEGORIES.forEach(c => { byCat[c.value] = 0; });
-  expenses.forEach(e => { byCat[e.category] = (byCat[e.category]||0) + (e.amount||0); });
-
-  const catColors = {rent:C.accent, maintenance:C.blue, eb:C.orange, salary:C.green, marketing:C.pink, misc:C.textMid};
+  const catLabel = (c) => (MONTHLY_EXPENSE_CATEGORIES.find(x=>x.value===c)||{}).label || c;
 
   return (
     <div>
-      {!hideFilter && <div className="card card-pad filter-bar" style={{marginBottom:"var(--sp-4)"}}>
-        <div style={{display:"flex",gap:8,flex:"1 1 220px",minWidth:0}}>
-          <Dropdown flex={1.5} value={month} onChange={v=>onChangeMonth(parseInt(v))}
-            options={MONTH_NAMES.map((m,i)=>({value:i+1,label:m}))} />
-          <Dropdown flex={1} value={year} onChange={v=>onChangeYear(parseInt(v))}
-            options={[new Date().getFullYear()-1, new Date().getFullYear(), new Date().getFullYear()+1].map(y=>({value:y,label:String(y)}))} />
-        </div>
-        <div className="filter-bar-right">
-          {!loading && <span className="filter-bar-count">{expenses.length} items</span>}
-          <button className="btn btn-sm" onClick={onAdd}>+ Add Expense</button>
-        </div>
+      {!hideFilter && <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:16,flexWrap:"wrap"}}>
+        <Dropdown flex={1.5} value={month} onChange={v=>onChangeMonth(parseInt(v))}
+          options={MONTH_NAMES.map((m,i)=>({value:i+1,label:m}))} />
+        <Dropdown flex={1} value={year} onChange={v=>onChangeYear(parseInt(v))}
+          options={[new Date().getFullYear()-1, new Date().getFullYear(), new Date().getFullYear()+1].map(y=>({value:y,label:String(y)}))} />
+        <button className="ft-btn-primary" style={{padding:"8px 16px",fontSize:13}} onClick={onAdd}>+ Add</button>
       </div>}
-      {hideFilter && <div style={{display:"flex",justifyContent:"flex-end",gap:8,marginBottom:"var(--sp-4)"}}>
-        <button className="btn btn-sm" onClick={onAdd}>+ Add Expense</button>
-      </div>}
-
-      {loading ? <div className="empty-state"><Spinner size={26} /><div style={{marginTop:10}}>Loading…</div></div> : <>
-        <div className="cashflow-grid" style={{marginBottom:"var(--sp-4)"}}>
-          {MONTHLY_EXPENSE_CATEGORIES.map(cat => (
-            <div key={cat.value} className="cashflow-item">
-              <div className="cashflow-label">{cat.label}</div>
-              <div className="cashflow-value" style={{color:catColors[cat.value]||C.text,fontSize:18}}>{f(byCat[cat.value])}</div>
-            </div>
-          ))}
-        </div>
-
-        <div className="card" style={{marginBottom:"var(--sp-4)",textAlign:"center",padding:"16px"}}>
+      {loading ? <div className="ft-empty"><Spinner size={24} /><div style={{marginTop:10}}>Loading...</div></div> : <>
+        <div className="ft-pnl-section" style={{marginBottom:16}}>
           <div style={{fontSize:12,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:".4px",marginBottom:4}}>Total Monthly Expenses</div>
           <div style={{fontSize:28,fontWeight:900,color:C.danger}}>{f(total)}</div>
           <div style={{fontSize:11,color:C.textLight,fontWeight:600,marginTop:4}}>{MONTH_NAMES[(month||1)-1]} {year}</div>
         </div>
 
-        {expenses.length > 0 ? <div className="card" style={{marginBottom:"var(--sp-4)"}}>
-          <div className="card-head"><div className="card-title">Expense Details</div></div>
-          <div className="breakdown-table-wrap">
-            <table className="breakdown-table">
-              <thead><tr><th>Category</th><th>Description</th><th>Amount</th><th></th></tr></thead>
-              <tbody>
-                {expenses.map((e,i) => (
-                  <tr key={e.id||i}>
-                    <td><span style={{display:"inline-block",width:8,height:8,borderRadius:4,background:catColors[e.category]||C.textMid,marginRight:6}}></span>{catLabel(e.category)}</td>
-                    <td>{e.description || "—"}</td>
-                    <td style={{color:C.danger,fontWeight:700}}>{f(e.amount)}</td>
-                    <td style={{width:36,textAlign:"center"}}><button type="button" className="icon-btn danger" title="Delete" onClick={()=>onDelete(e)} style={{fontSize:14}}>🗑️</button></td>
-                  </tr>
-                ))}
-                <tr style={{fontWeight:800,borderTop:"2px solid var(--border-strong)"}}>
-                  <td colSpan={2} style={{textAlign:"right"}}>Total</td>
-                  <td style={{color:C.danger}}>{f(total)}</td>
-                  <td></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div> : <div className="empty-state">No expenses recorded for {MONTH_NAMES[(month||1)-1]} {year}.</div>}
+        {expenses.length > 0 && <div className="ft-pnl-section">
+          <div style={{fontSize:13,fontWeight:700,marginBottom:10}}>Expense Details</div>
+          {expenses.map((e,i) => (
+            <div key={e.id||i} className="ft-entry-card" style={{padding:"12px 16px",marginBottom:8}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                <div>
+                  <div style={{fontWeight:700,fontSize:13}}>{catLabel(e.category)}</div>
+                  <div style={{fontSize:11,color:C.textLight}}>{e.description || "—"}</div>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontWeight:700,color:C.danger}}>{f(e.amount)}</span>
+                  <button className="ft-entry-act-btn ft-entry-act-btn--danger" onClick={()=>onDelete(e)}>
+                    <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 5l10 10M15 5L5 15"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>}
+        {!expenses.length && <div className="ft-empty">No expenses recorded for {MONTH_NAMES[(month||1)-1]} {year}.</div>}
       </>}
     </div>
   );
 };
+
+// ── Cash Flow Summary ──
 
 const CashFlowSummary = ({entries, expenses}) => {
   const totalUpi = entries.reduce((a,e) => a + (parseInt(e.playUpi)||0) + (parseInt(e.socksUpi)||0), 0);
@@ -618,89 +563,97 @@ const CashFlowSummary = ({entries, expenses}) => {
   const f = (v) => `₹${v.toLocaleString("en-IN")}`;
 
   return (
-    <div className="card card-pad cashflow-summary" style={{marginBottom:"var(--sp-4)"}}>
-      <div className="card-title" style={{marginBottom:12}}>💵 Cash Flow Summary</div>
-      <div className="cashflow-grid">
-        <div className="cashflow-item cashflow-item--in">
-          <div className="cashflow-icon">📱</div>
-          <div>
-            <div className="cashflow-label">UPI Received</div>
-            <div className="cashflow-value" style={{color:C.blue}}>{f(totalUpi)}</div>
-          </div>
+    <div className="ft-cr-summary">
+      <div className="ft-stat-grid">
+        <div className="ft-stat-card">
+          <div className="ft-stat-label">UPI Received</div>
+          <div className="ft-stat-value" style={{color:C.blue}}>{f(totalUpi)}</div>
         </div>
-        <div className="cashflow-item cashflow-item--in">
-          <div className="cashflow-icon">💵</div>
-          <div>
-            <div className="cashflow-label">Cash Received</div>
-            <div className="cashflow-value" style={{color:C.green}}>{f(totalCash)}</div>
-          </div>
+        <div className="ft-stat-card">
+          <div className="ft-stat-label">Cash Received</div>
+          <div className="ft-stat-value" style={{color:C.green}}>{f(totalCash)}</div>
         </div>
-        <div className="cashflow-item cashflow-item--out">
-          <div className="cashflow-icon">📤</div>
-          <div>
-            <div className="cashflow-label">Cash Expenses</div>
-            <div className="cashflow-value" style={{color:C.danger}}>{f(totalExpenses)}</div>
-          </div>
+        <div className="ft-stat-card">
+          <div className="ft-stat-label">Cash Expenses</div>
+          <div className="ft-stat-value" style={{color:C.danger}}>{f(totalExpenses)}</div>
         </div>
-        <div className="cashflow-item cashflow-item--net">
-          <div className="cashflow-icon">🏦</div>
-          <div>
-            <div className="cashflow-label">Net Cash in Hand</div>
-            <div className="cashflow-value" style={{color:netCash>=0?C.green:C.danger}}>{f(netCash)}</div>
-          </div>
+        <div className="ft-cr-total">
+          <div className="ft-stat-label" style={{color:"rgba(255,255,255,.7)"}}>Net Cash in Hand</div>
+          <div className="ft-stat-value" style={{color:netCash>=0?"#5ef0cf":"#ff8a9b",fontSize:24}}>{f(netCash)}</div>
         </div>
       </div>
     </div>
   );
 };
 
+// ── Bar Chart (simple SVG) ──
+
+const BarChart = ({data, labelKey, valueKey, color, height=160, prefix=""}) => {
+  if (!data || !data.length) return null;
+  const max = Math.max(...data.map(d=>d[valueKey]||0), 1);
+  const barW = Math.min(32, Math.max(12, Math.floor(300 / data.length) - 4));
+  return (
+    <div style={{overflowX:"auto"}}>
+      <svg width={Math.max(300, data.length * (barW+8))} height={height+30} style={{display:"block"}}>
+        {data.map((d,i) => {
+          const v = d[valueKey]||0;
+          const h = (v/max) * height;
+          const x = i * (barW+8) + 4;
+          return (
+            <g key={i}>
+              <rect x={x} y={height-h} width={barW} height={h} rx={4} fill={color} opacity={0.85} />
+              <text x={x+barW/2} y={height+14} textAnchor="middle" fontSize="9" fill={C.textLight}>{d[labelKey]}</text>
+              {v > 0 && <text x={x+barW/2} y={height-h-4} textAnchor="middle" fontSize="9" fontWeight="700" fill={C.text}>{prefix}{v.toLocaleString("en-IN")}</text>}
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+};
+
+// ── Expense List ──
+
 const ExpenseList = ({expenses, onDelete}) => {
   if (!expenses.length) return null;
   const f = (v) => `₹${v.toLocaleString("en-IN")}`;
   const catLabel = (c) => (EXPENSE_CATEGORIES.find(x=>x.value===c)||{}).label || c;
-  const total = expenses.reduce((s,e)=>s+(e.amount||0),0);
   return (
-    <div className="card" style={{marginBottom:"var(--sp-4)"}}>
-      <div className="card-head"><div className="card-title">📤 Expenses</div></div>
-      <div className="breakdown-table-wrap">
-        <table className="breakdown-table">
-          <thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Amount</th><th></th></tr></thead>
-          <tbody>
-            {expenses.map((e,i) => (
-              <tr key={e.id||i}>
-                <td>{(e.date||"").split("-").reverse().join("/")}</td>
-                <td>{e.description || "—"}</td>
-                <td>{catLabel(e.category)}</td>
-                <td style={{color:C.danger,fontWeight:700}}>{f(e.amount)}</td>
-                <td style={{width:36,textAlign:"center"}}><button type="button" className="icon-btn danger" title="Delete" onClick={()=>onDelete(e)} style={{fontSize:14}}>🗑️</button></td>
-              </tr>
-            ))}
-            {expenses.length > 1 && <tr style={{fontWeight:800}}>
-              <td colSpan={3} style={{textAlign:"right"}}>Total</td>
-              <td style={{color:C.danger}}>{f(total)}</td>
-              <td></td>
-            </tr>}
-          </tbody>
-        </table>
-      </div>
+    <div className="ft-pnl-section" style={{marginTop:16}}>
+      <div style={{fontSize:13,fontWeight:700,marginBottom:10}}>Expenses</div>
+      {expenses.map((e,i) => (
+        <div key={e.id||i} className="ft-entry-card" style={{padding:"10px 14px",marginBottom:6}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+            <div>
+              <div style={{fontSize:12,fontWeight:600}}>{(e.date||"").split("-").reverse().join("/")} · {catLabel(e.category)}</div>
+              <div style={{fontSize:11,color:C.textLight}}>{e.description||"—"}</div>
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:6}}>
+              <span style={{fontWeight:700,fontSize:13,color:C.danger}}>{f(e.amount)}</span>
+              <button className="ft-entry-act-btn ft-entry-act-btn--danger" onClick={()=>onDelete(e)}>
+                <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 5l10 10M15 5L5 15"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      ))}
     </div>
   );
 };
+
+// ── Stats Dashboard ──
 
 const StatsDashboard = ({entries, expenses, onDeleteExpense}) => {
   const totalKids = entries.reduce((a,e) => a + (parseInt(e.numKids)||1), 0);
   const totalRevenue = entries.reduce((a,e) => a + (parseInt(e.amount)||0) + (parseInt(e.socks)||0), 0);
   const totalPlayUpi = entries.reduce((a,e) => a + (parseInt(e.playUpi)||0), 0);
   const totalPlayCash = entries.reduce((a,e) => a + (parseInt(e.playCash)||0), 0);
-  const totalPlayAmt = entries.reduce((a,e) => a + (parseInt(e.amount)||0), 0);
   const totalSocksUpi = entries.reduce((a,e) => a + (parseInt(e.socksUpi)||0), 0);
   const totalSocksCash = entries.reduce((a,e) => a + (parseInt(e.socksCash)||0), 0);
-  const totalSocksAmt = entries.reduce((a,e) => a + (parseInt(e.socks)||0), 0);
   const totalUpi = totalPlayUpi + totalSocksUpi;
   const totalCash = totalPlayCash + totalSocksCash;
-
   const allExpenses = expenses || [];
-  const totalExpenses = allExpenses.reduce((a,e) => a + (parseInt(e.amount)||0), 0);
+  const f = (v) => `₹${v.toLocaleString("en-IN")}`;
 
   const grouped = {};
   entries.forEach(e => {
@@ -722,94 +675,64 @@ const StatsDashboard = ({entries, expenses, onDeleteExpense}) => {
   const kidsData = rows.map(r => ({label:r.label, value:r.kids}));
   const revenueData = rows.map(r => ({label:r.label, value:r.revenue}));
 
-  const f = (v) => `₹${v.toLocaleString("en-IN")}`;
-
   return (
-    <div className="stats-dash">
+    <div>
       <CashFlowSummary entries={entries} expenses={allExpenses} />
 
-      <div className="stats-dash-cards">
-        <div className="scard scard--blue">
-          <div className="scard-icon">👶</div>
-          <div className="scard-body">
-            <div className="scard-value">{totalKids}</div>
-            <div className="scard-label">Total Kids</div>
-          </div>
+      <div className="ft-stat-grid" style={{marginTop:16}}>
+        <div className="ft-stat-card">
+          <div className="ft-stat-label">Total Kids</div>
+          <div className="ft-stat-value">{totalKids}</div>
         </div>
-
-        <div className="scard scard--green">
-          <div className="scard-icon">💰</div>
-          <div className="scard-body">
-            <div className="scard-value">{f(totalRevenue)}</div>
-            <div className="scard-label">Total Revenue</div>
-            <div className="scard-split">
-              <span className="scard-tag scard-tag--accent">📱 UPI {f(totalUpi)}</span>
-              <span className="scard-tag scard-tag--yellow">💵 Cash {f(totalCash)}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="scard scard--accent">
-          <div className="scard-icon">🎪</div>
-          <div className="scard-body">
-            <div className="scard-value">{f(totalPlayAmt)}</div>
-            <div className="scard-label">Playtime Revenue</div>
-            <div className="scard-split">
-              <span className="scard-tag scard-tag--accent">📱 UPI {f(totalPlayUpi)}</span>
-              <span className="scard-tag scard-tag--yellow">💵 Cash {f(totalPlayCash)}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="scard scard--orange">
-          <div className="scard-icon">🧦</div>
-          <div className="scard-body">
-            <div className="scard-value">{f(totalSocksAmt)}</div>
-            <div className="scard-label">Socks Revenue</div>
-            <div className="scard-split">
-              <span className="scard-tag scard-tag--accent">📱 UPI {f(totalSocksUpi)}</span>
-              <span className="scard-tag scard-tag--yellow">💵 Cash {f(totalSocksCash)}</span>
-            </div>
-          </div>
+        <div className="ft-stat-card">
+          <div className="ft-stat-label">Revenue</div>
+          <div className="ft-stat-value" style={{color:C.deepest}}>{f(totalRevenue)}</div>
+          <div className="ft-stat-sub">UPI {f(totalUpi)} · Cash {f(totalCash)}</div>
         </div>
       </div>
 
-      {rows.length > 1 && <>
-        <div className="card card-pad" style={{marginBottom:"var(--sp-4)"}}>
-          <div className="card-title" style={{marginBottom:12}}>👶 Kids per day</div>
-          <BarChart data={kidsData} labelKey="label" valueKey="value" color={C.blue} height={160} />
+      {rows.length > 1 && (
+        <div className="ft-pnl-section" style={{marginTop:16}}>
+          <div style={{fontSize:13,fontWeight:700,marginBottom:10}}>Kids per day</div>
+          <BarChart data={kidsData} labelKey="label" valueKey="value" color={C.accent} height={120} />
         </div>
-        <div className="card card-pad" style={{marginBottom:"var(--sp-4)"}}>
-          <div className="card-title" style={{marginBottom:12}}>💰 Revenue per day</div>
-          <BarChart data={revenueData} labelKey="label" valueKey="value" color={C.green} height={160} prefix="₹" />
+      )}
+      {rows.length > 1 && (
+        <div className="ft-pnl-section" style={{marginTop:16}}>
+          <div style={{fontSize:13,fontWeight:700,marginBottom:10}}>Revenue per day</div>
+          <BarChart data={revenueData} labelKey="label" valueKey="value" color={C.green} height={120} prefix="₹" />
         </div>
-      </>}
+      )}
 
-      {rows.length > 0 && <div className="card" style={{marginBottom:"var(--sp-4)"}}>
-        <div className="card-head"><div className="card-title">📊 Daily Breakdown</div></div>
-        <div className="breakdown-table-wrap">
-          <table className="breakdown-table">
-            <thead><tr><th>Date</th><th>Kids</th><th>UPI</th><th>Cash</th><th>Expenses</th><th>Net Cash</th></tr></thead>
-            <tbody>
-              {rows.map((r,i) => (
-                <tr key={i}>
-                  <td>{r.label}</td>
-                  <td>{r.kids}</td>
-                  <td style={{color:C.blue}}>{f(r.upi)}</td>
-                  <td style={{color:C.green}}>{f(r.cash)}</td>
-                  <td style={{color:r.expenses>0?C.danger:undefined}}>{r.expenses>0?f(r.expenses):"—"}</td>
-                  <td style={{fontWeight:800,color:r.cash-r.expenses>=0?C.green:C.danger}}>{f(r.cash - r.expenses)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {rows.length > 0 && (
+        <div className="ft-pnl-section" style={{marginTop:16}}>
+          <div style={{fontSize:13,fontWeight:700,marginBottom:10}}>Daily Breakdown</div>
+          <div style={{overflowX:"auto"}}>
+            <table className="ft-table">
+              <thead><tr><th>Date</th><th>Kids</th><th>UPI</th><th>Cash</th><th>Expenses</th><th>Net Cash</th></tr></thead>
+              <tbody>
+                {rows.map((r,i) => (
+                  <tr key={i}>
+                    <td>{r.label}</td>
+                    <td>{r.kids}</td>
+                    <td style={{color:C.blue}}>{f(r.upi)}</td>
+                    <td style={{color:C.green}}>{f(r.cash)}</td>
+                    <td style={{color:r.expenses>0?C.danger:undefined}}>{r.expenses>0?f(r.expenses):"—"}</td>
+                    <td style={{fontWeight:800,color:r.cash-r.expenses>=0?C.green:C.danger}}>{f(r.cash - r.expenses)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>}
+      )}
 
       <ExpenseList expenses={allExpenses} onDelete={onDeleteExpense} />
     </div>
   );
 };
+
+// ── P&L Report ──
 
 const SOCKS_COST_PER_PIECE = 7;
 
@@ -841,18 +764,30 @@ const PnLReport = ({entries, expenses, monthlyExpenses, month, year, onChangeMon
           options={[new Date().getFullYear()-1, new Date().getFullYear(), new Date().getFullYear()+1].map(y=>({value:y,label:String(y)}))} />
       </div>
 
-      {loading ? <div className="empty-state"><Spinner size={26} /><div style={{marginTop:10}}>Loading…</div></div> :
+      {loading ? <div className="ft-empty"><Spinner size={24} /><div style={{marginTop:10}}>Loading...</div></div> :
       <div>
-        <div className="card" style={{marginBottom:"var(--sp-4)"}}>
-          <div className="card-head"><div className="card-title">📥 Revenue</div></div>
-          <div className="breakdown-table-wrap">
-            <table className="breakdown-table">
+        <div className="ft-pnl-hero">
+          <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,.7)",textTransform:"uppercase",letterSpacing:".5px",marginBottom:6}}>
+            {profit >= 0 ? "Net Profit" : "Net Loss"}
+          </div>
+          <div style={{fontSize:32,fontWeight:900,color:profit>=0?"#5ef0cf":"#ff8a9b"}}>
+            {profit >= 0 ? "+" : "−"}{f(profit)}
+          </div>
+          <div style={{fontSize:11,color:"rgba(255,255,255,.5)",fontWeight:600,marginTop:6}}>
+            {MONTH_NAMES[(month||1)-1]} {year} · {entries.length} entries
+          </div>
+        </div>
+
+        <div className="ft-pnl-section" style={{marginTop:16}}>
+          <div style={{fontSize:13,fontWeight:700,marginBottom:10}}>Revenue</div>
+          <div style={{overflowX:"auto"}}>
+            <table className="ft-table">
               <tbody>
                 <tr><td>Play Income (UPI)</td><td style={{textAlign:"right",color:C.blue,fontWeight:700}}>{f(totalPlayUpi)}</td></tr>
                 <tr><td>Play Income (Cash)</td><td style={{textAlign:"right",color:C.green,fontWeight:700}}>{f(totalPlayCash)}</td></tr>
                 <tr><td>Socks Income (UPI)</td><td style={{textAlign:"right",color:C.blue,fontWeight:700}}>{f(totalSocksUpi)}</td></tr>
                 <tr><td>Socks Income (Cash)</td><td style={{textAlign:"right",color:C.green,fontWeight:700}}>{f(totalSocksCash)}</td></tr>
-                <tr style={{fontWeight:800,borderTop:"2px solid var(--border-strong)"}}>
+                <tr style={{fontWeight:800,borderTop:`2px solid ${C.border}`}}>
                   <td>Total Revenue</td>
                   <td style={{textAlign:"right",color:C.green}}>{f(totalIncome)}</td>
                 </tr>
@@ -861,10 +796,10 @@ const PnLReport = ({entries, expenses, monthlyExpenses, month, year, onChangeMon
           </div>
         </div>
 
-        <div className="card" style={{marginBottom:"var(--sp-4)"}}>
-          <div className="card-head"><div className="card-title">📤 Costs</div></div>
-          <div className="breakdown-table-wrap">
-            <table className="breakdown-table">
+        <div className="ft-pnl-section" style={{marginTop:16}}>
+          <div style={{fontSize:13,fontWeight:700,marginBottom:10}}>Costs</div>
+          <div style={{overflowX:"auto"}}>
+            <table className="ft-table">
               <tbody>
                 <tr>
                   <td>Socks Procurement ({socksCount} pcs × ₹{SOCKS_COST_PER_PIECE})</td>
@@ -882,24 +817,12 @@ const PnLReport = ({entries, expenses, monthlyExpenses, month, year, onChangeMon
                     <td style={{textAlign:"right",color:C.danger,fontWeight:700}}>{f(v)}</td>
                   </tr>;
                 })}
-                <tr style={{fontWeight:800,borderTop:"2px solid var(--border-strong)"}}>
+                <tr style={{fontWeight:800,borderTop:`2px solid ${C.border}`}}>
                   <td>Total Costs</td>
                   <td style={{textAlign:"right",color:C.danger}}>{f(totalCosts)}</td>
                 </tr>
               </tbody>
             </table>
-          </div>
-        </div>
-
-        <div className="card pnl-result" style={{marginBottom:"var(--sp-4)",textAlign:"center",padding:"20px"}}>
-          <div style={{fontSize:13,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:".4px",marginBottom:6}}>
-            {profit >= 0 ? "Net Profit" : "Net Loss"}
-          </div>
-          <div style={{fontSize:32,fontWeight:900,color:profit>=0?C.green:C.danger}}>
-            {profit >= 0 ? "+" : "−"}{f(profit)}
-          </div>
-          <div style={{fontSize:12,color:C.textLight,fontWeight:600,marginTop:6}}>
-            {MONTH_NAMES[(month||1)-1]} {year} · {entries.length} entries
           </div>
         </div>
       </div>}
@@ -923,10 +846,10 @@ const STAFF_SHIFTS = [
 ];
 
 const ATT_STATUS = {
-  present:  {label:"P", full:"Present",  color:C.green,  bg:C.greenSoft},
-  absent:   {label:"A", full:"Absent",   color:C.danger, bg:C.dangerSoft},
-  half_day: {label:"H", full:"Half Day", color:C.orange, bg:C.orangeSoft},
-  leave:    {label:"L", full:"Leave",    color:C.blue,   bg:C.blueSoft},
+  present:  {label:"Present",  short:"P", color:C.green,  bg:"#e4f7f1"},
+  absent:   {label:"Absent",   short:"A", color:C.danger, bg:C.dangerSoft},
+  half_day: {label:"Holiday",  short:"H", color:C.orange, bg:C.orangeSoft},
+  leave:    {label:"Leave",    short:"L", color:C.blue,   bg:C.blueSoft},
 };
 
 function calcStaffSalary(staff, summary) {
@@ -966,12 +889,13 @@ const StaffFormPopup = ({staff, onSave, onCancel, saving}) => {
       paid_holidays: parseInt(form.paid_holidays)||0,
     });
   };
+
   return (
-    <div className="overlay" onClick={onCancel}>
-      <div className="modal" style={{maxWidth:460,textAlign:"left",padding:"20px"}} onClick={e=>e.stopPropagation()}>
+    <div className="ft-confirm-overlay" onClick={onCancel}>
+      <div className="ft-confirm-dialog" style={{maxWidth:460,textAlign:"left"}} onClick={e=>e.stopPropagation()}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
-          <span className="card-title">{staff ? "Edit Staff" : "+ Add Staff"}</span>
-          <button className="btn btn-sm btn-icon" onClick={onCancel} disabled={saving} aria-label="Close">✕</button>
+          <span style={{fontWeight:700,fontSize:15}}>{staff ? "Edit Staff" : "Add Staff"}</span>
+          <button className="ft-entry-act-btn" onClick={onCancel} disabled={saving}>✕</button>
         </div>
         <div className="form-grid">
           <InputField label="Name" icon="👤">
@@ -1015,10 +939,10 @@ const StaffFormPopup = ({staff, onSave, onCancel, saving}) => {
             </select>
           </InputField>}
         </div>
-        <div style={{display:"flex",gap:8,marginTop:4}}>
-          <button className="btn" onClick={onCancel} disabled={saving} style={{flex:"0 0 90px"}}>Cancel</button>
-          <button className="btn btn-primary" onClick={submit} disabled={saving||!form.name.trim()} style={{flex:1}}>
-            {saving?"Saving…":staff?"Update":"Add Staff"}
+        <div style={{display:"flex",gap:8,marginTop:12}}>
+          <button className="ft-btn-secondary" onClick={onCancel} disabled={saving} style={{flex:"0 0 90px"}}>Cancel</button>
+          <button className="ft-btn-primary" onClick={submit} disabled={saving||!form.name.trim()} style={{flex:1}}>
+            {saving?"Saving...":staff?"Update":"Add Staff"}
           </button>
         </div>
       </div>
@@ -1026,54 +950,45 @@ const StaffFormPopup = ({staff, onSave, onCancel, saving}) => {
   );
 };
 
+// ── Attendance (card-based) ──
+
 const AttendanceMarker = ({staffList, date, attendance, onMark, saving}) => {
   const dateAtt = {};
   attendance.filter(a=>a.date===date).forEach(a=>{ dateAtt[a.staff_id]=a; });
   const active = staffList.filter(s=>s.active!==false);
-  if (!active.length) return <div className="empty-state">Add staff members first.</div>;
+  if (!active.length) return <div className="ft-empty">Add staff members first.</div>;
 
   return (
-    <div className="card" style={{marginBottom:"var(--sp-4)"}}>
-      <div className="card-head">
-        <div className="card-title">Mark Attendance — {date.split("-").reverse().join("/")}</div>
-      </div>
-      <div className="att-marker-list">
-        {active.map(s=>{
-          const cur = dateAtt[s.id];
-          const status = cur ? cur.status : null;
-          return (
-            <div key={s.id} className="att-marker-row">
-              <div className="att-marker-name">
-                <span className="att-marker-avatar">{s.name.charAt(0).toUpperCase()}</span>
-                <div>
-                  <div style={{fontWeight:700,fontSize:13}}>{s.name}</div>
-                  <div style={{fontSize:11,color:C.textLight}}>{s.role}</div>
-                </div>
-              </div>
-              <div className="att-marker-btns">
-                {Object.keys(ATT_STATUS).map(st=>{
-                  const meta = ATT_STATUS[st];
-                  const isOn = status === st;
-                  return (
-                    <button key={st} type="button" className="att-status-btn"
-                      disabled={saving}
-                      style={{
-                        background:isOn?meta.bg:"transparent",
-                        color:isOn?meta.color:C.textLight,
-                        borderColor:isOn?meta.color:"var(--border)",
-                        fontWeight:isOn?800:600,
-                      }}
-                      onClick={()=>onMark(s.id, date, st)}
-                      title={meta.full}>
-                      {meta.label}
-                    </button>
-                  );
-                })}
+    <div className="ft-att-grid">
+      {active.map(s => {
+        const cur = dateAtt[s.id];
+        const status = cur ? cur.status : null;
+        return (
+          <div key={s.id} className="ft-staff-card">
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+              <div className="ft-staff-avatar">{s.name.charAt(0).toUpperCase()}</div>
+              <div>
+                <div style={{fontWeight:700,fontSize:13}}>{s.name}</div>
+                <div style={{fontSize:11,color:C.textLight}}>{s.role}</div>
               </div>
             </div>
-          );
-        })}
-      </div>
+            <div className="ft-att-btns">
+              {Object.keys(ATT_STATUS).map(st => {
+                const meta = ATT_STATUS[st];
+                const isOn = status === st;
+                return (
+                  <button key={st} className={`ft-att-btn${isOn?" ft-att-btn--active":""}`}
+                    disabled={saving}
+                    style={isOn ? {background:meta.bg, color:meta.color, borderColor:meta.color} : {}}
+                    onClick={() => onMark(s.id, date, st)}>
+                    {meta.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 };
@@ -1087,12 +1002,9 @@ const StaffTimesheet = ({staffList, attendance, month, year}) => {
   const mm = String(month).padStart(2,"0");
 
   const attMap = {};
-  attendance.forEach(a=>{
-    const key = a.staff_id + "_" + a.date;
-    attMap[key] = a.status;
-  });
+  attendance.forEach(a=>{ attMap[a.staff_id + "_" + a.date] = a.status; });
 
-  if (!active.length) return <div className="empty-state">No staff members yet.</div>;
+  if (!active.length) return <div className="ft-empty">No staff members yet.</div>;
 
   const days = [];
   for (let d=1; d<=daysInMonth; d++) days.push(d);
@@ -1109,52 +1021,43 @@ const StaffTimesheet = ({staffList, attendance, month, year}) => {
   });
 
   return (
-    <div className="card" style={{marginBottom:"var(--sp-4)"}}>
-      <div className="card-head"><div className="card-title">Timesheet — {MONTH_NAMES[month-1]} {year}</div></div>
-      <div className="timesheet-wrap">
-        <table className="timesheet-table">
+    <div className="ft-pnl-section" style={{marginTop:16}}>
+      <div style={{fontSize:13,fontWeight:700,marginBottom:10}}>Timesheet — {MONTH_NAMES[month-1]} {year}</div>
+      <div style={{overflowX:"auto"}}>
+        <table className="ft-table" style={{fontSize:10}}>
           <thead>
             <tr>
-              <th className="timesheet-name-col">Staff</th>
-              {days.map(d=>{
+              <th style={{position:"sticky",left:0,background:"#fff",zIndex:1}}>Staff</th>
+              {days.map(d => {
                 const dateStr = year+"-"+mm+"-"+String(d).padStart(2,"0");
-                const dow = new Date(dateStr).getDay();
-                const isSun = dow === 0;
                 const isToday = dateStr === todayStr;
-                return <th key={d} className={`timesheet-day-col${isSun?" timesheet-sun":""}${isToday?" timesheet-today":""}`}>{d}</th>;
+                return <th key={d} style={isToday?{background:C.accentSoft,color:C.accent}:{}}>{d}</th>;
               })}
-              <th className="timesheet-sum-col" style={{color:C.green}}>P</th>
-              <th className="timesheet-sum-col" style={{color:C.danger}}>A</th>
-              <th className="timesheet-sum-col" style={{color:C.orange}}>H</th>
-              <th className="timesheet-sum-col" style={{color:C.blue}}>L</th>
+              <th style={{color:C.green}}>P</th>
+              <th style={{color:C.danger}}>A</th>
+              <th style={{color:C.orange}}>H</th>
+              <th style={{color:C.blue}}>L</th>
             </tr>
           </thead>
           <tbody>
             {active.map(s=>(
               <tr key={s.id}>
-                <td className="timesheet-name-col">
-                  <span className="timesheet-avatar">{s.name.charAt(0).toUpperCase()}</span>
-                  <span className="timesheet-staff-name">{s.name}</span>
-                </td>
+                <td style={{position:"sticky",left:0,background:"#fff",zIndex:1,fontWeight:700,whiteSpace:"nowrap"}}>{s.name}</td>
                 {days.map(d=>{
                   const dateStr = year+"-"+mm+"-"+String(d).padStart(2,"0");
                   const st = attMap[s.id+"_"+dateStr];
-                  const dow = new Date(dateStr).getDay();
-                  const isSun = dow === 0;
                   const isToday = dateStr === todayStr;
                   const meta = st ? ATT_STATUS[st] : null;
                   return (
-                    <td key={d} className={`timesheet-cell${isSun?" timesheet-sun":""}${isToday?" timesheet-today":""}`}>
-                      {meta
-                        ? <span className="timesheet-dot" style={{background:meta.color,color:"#fff"}}>{meta.label}</span>
-                        : <span className="timesheet-empty">·</span>}
+                    <td key={d} style={isToday?{background:C.accentSoft}:{}}>
+                      {meta ? <span style={{display:"inline-block",width:18,height:18,borderRadius:9,background:meta.color,color:"#fff",fontSize:9,lineHeight:"18px",textAlign:"center",fontWeight:700}}>{meta.short}</span> : "·"}
                     </td>
                   );
                 })}
-                <td className="timesheet-sum-col" style={{color:C.green,fontWeight:700}}>{summaries[s.id].present}</td>
-                <td className="timesheet-sum-col" style={{color:C.danger,fontWeight:700}}>{summaries[s.id].absent}</td>
-                <td className="timesheet-sum-col" style={{color:C.orange,fontWeight:700}}>{summaries[s.id].half_day}</td>
-                <td className="timesheet-sum-col" style={{color:C.blue,fontWeight:700}}>{summaries[s.id].leave}</td>
+                <td style={{color:C.green,fontWeight:700}}>{summaries[s.id].present}</td>
+                <td style={{color:C.danger,fontWeight:700}}>{summaries[s.id].absent}</td>
+                <td style={{color:C.orange,fontWeight:700}}>{summaries[s.id].half_day}</td>
+                <td style={{color:C.blue,fontWeight:700}}>{summaries[s.id].leave}</td>
               </tr>
             ))}
           </tbody>
@@ -1166,34 +1069,41 @@ const StaffTimesheet = ({staffList, attendance, month, year}) => {
 
 const StaffList = ({staffList, onEdit, onDelete}) => {
   const f = (v)=>`₹${(v||0).toLocaleString("en-IN")}`;
-  if (!staffList.length) return <div className="empty-state">No staff members yet. Add your first staff member.</div>;
+  if (!staffList.length) return <div className="ft-empty">No staff members yet. Add your first staff member.</div>;
   return (
-    <div className="card" style={{marginBottom:"var(--sp-4)"}}>
-      <div className="card-head"><div className="card-title">Staff Members</div></div>
-      <div className="breakdown-table-wrap">
-        <table className="breakdown-table">
-          <thead><tr><th>Name</th><th>Shift</th><th>Fixed</th><th>Pro Rata</th><th>Holidays</th><th>Status</th><th></th></tr></thead>
-          <tbody>
-            {staffList.map(s=>{
-              const shiftLabel = (STAFF_SHIFTS.find(x=>x.value===s.shift)||{}).label||s.shift;
-              return (
-                <tr key={s.id} style={{opacity:s.active===false?0.5:1}}>
-                  <td style={{fontWeight:700}}>{s.name}<div style={{fontSize:10,color:C.textLight}}>{s.role}{s.phone?" · "+s.phone:""}</div></td>
-                  <td style={{fontSize:11}}>{shiftLabel}</td>
-                  <td style={{color:C.accent,fontWeight:700}}>{s.fixed_pay?f(s.fixed_pay):"—"}</td>
-                  <td style={{color:C.blue,fontWeight:700}}>{s.pro_rata_base?f(s.pro_rata_base)+"/30":"—"}</td>
-                  <td>{s.paid_holidays||0} days</td>
-                  <td><span style={{fontSize:11,fontWeight:700,color:s.active!==false?C.green:C.textLight,background:s.active!==false?C.greenSoft:"var(--bg)",padding:"2px 8px",borderRadius:6}}>{s.active!==false?"Active":"Inactive"}</span></td>
-                  <td style={{width:60,textAlign:"center"}}>
-                    <button type="button" className="icon-btn" title="Edit" onClick={()=>onEdit(s)} style={{fontSize:14}}>✏️</button>
-                    <button type="button" className="icon-btn danger" title="Delete" onClick={()=>onDelete(s)} style={{fontSize:14}}>🗑️</button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+    <div className="ft-att-grid">
+      {staffList.map(s => {
+        const shiftLabel = (STAFF_SHIFTS.find(x=>x.value===s.shift)||{}).label||s.shift;
+        return (
+          <div key={s.id} className="ft-staff-card" style={{opacity:s.active===false?0.5:1}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+              <div className="ft-staff-avatar">{s.name.charAt(0).toUpperCase()}</div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontWeight:700,fontSize:14}}>{s.name}</div>
+                <div style={{fontSize:11,color:C.textLight}}>{s.role}{s.phone?" · "+s.phone:""}</div>
+              </div>
+              <span style={{fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:8,
+                background:s.active!==false?C.greenSoft:C.bg,
+                color:s.active!==false?C.green:C.textLight}}>
+                {s.active!==false?"Active":"Inactive"}
+              </span>
+            </div>
+            <div style={{display:"flex",gap:12,fontSize:11,color:C.textMid,marginBottom:8}}>
+              <span>{shiftLabel}</span>
+              {s.fixed_pay > 0 && <span>Fixed: {f(s.fixed_pay)}</span>}
+              {s.pro_rata_base > 0 && <span>Pro Rata: {f(s.pro_rata_base)}/30</span>}
+            </div>
+            <div style={{display:"flex",gap:6,justifyContent:"flex-end"}}>
+              <button className="ft-entry-act-btn" onClick={()=>onEdit(s)} title="Edit">
+                <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2"><path d="M13.5 3.5l3 3L7 16H4v-3L13.5 3.5z"/></svg>
+              </button>
+              <button className="ft-entry-act-btn ft-entry-act-btn--danger" onClick={()=>onDelete(s)} title="Delete">
+                <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 5l10 10M15 5L5 15"/></svg>
+              </button>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 };
@@ -1205,9 +1115,10 @@ const StaffSection = ({staffList, attendance, month, year, onChangeMonth, onChan
   return (
     <div>
       <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:16,flexWrap:"wrap"}}>
-        <div className="chips" style={{marginRight:"auto"}}>
+        <div className="ft-seg" style={{marginRight:"auto"}}>
           {[{v:"members",l:"Staff List"},{v:"salary",l:"Salary"}].map(t=>(
-            <button key={t.v} type="button" className={`chip chip-sm${tab===t.v?" is-on":""}`} onClick={()=>setTab(t.v)}>{t.l}</button>
+            <button key={t.v} className={`ft-seg-item${tab===t.v?" ft-seg-item--active":""}`}
+              onClick={()=>setTab(t.v)}>{t.l}</button>
           ))}
         </div>
         {tab==="salary" && <>
@@ -1216,10 +1127,10 @@ const StaffSection = ({staffList, attendance, month, year, onChangeMonth, onChan
           <Dropdown flex={0} value={year} onChange={v=>onChangeYear(parseInt(v))}
             options={[new Date().getFullYear()-1, new Date().getFullYear(), new Date().getFullYear()+1].map(y=>({value:y,label:String(y)}))} />
         </>}
-        {tab==="members" && <button className="btn btn-sm btn-primary" onClick={onAddStaff}>+ Add Staff</button>}
+        {tab==="members" && <button className="ft-btn-primary" style={{padding:"8px 16px",fontSize:13}} onClick={onAddStaff}>+ Add Staff</button>}
       </div>
 
-      {loading ? <div className="empty-state"><Spinner size={26} /><div style={{marginTop:10}}>Loading…</div></div> : <>
+      {loading ? <div className="ft-empty"><Spinner size={24} /><div style={{marginTop:10}}>Loading...</div></div> : <>
         {tab==="members" && <StaffList staffList={staffList} onEdit={onEditStaff} onDelete={onDeleteStaff} />}
         {tab==="salary" && <StaffSalaryTable staffList={staffList} attendance={attendance} month={month} year={year} />}
       </>}
@@ -1236,7 +1147,7 @@ const StaffSalaryTable = ({staffList, attendance, month, year}) => {
   const attMap = {};
   attendance.forEach(a=>{ attMap[a.staff_id + "_" + a.date] = a.status; });
 
-  if (!active.length) return <div className="empty-state">No staff members yet.</div>;
+  if (!active.length) return <div className="ft-empty">No staff members yet.</div>;
 
   const days = [];
   for (let d=1; d<=daysInMonth; d++) days.push(d);
@@ -1257,19 +1168,14 @@ const StaffSalaryTable = ({staffList, attendance, month, year}) => {
   const totalSalary = active.reduce((s,st)=>s+salaries[st.id].total,0);
 
   return (
-    <div className="card" style={{marginBottom:"var(--sp-4)"}}>
-      <div className="card-head"><div className="card-title">Salary Calculation — {MONTH_NAMES[month-1]} {year}</div></div>
-      <div className="breakdown-table-wrap">
-        <table className="breakdown-table">
+    <div className="ft-pnl-section">
+      <div style={{fontSize:13,fontWeight:700,marginBottom:10}}>Salary Calculation — {MONTH_NAMES[month-1]} {year}</div>
+      <div style={{overflowX:"auto"}}>
+        <table className="ft-table">
           <thead>
             <tr>
-              <th>Staff</th>
-              <th>Shift</th>
-              <th>P</th><th>A</th><th>H</th><th>L</th>
-              <th>Eff. Days</th>
-              <th>Fixed</th>
-              <th>Pro Rata</th>
-              <th>Total</th>
+              <th>Staff</th><th>Shift</th><th>P</th><th>A</th><th>H</th><th>L</th>
+              <th>Eff. Days</th><th>Fixed</th><th>Pro Rata</th><th>Total</th>
             </tr>
           </thead>
           <tbody>
@@ -1285,14 +1191,14 @@ const StaffSalaryTable = ({staffList, attendance, month, year}) => {
                   <td style={{color:C.danger,fontWeight:700}}>{sum.absent}</td>
                   <td style={{color:C.orange,fontWeight:700}}>{sum.half_day}</td>
                   <td style={{color:C.blue,fontWeight:700}}>{sum.leave}</td>
-                  <td>{sal.effectiveDays}{sal.paidLeave>0?<span style={{fontSize:10,color:C.blue}}> ({sal.paidLeave}L paid)</span>:""}</td>
+                  <td>{sal.effectiveDays}{sal.paidLeave>0?<span style={{fontSize:10,color:C.blue}}> ({sal.paidLeave}L)</span>:""}</td>
                   <td>{sal.fixedPay ? f(sal.fixedPay) : "—"}</td>
-                  <td>{sal.proRata ? f(sal.proRata) : "—"}<br/><span style={{fontSize:10,color:C.textLight}}>{s.pro_rata_base?`${f(s.pro_rata_base)}/30`:""}</span></td>
+                  <td>{sal.proRata ? f(sal.proRata) : "—"}</td>
                   <td style={{fontWeight:800,color:C.accent}}>{f(sal.total)}</td>
                 </tr>
               );
             })}
-            <tr style={{fontWeight:800,borderTop:"2px solid var(--border-strong)"}}>
+            <tr style={{fontWeight:800,borderTop:`2px solid ${C.border}`}}>
               <td colSpan={9} style={{textAlign:"right"}}>Total Payroll</td>
               <td style={{color:C.accent}}>{f(totalSalary)}</td>
             </tr>
@@ -1304,78 +1210,23 @@ const StaffSalaryTable = ({staffList, attendance, month, year}) => {
 };
 
 const AttendanceWidget = ({staffList, date, attendance, onMark, onChangeDate, saving}) => {
-  const [open, setOpen] = React.useState(false);
   const dateAtt = {};
   attendance.filter(a=>a.date===date).forEach(a=>{ dateAtt[a.staff_id]=a; });
   const active = staffList.filter(s=>s.active!==false);
   if (!active.length) return null;
-
   const marked = active.filter(s=>dateAtt[s.id]).length;
 
   return (
-    <div className="card" style={{marginBottom:"var(--sp-4)"}}>
-      <div className="card-head" style={{cursor:"pointer"}} onClick={()=>setOpen(o=>!o)}>
-        <div style={{display:"flex",alignItems:"center",gap:8,flex:1}}>
-          <div className="card-title" style={{margin:0}}>Mark Attendance</div>
-          <span style={{fontSize:11,color:C.textLight,background:"var(--bg)",padding:"2px 8px",borderRadius:10}}>
-            {marked}/{active.length} marked
-          </span>
-        </div>
-        <span style={{fontSize:14,color:C.textLight,transition:"transform .2s",transform:open?"rotate(180deg)":"rotate(0)"}}>{open?"▲":"▼"}</span>
+    <div>
+      <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:12,flexWrap:"wrap"}}>
+        <div style={{fontWeight:700,fontSize:14}}>Mark Attendance</div>
+        <span style={{fontSize:11,color:C.textLight,background:C.accentSoft,padding:"3px 10px",borderRadius:10}}>
+          {marked}/{active.length} marked
+        </span>
+        <input className="fld" type="date" value={date} onChange={e=>onChangeDate(e.target.value)}
+          style={{maxWidth:150,fontSize:12,marginLeft:"auto"}} />
       </div>
-      {open && <div style={{padding:"12px 16px"}}>
-        <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:12,flexWrap:"wrap"}}>
-          <input className="fld" type="date" value={date} onChange={e=>onChangeDate(e.target.value)}
-            style={{maxWidth:160,fontSize:13,padding:"6px 10px"}} />
-          <span style={{fontSize:12,color:C.textMid}}>{date.split("-").reverse().join("/")}</span>
-        </div>
-        <div className="att-marker-list">
-          {active.map(s=>{
-            const cur = dateAtt[s.id];
-            const status = cur ? cur.status : null;
-            const checkIn = cur ? cur.check_in : "";
-            const checkOut = cur ? cur.check_out : "";
-            return (
-              <div key={s.id} className="att-widget-row">
-                <div className="att-marker-name" style={{minWidth:90,flex:"0 0 auto"}}>
-                  <span className="att-marker-avatar" style={{width:26,height:26,fontSize:11}}>{s.name.charAt(0).toUpperCase()}</span>
-                  <span style={{fontWeight:700,fontSize:12}}>{s.name}</span>
-                </div>
-                <div className="att-marker-btns" style={{gap:4}}>
-                  {Object.keys(ATT_STATUS).map(st=>{
-                    const meta = ATT_STATUS[st];
-                    const isOn = status === st;
-                    return (
-                      <button key={st} type="button" className="att-status-btn"
-                        disabled={saving}
-                        style={{
-                          background:isOn?meta.bg:"transparent",
-                          color:isOn?meta.color:C.textLight,
-                          borderColor:isOn?meta.color:"var(--border)",
-                          fontWeight:isOn?800:600,
-                          minWidth:28,height:28,fontSize:11,padding:"0 4px",
-                        }}
-                        onClick={()=>onMark(s.id, date, st)}
-                        title={meta.full}>
-                        {meta.label}
-                      </button>
-                    );
-                  })}
-                </div>
-                <div style={{display:"flex",gap:4,alignItems:"center",flex:"0 0 auto"}}>
-                  <input className="fld" type="time" value={checkIn} placeholder="In"
-                    style={{width:75,fontSize:11,padding:"4px 6px"}}
-                    onChange={e=>onMark(s.id, date, status||"present", e.target.value, checkOut)} />
-                  <span style={{fontSize:10,color:C.textLight}}>to</span>
-                  <input className="fld" type="time" value={checkOut} placeholder="Out"
-                    style={{width:75,fontSize:11,padding:"4px 6px"}}
-                    onChange={e=>onMark(s.id, date, status||"present", checkIn, e.target.value)} />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>}
+      <AttendanceMarker staffList={staffList} date={date} attendance={attendance} onMark={onMark} saving={saving} />
     </div>
   );
 };
@@ -1391,45 +1242,11 @@ const AttendanceSection = ({staffList, attendance, month, year, attDate,
           options={[new Date().getFullYear()-1, new Date().getFullYear(), new Date().getFullYear()+1].map(y=>({value:y,label:String(y)}))} />
       </div>
 
-      {loading ? <div className="empty-state"><Spinner size={26} /><div style={{marginTop:10}}>Loading…</div></div> : <>
+      {loading ? <div className="ft-empty"><Spinner size={24} /><div style={{marginTop:10}}>Loading...</div></div> : <>
         <AttendanceWidget staffList={staffList} date={attDate} attendance={attendance}
           onMark={onMarkAttendance} onChangeDate={onChangeAttDate} saving={saving} />
         <StaffTimesheet staffList={staffList} attendance={attendance} month={month} year={year} />
       </>}
-    </div>
-  );
-};
-
-const EntryList = ({entries,onEdit,onDelete,loading}) => {
-  if (loading) return <div className="empty-state"><Spinner size={26} /><div style={{marginTop:10}}>Loading entries…</div></div>;
-  if (!entries.length) return <div className="empty-state">No entries today yet — start with <strong style={{color:C.accent}}>New Entry</strong>.</div>;
-  return (
-    <div className="entries-grid">
-      {entries.map((e,i) => {
-        const name=e.customerName||e["Customer name"]||"—";
-        const amt=e.amount||e["Amount"]||0;
-        const mop=e.mop||e["MOP"]||"";
-        const kids=e.numKids||e["No of kids"]||1;
-        const timing=e.timing||e["Timing"]||"";
-        const typeColors = {"funzone":C.accentSoft,"birthday":C.pinkSoft,"event":C.blueSoft,"daycare":C.orangeSoft};
-        const typeKey = e.entryType||e["Entry Type"]||"funzone";
-        return (
-          <div key={i} className="row-card" style={{animation:"springIn .3s ease both",animationDelay:`${Math.min(i,10)*.025}s`}}>
-            <div className="row-icon" style={{background:typeColors[typeKey]||C.accentSoft}}>
-              {CONFIG.ENTRY_TYPES.find(t=>t.key===typeKey)?.icon||"🎪"}
-            </div>
-            <div className="row-body">
-              <div className="row-title">{name}</div>
-              <div className="row-sub">{kids>1?`${kids} kids · `:""}{mop}{timing?` · ${timing}`:""}</div>
-            </div>
-            <div className="row-amount">₹{parseInt(amt).toLocaleString("en-IN")}</div>
-            <div className="row-actions">
-              <button type="button" className="icon-btn" title="Edit" onClick={()=>onEdit(e)}>✏️</button>
-              <button type="button" className="icon-btn danger" title="Delete" onClick={()=>onDelete(e)}>🗑️</button>
-            </div>
-          </div>
-        );
-      })}
     </div>
   );
 };

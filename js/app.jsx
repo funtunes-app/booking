@@ -1,169 +1,161 @@
 // =============================================================================
-// FunTunes Main App v3 — Purple Theme + Logo
+// FunTunes Hi-Fi App — Main Application
 // =============================================================================
-const { useState, useRef, useEffect, useCallback } = React;
 
-const STEP_LABELS = ["Customer","Payment","Review"];
-const LAST_STEP = STEP_LABELS.length - 1;
+const { useState, useEffect, useCallback, useRef } = React;
 
-// ── Date/Time Formatters ──
-function formatDateDDMMYYYY(dateStr) {
-  if (!dateStr) return "";
-  const d = new Date(dateStr);
-  return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`;
-}
-
-function formatTime12(time24) {
-  if (!time24 || time24.indexOf(":") === -1) return time24 || "";
-  const [hStr,mStr] = time24.split(":");
-  let h = parseInt(hStr);
+function formatDateDDMMYYYY(d) { return d ? d.split("-").reverse().join("/") : ""; }
+function formatTime12(t) {
+  if (!t) return "";
+  const [h,m] = t.split(":").map(Number);
   const ampm = h >= 12 ? "PM" : "AM";
-  h = h % 12; if (h === 0) h = 12;
-  return `${String(h).padStart(2,"0")}:${mStr} ${ampm}`;
+  return `${h%12||12}:${String(m).padStart(2,"0")} ${ampm}`;
 }
-
 function getCurrentDate() {
-  const n = new Date();
-  return `${String(n.getDate()).padStart(2,"0")}/${String(n.getMonth()+1).padStart(2,"0")}/${n.getFullYear()}`;
+  const d = new Date();
+  const days = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`;
 }
-
 function getCurrentTime12() {
-  const n = new Date();
-  let h = n.getHours();
-  const m = String(n.getMinutes()).padStart(2,"0");
-  const ampm = h >= 12 ? "PM" : "AM";
-  h = h % 12; if (h === 0) h = 12;
-  return `${String(h).padStart(2,"0")}:${m} ${ampm}`;
+  const d = new Date();
+  const h = d.getHours(), m = d.getMinutes();
+  return `${h%12||12}:${String(m).padStart(2,"0")} ${h>=12?"PM":"AM"}`;
+}
+function computeAmountForHours(h) {
+  const n = parseFloat(h);
+  if (n <= 0.5) return CONFIG.RATE_PER_HALF_HOUR;
+  return Math.round(n * CONFIG.RATE_PER_HOUR);
+}
+function formatHoursLabel(h) {
+  const n = parseFloat(h);
+  if (n === 0.5) return "30 min";
+  if (n === 1) return "1 hour";
+  return `${n} hours`;
 }
 
-// ── Pricing ──
-// Full hours at RATE_PER_HOUR + a trailing half hour at RATE_PER_HALF_HOUR.
-function computeAmountForHours(hours) {
-  const h = parseFloat(hours)||0;
-  const full = Math.floor(h);
-  return full*CONFIG.RATE_PER_HOUR + ((h-full) >= 0.5 ? CONFIG.RATE_PER_HALF_HOUR : 0);
-}
+const SECTIONS = ["home","entries","cash-register","expenses","birthdays","staff","attendance"];
 
-function formatHoursLabel(hours) {
-  const preset = CONFIG.HOUR_OPTIONS.find(o=>o.value===String(hours));
-  if (preset) return preset.label;
-  const h = parseFloat(hours)||0;
-  return h === 1 ? "1 hour" : `${h} hours`;
-}
-
-// ── Main App ──
 function App() {
-  const [screen,setScreen] = useState("home");
-  const [step,setStep] = useState(0);
-  const [entryType,setEntryType] = useState("funzone");
-  const [form,setFormState] = useState(getDefaultForm());
-  const [errors,setErrors] = useState({});
-  const [shakeStep,setShakeStep] = useState(false);
-  const [todayEntries,setTodayEntries] = useState([]);
-  const [filterDate,setFilterDate] = useState(new Date().toISOString().slice(0,10));
-  const [calMode,setCalMode] = useState("day");
-  const [rangeStart,setRangeStart] = useState("");
-  const [rangeEnd,setRangeEnd] = useState("");
-  const SECTIONS = ["home","entries","cash-register","expenses","birthdays","staff","attendance","events","marketing"];
-  const [section,setSection] = useState("home");
-  const [sidebarOpen,setSidebarOpen] = useState(false);
-  const [statsUnlocked,setStatsUnlocked] = useState(false);
-  const [loading,setLoading] = useState(false);
-  const [saving,setSaving] = useState(false);
-  const [showSuccess,setShowSuccess] = useState(false);
-  const [editTarget,setEditTarget] = useState(null);
-  const [toast,setToast] = useState(null);
-  const [birthdays,setBirthdays] = useState([]);
-  const [birthdaysLoading,setBirthdaysLoading] = useState(false);
-  const [birthdayMonth,setBirthdayMonth] = useState(new Date().getMonth()+1);
-  const [birthdayYear,setBirthdayYear] = useState(new Date().getFullYear());
-  const [weekFilter,setWeekFilter] = useState(()=>Math.min(5,Math.ceil(new Date().getDate()/7)));
-  const [phoneLookupLoading,setPhoneLookupLoading] = useState(false);
-  const [enquiry,setEnquiry] = useState(null);
-  const [enquirySaving,setEnquirySaving] = useState(false);
-  const [expenses,setExpenses] = useState([]);
-  const [expensePopup,setExpensePopup] = useState(null);
-  const [expenseSaving,setExpenseSaving] = useState(false);
-  const [monthlyExp,setMonthlyExp] = useState([]);
-  const [monthlyExpMonth,setMonthlyExpMonth] = useState(new Date().getMonth()+1);
-  const [monthlyExpYear,setMonthlyExpYear] = useState(new Date().getFullYear());
-  const [monthlyExpLoading,setMonthlyExpLoading] = useState(false);
-  const [monthlyExpPopup,setMonthlyExpPopup] = useState(null);
-  const [monthlyExpSaving,setMonthlyExpSaving] = useState(false);
-  const [pnlEntries,setPnlEntries] = useState([]);
-  const [pnlExpenses,setPnlExpenses] = useState([]);
-  const [pnlLoading,setPnlLoading] = useState(false);
-  const [confirmAction,setConfirmAction] = useState(null);
-  const [staffList,setStaffList] = useState([]);
-  const [staffAtt,setStaffAtt] = useState([]);
-  const [staffMonth,setStaffMonth] = useState(new Date().getMonth()+1);
-  const [staffYear,setStaffYear] = useState(new Date().getFullYear());
-  const [staffAttDate,setStaffAttDate] = useState(new Date().toISOString().slice(0,10));
-  const [staffLoading,setStaffLoading] = useState(false);
-  const [staffSaving,setStaffSaving] = useState(false);
-  const [staffPopup,setStaffPopup] = useState(null);
+  const [splash, setSplash] = useState(true);
+  const [tab, setTab] = useState("today");
+  const [section, setSection] = useState("home");
+  const [screen, setScreen] = useState("home");
+  const [moreOpen, setMoreOpen] = useState(false);
+
+  const [step, setStep] = useState(0);
+  const [entryType, setEntryType] = useState("funzone");
+  const [formState, setFormState] = useState(getDefaultForm);
+  const form = formState;
+  const [errors, setErrors] = useState({});
+  const [shakeStep, setShakeStep] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [editTarget, setEditTarget] = useState(null);
+  const [toast, setToast] = useState(null);
+  const [todayEntries, setTodayEntries] = useState([]);
+  const [filterDate, setFilterDate] = useState(()=>new Date().toISOString().slice(0,10));
+  const [calMode, setCalMode] = useState("day");
+  const [rangeStart, setRangeStart] = useState("");
+  const [rangeEnd, setRangeEnd] = useState("");
+  const [birthdays, setBirthdays] = useState([]);
+  const [birthdaysLoading, setBirthdaysLoading] = useState(false);
+  const [birthdayMonth, setBirthdayMonth] = useState(()=>new Date().getMonth()+1);
+  const [birthdayYear, setBirthdayYear] = useState(()=>new Date().getFullYear());
+  const [statsUnlocked, setStatsUnlocked] = useState(false);
+  const [phoneLookupLoading, setPhoneLookupLoading] = useState(false);
+  const [enquiry, setEnquiry] = useState(null);
+  const [enquirySaving, setEnquirySaving] = useState(false);
+  const [expenses, setExpenses] = useState([]);
+  const [expensePopup, setExpensePopup] = useState(null);
+  const [expenseSaving, setExpenseSaving] = useState(false);
+  const [monthlyExp, setMonthlyExp] = useState([]);
+  const [monthlyExpMonth, setMonthlyExpMonth] = useState(new Date().getMonth()+1);
+  const [monthlyExpYear, setMonthlyExpYear] = useState(new Date().getFullYear());
+  const [monthlyExpLoading, setMonthlyExpLoading] = useState(false);
+  const [monthlyExpPopup, setMonthlyExpPopup] = useState(null);
+  const [monthlyExpSaving, setMonthlyExpSaving] = useState(false);
+  const [pnlEntries, setPnlEntries] = useState([]);
+  const [pnlExpenses, setPnlExpenses] = useState([]);
+  const [pnlLoading, setPnlLoading] = useState(false);
+  const [confirmAction, setConfirmAction] = useState(null);
+  const [staffList, setStaffList] = useState([]);
+  const [staffAtt, setStaffAtt] = useState([]);
+  const [staffMonth, setStaffMonth] = useState(new Date().getMonth()+1);
+  const [staffYear, setStaffYear] = useState(new Date().getFullYear());
+  const [staffAttDate, setStaffAttDate] = useState(new Date().toISOString().slice(0,10));
+  const [staffLoading, setStaffLoading] = useState(false);
+  const [staffSaving, setStaffSaving] = useState(false);
+  const [staffPopup, setStaffPopup] = useState(null);
   const containerRef = useRef(null);
   const lastLookedUpPhone = useRef("");
 
+  useEffect(() => {
+    const timer = setTimeout(() => setSplash(false), 2400);
+    return () => clearTimeout(timer);
+  }, []);
+
   function getDefaultForm() {
-    const n=new Date();
-    const hours=CONFIG.DEFAULT_HOURS, socksCount=CONFIG.DEFAULT_SOCK_COUNT;
-    return {customerName:"",amount:String(computeAmountForHours(hours)),numKids:1,
-      hours:hours,hoursMode:"preset",
+    const n = new Date();
+    const hours = CONFIG.DEFAULT_HOURS, socksCount = CONFIG.DEFAULT_SOCK_COUNT;
+    return {
+      customerName:"", amount:String(computeAmountForHours(hours)), numKids:1,
+      hours:hours, hoursMode:"preset",
       timeIn:`${String(n.getHours()).padStart(2,"0")}:${String(n.getMinutes()).padStart(2,"0")}`,
-      socks:socksCount*CONFIG.SOCKS_RATE,sockCount:socksCount,sockMode:"preset",
-      phone:"",dob:"",date:n.toISOString().slice(0,10),
-      kidNames:[],dobs:[],
-      playMop:CONFIG.DEFAULT_MOP,playUpiAmount:"",playCashAmount:"",
-      socksMop:CONFIG.DEFAULT_MOP,socksUpiAmount:"",socksCashAmount:""};
+      socks:socksCount*CONFIG.SOCKS_RATE, sockCount:socksCount, sockMode:"preset",
+      phone:"", dob:"", date:n.toISOString().slice(0,10),
+      kidNames:[], dobs:[],
+      playMop:CONFIG.DEFAULT_MOP, playUpiAmount:"", playCashAmount:"",
+      socksMop:CONFIG.DEFAULT_MOP, socksUpiAmount:"", socksCashAmount:""
+    };
   }
 
   const set = useCallback((key,val) => {
-    setFormState(f=>{
-      const next = {...f,[key]:val};
-      if ((key==="numKids") && entryType==="funzone") {
+    setFormState(f => {
+      const next = {...f, [key]:val};
+      if (key === "numKids" && entryType === "funzone") {
         next.amount = String(computeAmountForHours(next.hours) * val);
       }
       return next;
     });
-    setErrors(e=>({...e,[key]:undefined}));
-  },[entryType]);
+    setErrors(e => ({...e, [key]:undefined}));
+  }, [entryType]);
 
-  const setHours = useCallback((v,autoPrice) => {
-    setFormState(f=>autoPrice ? {...f,hours:v,amount:String(computeAmountForHours(v)*f.numKids)} : {...f,hours:v});
-    if (autoPrice) setErrors(e=>({...e,amount:undefined}));
-  },[]);
+  const setHours = useCallback((v, autoPrice) => {
+    setFormState(f => autoPrice ? {...f, hours:v, amount:String(computeAmountForHours(v)*f.numKids)} : {...f, hours:v});
+    if (autoPrice) setErrors(e => ({...e, amount:undefined}));
+  }, []);
 
   const setSockCount = useCallback((n) => {
-    setFormState(f=>({...f,sockCount:n,socks:n*CONFIG.SOCKS_RATE,
+    setFormState(f => ({...f, sockCount:n, socks:n*CONFIG.SOCKS_RATE,
       socksMop:n>0?(f.socksMop||f.playMop):""}));
-  },[]);
+  }, []);
 
-  const showToastMsg = (msg,type) => { setToast({msg,type:type||"info"}); setTimeout(()=>setToast(null),3000); };
+  const showToastMsg = (msg, type) => { setToast({msg, type:type||"info"}); setTimeout(()=>setToast(null), 3000); };
 
-  useEffect(()=>{
-    fetchEntries(); checkBirthdaysCache();
-    const onHash = () => {
-      const h = location.hash.replace("#","");
-      if (SECTIONS.includes(h)) {
-        setSection(h);
-        if (h !== "cash-register" && h !== "expenses" && h !== "staff") setStatsUnlocked(false);
-        if (h === "birthdays") checkBirthdaysCache();
-        if (h === "staff" || h === "attendance") fetchStaffData();
-      } else if (!h || h === "home") { setSection("home"); }
-      else if (h === "list") { setSection("entries"); }
-      else if (h === "stats") { setSection("cash-register"); }
-    };
-    window.addEventListener("hashchange", onHash);
-    return () => window.removeEventListener("hashchange", onHash);
-  },[]);
+  useEffect(() => {
+    fetchEntries();
+    checkBirthdaysCache();
+  }, []);
+
+  function switchTab(t) {
+    setTab(t);
+    setMoreOpen(false);
+    if (t === "today") { setSection("home"); setScreen("home"); }
+    else if (t === "entries") { setSection("entries"); setScreen("home"); }
+    else if (t === "birthdays") { setSection("birthdays"); setScreen("home"); checkBirthdaysCache(); }
+  }
 
   function switchSection(s) {
-    setSidebarOpen(false);
+    setMoreOpen(false);
     if (s !== "cash-register" && s !== "expenses" && s !== "staff") setStatsUnlocked(false);
     setSection(s);
-    location.hash = s === "home" ? "" : s;
-    if (s === "birthdays") checkBirthdaysCache();
+    setScreen("home");
+    if (s === "home") setTab("today");
+    else if (s === "entries") setTab("entries");
+    else if (s === "birthdays") { setTab("birthdays"); checkBirthdaysCache(); }
+    else setTab("more");
     if (s === "staff" || s === "attendance") fetchStaffData();
   }
 
@@ -283,11 +275,9 @@ function App() {
     setMonthlyExpSaving(true);
     try {
       const res = await api.addMonthlyExpense({
-        month: monthlyExpMonth,
-        year: monthlyExpYear,
+        month: monthlyExpMonth, year: monthlyExpYear,
         category: monthlyExpPopup.category || "misc",
-        amount: monthlyExpPopup.amount,
-        description: monthlyExpPopup.description || "",
+        amount: monthlyExpPopup.amount, description: monthlyExpPopup.description || "",
       });
       if (res.success) {
         setMonthlyExp(prev => [res.data, ...prev]);
@@ -398,7 +388,7 @@ function App() {
     finally { setStaffSaving(false); }
   }
 
-  async function fetchEntries(date,mode,rs,re) {
+  async function fetchEntries(date, mode, rs, re) {
     const d = date||filterDate, md = mode||calMode;
     setLoading(true);
     try {
@@ -409,14 +399,12 @@ function App() {
         else { setLoading(false); return; }
       } else {
         const [y,m,dd] = d.split("-").map(Number);
-        res = await api.readEntries(y,m,md==="month"?"all":dd);
+        res = await api.readEntries(y, m, md==="month"?"all":dd);
         if (md==="month") {
           const mm=String(m).padStart(2,"0");
           startDate=y+"-"+mm+"-01";
           endDate=y+"-"+mm+"-"+String(new Date(y,m,0).getDate()).padStart(2,"0");
-        } else {
-          startDate=d; endDate=d;
-        }
+        } else { startDate=d; endDate=d; }
       }
       if (res.success) setTodayEntries(res.data||[]);
       else showToastMsg("Error: "+(res.error||"unknown"),"error");
@@ -453,49 +441,28 @@ function App() {
     finally { setPhoneLookupLoading(false); }
   }
 
-  const computeTimeOut = (timeIn,hours) => {
+  const computeTimeOut = (timeIn, hours) => {
     if(!timeIn) return "";
-    const [h,m]=timeIn.split(":").map(Number);
-    const dur=parseFloat(hours)||1;
-    const t=h*60+m+dur*60;
+    const [h,m] = timeIn.split(":").map(Number);
+    const dur = parseFloat(hours)||1;
+    const t = h*60+m+dur*60;
     return `${String(Math.floor(t/60)%24).padStart(2,"0")}:${String(Math.round(t%60)).padStart(2,"0")}`;
   };
 
   const socksCharge = entryType === "funzone" ? (form.socks||0) : 0;
   const totalAmount = (parseInt(form.amount)||0) + socksCharge;
 
-  const validate = (s) => {
-    const errs={};
-    if(s===0) {
-      if(!form.phone||form.phone.length!==10) errs.phone="10 digits required";
-      if(!form.customerName.trim()) errs.customerName="Required";
-      if(!form.amount||parseInt(form.amount)<=0) errs.amount="Enter amount";
-    }
-    if(s===1) {
-      if(!form.playMop) errs.playMop="Select mode";
-      if(socksCharge>0 && !form.socksMop) errs.socksMop="Select mode";
-    }
+  const validate = () => {
+    const errs = {};
+    if (!form.phone || form.phone.length !== 10) errs.phone = "10 digits required";
+    if (!form.customerName.trim()) errs.customerName = "Required";
+    if (!form.amount || parseInt(form.amount) <= 0) errs.amount = "Enter amount";
+    if (!form.playMop) errs.playMop = "Select mode";
+    if (socksCharge > 0 && !form.socksMop) errs.socksMop = "Select mode";
     setErrors(errs);
-    if(Object.keys(errs).length){setShakeStep(true);setTimeout(()=>setShakeStep(false),500);}
+    if (Object.keys(errs).length) { setShakeStep(true); setTimeout(()=>setShakeStep(false),500); }
     return !Object.keys(errs).length;
   };
-
-  const doNext = () => { setStep(s=>Math.min(s+1,LAST_STEP));containerRef.current?.scrollTo({top:0,behavior:"smooth"}); };
-  const next = () => {
-    if(!validate(step)) return;
-    const today = new Date().toISOString().slice(0,10);
-    if(step===0 && form.date && form.date < today) {
-      setConfirmAction({
-        message: "You're creating an entry for a past date (" + formatDateDDMMYYYY(form.date) + "). Continue?",
-        needsPassword: false,
-        confirmLabel: "Continue",
-        onConfirm: doNext,
-      });
-      return;
-    }
-    doNext();
-  };
-  const prev = () => setStep(s=>Math.max(s-1,0));
 
   function getPlayMopString() {
     if(form.playMop==="UPI + Cash"){
@@ -529,7 +496,8 @@ function App() {
   }
 
   async function submitEntry() {
-    const timeOut = computeTimeOut(form.timeIn,form.hours);
+    if (!validate()) return;
+    const timeOut = computeTimeOut(form.timeIn, form.hours);
     const totalAmt = parseInt(form.amount)||0;
     const perKidAmt = form.numKids>1 ? Math.round(totalAmt/form.numKids) : totalAmt;
     const kidNames = form.kidNames || [];
@@ -538,36 +506,36 @@ function App() {
     const pay = computePaymentCols();
 
     if (form.numKids <= 1) {
-      const entry={...form,mop:playMopStr,socksMop:socksMopStr,entryType,timeIn:form.timeIn,timeOut:timeOut,
-        amount:perKidAmt,numKids:1,socks:socksCharge,
-        playUpi:pay.playUpi,playCash:pay.playCash,socksUpi:pay.socksUpi,socksCash:pay.socksCash};
+      const entry = {...form, mop:playMopStr, socksMop:socksMopStr, entryType, timeIn:form.timeIn, timeOut:timeOut,
+        amount:perKidAmt, numKids:1, socks:socksCharge,
+        playUpi:pay.playUpi, playCash:pay.playCash, socksUpi:pay.socksUpi, socksCash:pay.socksCash};
       setSaving(true);
       try {
-        const res=await api.addEntry(entry);
-        if(res.success){ showToastMsg("Entry saved!","success"); setShowSuccess(true); fetchEntries(); }
+        const res = await api.addEntry(entry);
+        if(res.success) { showToastMsg("Entry saved!","success"); setShowSuccess(true); fetchEntries(); }
         else showToastMsg("Error: "+(res.error||"unknown"),"error");
-      } catch(e){console.error("Save:",e);showToastMsg("Could not save — check internet","error");}
-      finally{setSaving(false);}
+      } catch(e) { console.error("Save:",e); showToastMsg("Could not save — check internet","error"); }
+      finally { setSaving(false); }
     } else {
       setSaving(true);
       try {
-        let ok=0;
+        let ok = 0;
         for (let k=0; k<form.numKids; k++) {
           const name = k===0 ? (form.customerName||"") : (kidNames[k]||form.customerName+" - Kid "+(k+1));
           const dob = k===0 ? (form.dob||"") : ((form.dobs&&form.dobs[k])||"");
           const kidPU = Math.round(pay.playUpi/form.numKids);
           const kidPC = Math.round(pay.playCash/form.numKids);
-          const entry={...form,mop:playMopStr,socksMop:k===0?socksMopStr:"",entryType,timeIn:form.timeIn,timeOut:timeOut,
+          const entry = {...form, mop:playMopStr, socksMop:k===0?socksMopStr:"", entryType, timeIn:form.timeIn, timeOut:timeOut,
             customerName:name, dob:dob, amount:perKidAmt, numKids:1,
             socks: k===0 ? socksCharge : 0,
             playUpi:kidPU, playCash:kidPC,
             socksUpi: k===0 ? pay.socksUpi : 0, socksCash: k===0 ? pay.socksCash : 0};
-          const res=await api.addEntry(entry);
+          const res = await api.addEntry(entry);
           if(res.success) ok++;
         }
         showToastMsg(`${ok} entries saved!`,"success"); setShowSuccess(true); fetchEntries();
-      } catch(e){console.error("Save:",e);showToastMsg("Could not save — check internet","error");}
-      finally{setSaving(false);}
+      } catch(e) { console.error("Save:",e); showToastMsg("Could not save — check internet","error"); }
+      finally { setSaving(false); }
     }
   }
 
@@ -608,9 +576,9 @@ function App() {
 
     let editSocksMop=CONFIG.DEFAULT_MOP, editSocksUpi="", editSocksCash="";
     if(socksTotal>0){
-      const su=parseInt(entry.socksUpi)||0, sc=parseInt(entry.socksCash)||0;
-      if(su>0&&sc>0){editSocksMop="UPI + Cash";editSocksUpi=String(su);editSocksCash=String(sc);}
-      else if(sc>0) editSocksMop="Cash";
+      const su=parseInt(entry.socksUpi)||0, sc2=parseInt(entry.socksCash)||0;
+      if(su>0&&sc2>0){editSocksMop="UPI + Cash";editSocksUpi=String(su);editSocksCash=String(sc2);}
+      else if(sc2>0) editSocksMop="Cash";
       else if(su>0) editSocksMop="UPI";
       else {
         const rsm=entry.socksMop||"";
@@ -623,23 +591,19 @@ function App() {
     setFormState({
       customerName:entry.customerName||entry["Customer name"]||"",
       amount:amt,
-      playMop:editPlayMop,playUpiAmount:editPlayUpi,playCashAmount:editPlayCash,
-      socksMop:editSocksMop,socksUpiAmount:editSocksUpi,socksCashAmount:editSocksCash,
-      numKids:1,
-      hours:hours,
+      playMop:editPlayMop, playUpiAmount:editPlayUpi, playCashAmount:editPlayCash,
+      socksMop:editSocksMop, socksUpiAmount:editSocksUpi, socksCashAmount:editSocksCash,
+      numKids:1, hours:hours,
       hoursMode:CONFIG.HOUR_OPTIONS.some(o=>o.value===hours)?"preset":"custom",
-      timeIn:timeIn,
-      socks:socksTotal,
-      sockCount:sockCount,
+      timeIn:timeIn, socks:socksTotal, sockCount:sockCount,
       sockMode:CONFIG.SOCK_COUNT_OPTIONS.includes(sockCount)?"preset":"custom",
       phone:String(entry.phone||entry["Phone number"]||""),
       dob:entry.dob||entry["DOB"]||"",
       date:entry.date||new Date().toISOString().slice(0,10),
-      kidNames:[],
-      dobs:[],
+      kidNames:[], dobs:[],
     });
     setEntryType(entry.entryType||entry["Entry Type"]||"funzone");
-    setStep(0); setScreen("form");
+    setScreen("form");
   }
 
   function handleEdit(entry) {
@@ -648,32 +612,31 @@ function App() {
     if (isPast) {
       setConfirmAction({
         message: "Edit this past entry" + (entry.customerName ? " for " + entry.customerName : "") + "?",
-        needsPassword: true,
-        confirmLabel: "Confirm",
+        needsPassword: true, confirmLabel: "Confirm",
         onConfirm: () => doEdit(entry),
       });
-    } else {
-      doEdit(entry);
-    }
+    } else { doEdit(entry); }
   }
 
   async function handleUpdateSubmit() {
-    const timeOut = computeTimeOut(form.timeIn,form.hours);
+    if (!validate()) return;
+    const timeOut = computeTimeOut(form.timeIn, form.hours);
     const pay = computePaymentCols();
-    const entry={...form,mop:getPlayMopString(),socksMop:getSocksMopString(),entryType,timeIn:form.timeIn,timeOut:timeOut,
-      amount:parseInt(form.amount)||0,numKids:1,socks:socksCharge,
-      playUpi:pay.playUpi,playCash:pay.playCash,socksUpi:pay.socksUpi,socksCash:pay.socksCash};
-    if(!editTarget?.id){showToastMsg("Cannot identify entry","error");resetForm();return;}
+    const entry = {...form, mop:getPlayMopString(), socksMop:getSocksMopString(), entryType, timeIn:form.timeIn, timeOut:timeOut,
+      amount:parseInt(form.amount)||0, numKids:1, socks:socksCharge,
+      playUpi:pay.playUpi, playCash:pay.playCash, socksUpi:pay.socksUpi, socksCash:pay.socksCash};
+    if(!editTarget?.id) { showToastMsg("Cannot identify entry","error"); resetForm(); return; }
     setSaving(true);
     try {
-      const res=await api.updateEntry(editTarget.id,entry);
-      if(res.success){showToastMsg("Updated!","success");fetchEntries();}else showToastMsg("Error: "+(res.error||"unknown"),"error");
-    } catch(e){console.error("Update:",e);showToastMsg("Could not update","error");}
-    finally{setSaving(false);resetForm();}
+      const res = await api.updateEntry(editTarget.id, entry);
+      if(res.success) { showToastMsg("Updated!","success"); fetchEntries(); }
+      else showToastMsg("Error: "+(res.error||"unknown"),"error");
+    } catch(e) { console.error("Update:",e); showToastMsg("Could not update","error"); }
+    finally { setSaving(false); resetForm(); }
   }
 
   function handleDelete(entry) {
-    if(!entry.id){showToastMsg("Cannot identify entry","error");return;}
+    if(!entry.id) { showToastMsg("Cannot identify entry","error"); return; }
     const today = new Date().toISOString().slice(0,10);
     const isPast = entry.date && entry.date !== today;
     setConfirmAction({
@@ -682,21 +645,21 @@ function App() {
       onConfirm: async () => {
         setSaving(true);
         try {
-          const res=await api.deleteEntry(entry.id);
-          if(res.success){showToastMsg("Deleted","info");fetchEntries();}else showToastMsg("Error: "+(res.error||"unknown"),"error");
-        } catch(e){console.error("Delete:",e);showToastMsg("Could not delete","error");}
-        finally{setSaving(false);}
+          const res = await api.deleteEntry(entry.id);
+          if(res.success) { showToastMsg("Deleted","info"); fetchEntries(); }
+          else showToastMsg("Error: "+(res.error||"unknown"),"error");
+        } catch(e) { console.error("Delete:",e); showToastMsg("Could not delete","error"); }
+        finally { setSaving(false); }
       }
     });
   }
 
   function resetForm() {
-    setFormState(getDefaultForm()); setStep(0); setErrors({}); setShowSuccess(false);
+    setFormState(getDefaultForm()); setErrors({}); setShowSuccess(false);
     setEditTarget(null); setScreen("home"); setEntryType("funzone");
     lastLookedUpPhone.current = "";
   }
 
-  // ── Birthday party enquiries (leads, not paid entries) ──
   function openEnquiry() {
     setEnquiry({parentName:"",kidName:"",phone:"",dob:"",preferredDate:"",numKids:"",notes:""});
   }
@@ -714,15 +677,9 @@ function App() {
     finally { setEnquirySaving(false); }
   }
 
-  function openBirthdays() {
-    resetForm();
-    switchSection("birthdays");
-  }
-
   function setFormType(type) {
     setEntryType(type);
-    setStep(0);
-    setFormState(f=>{
+    setFormState(f => {
       if (type === "funzone") {
         const n = f.sockCount || CONFIG.DEFAULT_SOCK_COUNT;
         return {...f, sockCount:n, socks:n*CONFIG.SOCKS_RATE};
@@ -742,182 +699,272 @@ function App() {
   const typeMeta = CONFIG.ENTRY_TYPES.find(t=>t.key===entryType) || CONFIG.ENTRY_TYPES[0];
   const isPlayArea = entryType === "funzone";
 
+  const todayKids = todayEntries.reduce((a,e) => a + (parseInt(e.numKids)||1), 0);
+  const todayRevenue = todayEntries.reduce((a,e) => a + (parseInt(e.amount)||0) + (parseInt(e.socks)||0), 0);
+  const todayCash = todayEntries.reduce((a,e) => a + (parseInt(e.playCash)||0) + (parseInt(e.socksCash)||0), 0);
+  const todaySocks = todayEntries.reduce((a,e) => {
+    const s = parseInt(e.socks)||0;
+    return a + (s > 0 && CONFIG.SOCKS_RATE > 0 ? Math.round(s/CONFIG.SOCKS_RATE) : 0);
+  }, 0);
+
+  const activeNow = todayEntries.filter(e => {
+    if (!e.timeIn || !e.timeOut) return false;
+    const now = new Date();
+    if ((e.date||"") !== now.toISOString().slice(0,10)) return false;
+    const nowMin = now.getHours()*60 + now.getMinutes();
+    return nowMin >= parseTime24ToMinutes(e.timeIn) && nowMin < parseTime24ToMinutes(e.timeOut) && !isCheckedOut(e.id);
+  });
+
   // =========================================================================
   // RENDER
   // =========================================================================
   return (
-    <div className={`app-shell${screen==="form"?" theme-form":""}`}>
+    <div className="ft-app">
 
-      {/* Toast */}
-      {toast && <div className="toast" style={{background:toast.type==="success"?C.green:toast.type==="error"?C.danger:C.blue}}>{toast.msg}</div>}
-
-      {/* Saving */}
-      {saving && <div className="overlay" style={{zIndex:150}}>
-        <div className="modal" style={{padding:"24px 30px",maxWidth:260}}>
-          <Spinner size={28} /><div style={{marginTop:10,fontSize:13.5,fontWeight:700,color:C.textMid}}>Saving…</div>
-        </div></div>}
-
-      {/* Success */}
-      {showSuccess && <div className="overlay">
-        <div className="modal">
-          <div style={{width:64,height:64,margin:"0 auto 16px",borderRadius:"50%",background:C.greenSoft,display:"flex",alignItems:"center",justifyContent:"center"}}>
-            <svg width="34" height="34" viewBox="0 0 40 40" fill="none"><path d="M10 20 L17 27 L30 14" stroke={C.green} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="40" strokeDashoffset="40" style={{animation:"checkDraw .6s ease .3s forwards"}} /></svg>
+      {/* ── Splash ── */}
+      {splash && (
+        <div className="ft-splash">
+          <div className="ft-splash-center">
+            <div className="ft-splash-ring"></div>
+            <div className="ft-splash-icon">FT</div>
+            <div className="ft-splash-name">FUNTUNES</div>
+            <div className="ft-splash-bar"><div className="ft-splash-bar-fill"></div></div>
           </div>
-          <h2 style={{margin:"0 0 6px",fontSize:19,fontWeight:800}}>Entry saved</h2>
-          <p style={{margin:"0 0 2px",fontSize:13.5,color:C.textMid}}><strong>{form.customerName}</strong>{form.numKids>1?` × ${form.numKids} kids`:""}</p>
-          <p style={{margin:"0 0 20px",fontSize:26,fontWeight:800,color:C.green}}>₹{totalAmount.toLocaleString("en-IN")}</p>
-          <button className="btn btn-primary btn-block btn-lg" style={{marginBottom:8}}
-            onClick={()=>{setFormState(getDefaultForm());setStep(0);setShowSuccess(false);setEntryType("funzone");}}>+ Add another</button>
-          <button className="btn btn-block" onClick={resetForm}>📊 Go to dashboard</button>
-        </div></div>}
-
-      {/* ══════════ FULL-SCREEN HOME LANDING ══════════ */}
-      {screen==="home" && section==="home" && <div className="home-fullscreen">
-        <div className="home-hero">
-          <img src="icons/logo.png" alt={CONFIG.APP_NAME} className="home-logo" />
-          <p className="home-subtitle">Kids Indoor Play Zone — Ops</p>
         </div>
-        <div className="home-grid">
-          {[
-            {key:"entries",icon:"🎟️",label:"Entries",desc:"Log walk-ins & manage daily entries"},
-            {key:"cash-register",icon:"💰",label:"Cash Register",desc:"Revenue, UPI & cash breakdown"},
-            {key:"expenses",icon:"📊",label:"Profit / Loss",desc:"Monthly expenses & P&L statement"},
-            {key:"birthdays",icon:"🎂",label:"Birthdays CRM",desc:"Birthday calendar & bookings"},
-            {key:"staff",icon:"👥",label:"Staff",desc:"Staff list & salary tracker"},
-            {key:"attendance",icon:"📋",label:"Attendance",desc:"Daily attendance & timesheet"},
-          ].map(item=>(
-            <button key={item.key} className="home-card" onClick={()=>switchSection(item.key)}>
-              <span className="home-card-icon">{item.icon}</span>
-              <span className="home-card-text">
-                <div className="home-card-label">{item.label}</div>
-                <div className="home-card-desc">{item.desc}</div>
-              </span>
-            </button>
-          ))}
+      )}
+
+      {/* ── Toast ── */}
+      {toast && <div className="ft-toast" style={{
+        background: toast.type==="success"?C.green : toast.type==="error"?C.danger : C.accent
+      }}>{toast.msg}</div>}
+
+      {/* ── Saving overlay ── */}
+      {saving && <div className="ft-confirm-overlay" style={{zIndex:200}}>
+        <div className="ft-confirm-dialog" style={{padding:"24px 30px",maxWidth:200,textAlign:"center"}}>
+          <Spinner size={28} /><div style={{marginTop:10,fontSize:13,fontWeight:700,color:C.textMid}}>Saving...</div>
         </div>
       </div>}
 
-      {/* ══════════ HOME — Sidebar + Main Content ══════════ */}
-      {screen==="home" && section!=="home" && <>
-        {/* Sidebar overlay (mobile) */}
-        {sidebarOpen && <div className="sidebar-overlay" onClick={()=>setSidebarOpen(false)} />}
+      {/* ── Success ── */}
+      {showSuccess && <div className="ft-confirm-overlay" style={{zIndex:180}}>
+        <div className="ft-confirm-dialog" style={{textAlign:"center",maxWidth:320}}>
+          <div style={{width:64,height:64,margin:"0 auto 16px",borderRadius:"50%",background:C.greenSoft,display:"flex",alignItems:"center",justifyContent:"center"}}>
+            <svg width="34" height="34" viewBox="0 0 40 40" fill="none"><path d="M10 20 L17 27 L30 14" stroke={C.green} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          </div>
+          <div style={{fontSize:19,fontWeight:800,marginBottom:6}}>Entry saved</div>
+          <div style={{fontSize:13,color:C.textMid,marginBottom:4}}><strong>{form.customerName}</strong>{form.numKids>1?` x ${form.numKids} kids`:""}</div>
+          <div style={{fontSize:26,fontWeight:800,color:C.green,marginBottom:20}}>₹{totalAmount.toLocaleString("en-IN")}</div>
+          <button className="ft-btn-primary" style={{width:"100%",marginBottom:8}}
+            onClick={()=>{setFormState(getDefaultForm());setShowSuccess(false);setEntryType("funzone");}}>+ Add another</button>
+          <button className="ft-btn-secondary" style={{width:"100%"}} onClick={resetForm}>Go to dashboard</button>
+        </div>
+      </div>}
 
-        {/* Sidebar */}
-        <nav className={`sidebar${sidebarOpen?" is-open":""}`}>
-          <div className="sidebar-brand" onClick={()=>switchSection("home")} style={{cursor:"pointer"}}>
-            <img src="icons/logo-header.png" alt="" style={{width:32,height:32,borderRadius:8}} />
-            <span className="sidebar-brand-name">{CONFIG.APP_NAME}</span>
-          </div>
-          <div className="sidebar-nav">
-            {[
-              {key:"home",icon:"🏠",label:"Home"},
-              {key:"entries",icon:"🎟️",label:"Entries"},
-              {key:"cash-register",icon:"💰",label:"Cash Register"},
-              {key:"expenses",icon:"📊",label:"Profit / Loss"},
-              {key:"birthdays",icon:"🎂",label:"Birthdays CRM"},
-              {key:"staff",icon:"👥",label:"Staff"},
-              {key:"attendance",icon:"📋",label:"Attendance"},
-              {key:"events",icon:"🎪",label:"Events",soon:true},
-              {key:"marketing",icon:"📢",label:"Marketing",soon:true},
-            ].map(item=>(
-              <button key={item.key} type="button"
-                className={`sidebar-item${section===item.key?" is-on":""}`}
-                onClick={()=>switchSection(item.key)}>
-                <span className="sidebar-item-icon">{item.icon}</span>
-                {item.label}
-                {item.soon && <span className="sidebar-item-badge">Soon</span>}
-              </button>
-            ))}
-          </div>
-          <div className="sidebar-footer">{dateDisplay} · {timeDisplay}</div>
+      {/* ── Desktop Icon Rail ── */}
+      {screen === "home" && (
+        <nav className="ft-rail">
+          <div className="ft-rail-logo" onClick={() => switchSection("home")}>FT</div>
+          {[
+            {key:"home", icon:<TabIconToday active={section==="home"} />, label:"Today"},
+            {key:"entries", icon:<TabIconEntries active={section==="entries"} />, label:"Entries"},
+            {key:"birthdays", icon:<TabIconBirthdays active={section==="birthdays"} />, label:"Birthdays"},
+            {key:"cash-register", icon:<svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke={section==="cash-register"?"#5d2a99":"#a099b5"} strokeWidth="1.7"><rect x="3" y="3" width="14" height="14" rx="2"/><path d="M3 8h14"/><path d="M8 8v9"/></svg>, label:"Cash"},
+            {key:"expenses", icon:<svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke={section==="expenses"?"#5d2a99":"#a099b5"} strokeWidth="1.7"><path d="M3 17V5a2 2 0 012-2h10a2 2 0 012 2v12"/><path d="M7 8h6M7 11h4"/></svg>, label:"P&L"},
+            {key:"staff", icon:<svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke={section==="staff"?"#5d2a99":"#a099b5"} strokeWidth="1.7"><circle cx="10" cy="7" r="3"/><path d="M4 17c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>, label:"Staff"},
+            {key:"attendance", icon:<svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke={section==="attendance"?"#5d2a99":"#a099b5"} strokeWidth="1.7"><rect x="3" y="4" width="14" height="13" rx="2"/><path d="M3 8h14"/><path d="M7 2v4M13 2v4"/></svg>, label:"Attend."},
+          ].map(item => (
+            <button key={item.key} className={`ft-rail-item${section===item.key?" ft-rail-item--active":""}`}
+              onClick={() => switchSection(item.key)}>
+              {item.icon}
+              <span className="ft-rail-label">{item.label}</span>
+            </button>
+          ))}
         </nav>
+      )}
 
-        {/* Main content area */}
-        <div className="app-main">
-          <header className="appbar">
-            <div className="container appbar-inner">
-              <div className="appbar-brand">
-                <button type="button" className="sidebar-toggle" onClick={()=>setSidebarOpen(o=>!o)} aria-label="Menu">☰</button>
-                <div style={{minWidth:0}}>
-                  <div className="appbar-title">
-                    {{home:CONFIG.APP_NAME,entries:"Entries","cash-register":"Cash Register",expenses:"Profit / Loss",birthdays:"Birthdays CRM",staff:"Staff",attendance:"Attendance",events:"Events",marketing:"Marketing"}[section]}
-                  </div>
-                  <div className="appbar-sub">{dateDisplay} · {timeDisplay}</div>
-                </div>
+      {/* ── Main Content Area ── */}
+      <div className="ft-main">
+
+        {/* ══════════ TODAY DASHBOARD ══════════ */}
+        {screen === "home" && section === "home" && (
+          <div className="ft-page">
+            <div className="ft-header">
+              <div>
+                <div className="ft-header-title">Today</div>
+                <div className="ft-header-sub">{dateDisplay} · {timeDisplay}</div>
               </div>
-              <div className="appbar-actions">
-                {section==="entries" && <button className="btn btn-sm btn-primary new-entry-inline" onClick={()=>startNewEntry("funzone")}>+ New Entry</button>}
+              <button className="ft-header-shield" onClick={() => switchSection("cash-register")}>
+                <ShieldIcon />
+              </button>
+            </div>
+
+            {/* Stat tiles */}
+            <div className="ft-stat-grid">
+              <div className="ft-stat-card">
+                <div className="ft-stat-label">KIDS IN</div>
+                <div className="ft-stat-value">{todayKids}</div>
+              </div>
+              <div className="ft-stat-card">
+                <div className="ft-stat-label">COLLECTED</div>
+                <div className="ft-stat-value" style={{color:C.deepest}}>₹{todayRevenue.toLocaleString("en-IN")}</div>
+              </div>
+              <div className="ft-stat-card">
+                <div className="ft-stat-label">CASH IN HAND</div>
+                <div className="ft-stat-value" style={{color:C.deepest}}>₹{todayCash.toLocaleString("en-IN")}</div>
+              </div>
+              <div className="ft-stat-card">
+                <div className="ft-stat-label">SOCKS</div>
+                <div className="ft-stat-value">{todaySocks}</div>
               </div>
             </div>
-          </header>
 
-          <div className="container page">
-            {/* ── ENTRIES SECTION ── */}
-            {section==="entries" && <>
-              <div className="card card-pad filter-bar" style={{marginBottom:"var(--sp-4)"}}>
-                <CalendarFilter mode={calMode} date={filterDate}
-                  rangeStart={rangeStart} rangeEnd={rangeEnd}
-                  onModeChange={onCalModeChange} onDateChange={onCalDateChange}
-                  onRangeChange={onCalRangeChange} onToday={onCalToday} />
-                <div className="filter-bar-right">
-                  {!loading && <span className="filter-bar-count">{todayEntries.length} entries</span>}
-                  <button className="btn btn-sm btn-icon" onClick={()=>fetchEntries()} disabled={loading} title="Refresh">↻</button>
-                </div>
+            {/* Playing now dark card */}
+            <div className="ft-playing">
+              <div className="ft-playing-header">
+                <div className="ft-playing-pulse"></div>
+                <span className="ft-playing-count">{activeNow.length} playing now</span>
+                <span className="ft-playing-revenue">₹{todayRevenue.toLocaleString("en-IN")} today</span>
               </div>
-              <LiveEntryList entries={[...todayEntries].sort((a,b)=>(a.id||0)-(b.id||0))} onEdit={handleEdit} onDelete={handleDelete} onCheckout={handleCheckout} loading={loading} />
-            </>}
+              <div className="ft-playing-bars">
+                {[28,44,36,58,72,64,88,100].map((h,i) => (
+                  <span key={i} className="ft-playing-bar" style={{height:`${h}%`,
+                    background:i>=6?`linear-gradient(180deg,${i===7?"#8affe0,#33c9a6":"#c9a3ff,#7c3fc4"})`:`rgba(255,255,255,${0.15+i*0.02})`}} />
+                ))}
+              </div>
+            </div>
 
-            {/* ── BIRTHDAYS CRM SECTION ── */}
-            {section==="birthdays" && <>
-              <div className="card card-pad" style={{marginBottom:"var(--sp-4)"}}>
-                <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
-                  <div style={{display:"flex",gap:8,flex:"1 1 220px",minWidth:0}}>
-                    <Dropdown flex={1.5} value={birthdayMonth} onChange={changeMonth}
-                      options={MONTH_NAMES.map((m,i)=>({value:i+1,label:m}))} />
-                    <Dropdown flex={1} value={birthdayYear} onChange={changeYear}
-                      options={[new Date().getFullYear()-1, new Date().getFullYear(), new Date().getFullYear()+1].map(y=>({value:y,label:String(y)}))} />
-                  </div>
-                  <div style={{display:"flex",alignItems:"center",gap:8,marginLeft:"auto"}}>
-                    <span style={{fontSize:12,fontWeight:700,color:C.textMid}}>🎉 <strong style={{color:C.text}}>{birthdays.length}</strong></span>
-                    <span style={{fontSize:11,color:C.green,fontWeight:700}}>{birthdays.filter(b=>(b.status||"not_contacted")!=="not_contacted").length} contacted</span>
-                    <button className="btn btn-sm" onClick={openEnquiry}>+ Enquiry</button>
-                    <button className="btn btn-sm btn-icon" onClick={()=>fetchBirthdays()} disabled={birthdaysLoading} title="Refresh">↻</button>
+            {/* Quick links grid */}
+            <div className="ft-quick-grid">
+              <button className="ft-quick-card ft-quick-card--primary" onClick={()=>startNewEntry("funzone")}>
+                <div className="ft-quick-icon ft-quick-icon--primary">
+                  <svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="#fff" strokeWidth="2"><path d="M10 4v12M4 10h12"/></svg>
+                </div>
+                <div className="ft-quick-label">New booking</div>
+              </button>
+              <button className="ft-quick-card" onClick={()=>switchSection("cash-register")}>
+                <div className="ft-quick-icon">
+                  <svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="#6d3f9c" strokeWidth="1.7"><rect x="2.5" y="6" width="15" height="8" rx="2"/><path d="M7 6v8"/></svg>
+                </div>
+                <div className="ft-quick-label">Cash Register</div>
+                <div className="ft-quick-sub">admin</div>
+              </button>
+              <button className="ft-quick-card" onClick={()=>{setExpensePopup({date:filterDate,amount:"",description:"",category:"misc"});}}>
+                <div className="ft-quick-icon">
+                  <svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="#6d3f9c" strokeWidth="1.7"><circle cx="10" cy="10" r="6.5"/><path d="M10 6.5v7"/></svg>
+                </div>
+                <div className="ft-quick-label">Add expense</div>
+              </button>
+              <button className="ft-quick-card" onClick={()=>openEnquiry()}>
+                <div className="ft-quick-icon">
+                  <svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="#6d3f9c" strokeWidth="1.7"><rect x="3.5" y="8" width="13" height="8" rx="2"/><circle cx="10" cy="4.5" r="1.5"/></svg>
+                </div>
+                <div className="ft-quick-label">Birthday request</div>
+              </button>
+            </div>
+
+            {/* Birthday widget */}
+            {birthdays.length > 0 && (
+              <div className="ft-bday-widget" onClick={() => switchSection("birthdays")}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontSize:18}}>🎂</span>
+                  <div>
+                    <div style={{fontWeight:700,fontSize:13}}>{birthdays.length} birthdays this month</div>
+                    <div style={{fontSize:11,color:C.textLight}}>{birthdays.filter(b=>(b.status||"not_contacted")!=="not_contacted").length} contacted</div>
                   </div>
                 </div>
+                <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke={C.textLight} strokeWidth="2"><path d="M7 4l6 6-6 6"/></svg>
               </div>
-              <BirthdayCalendar birthdays={birthdays} month={birthdayMonth} year={birthdayYear} loading={birthdaysLoading} onSave={saveBirthdayCall} />
-            </>}
+            )}
+          </div>
+        )}
 
-            {/* ── CASH REGISTER SECTION (Stats) ── */}
-            {section==="cash-register" && <>
-              {!statsUnlocked
-                ? <PasswordGate onUnlock={()=>setStatsUnlocked(true)} />
-                : <>
-                  <div className="card card-pad filter-bar" style={{marginBottom:"var(--sp-4)"}}>
-                    <CalendarFilter mode={calMode} date={filterDate}
-                      rangeStart={rangeStart} rangeEnd={rangeEnd}
-                      onModeChange={onCalModeChange} onDateChange={onCalDateChange}
-                      onRangeChange={onCalRangeChange} onToday={onCalToday} />
-                    <div className="filter-bar-right">
-                      {!loading && <span className="filter-bar-count">{todayEntries.length} entries</span>}
-                      <button className="btn btn-sm" onClick={()=>setExpensePopup({date:filterDate,amount:"",description:"",category:"misc"})}>+ Expense</button>
-                      <button className="btn btn-sm btn-icon" onClick={()=>fetchEntries()} disabled={loading} title="Refresh">↻</button>
-                    </div>
+        {/* ══════════ ENTRIES ══════════ */}
+        {screen === "home" && section === "entries" && (
+          <div className="ft-page">
+            <div className="ft-header">
+              <div>
+                <div className="ft-header-title">Entries</div>
+                <div className="ft-header-sub">{dateDisplay}</div>
+              </div>
+              <button className="ft-btn-primary" style={{padding:"8px 16px",fontSize:13}} onClick={()=>startNewEntry("funzone")}>+ New Entry</button>
+            </div>
+            <div style={{marginBottom:16}}>
+              <CalendarFilter mode={calMode} date={filterDate}
+                rangeStart={rangeStart} rangeEnd={rangeEnd}
+                onModeChange={onCalModeChange} onDateChange={onCalDateChange}
+                onRangeChange={onCalRangeChange} onToday={onCalToday} />
+              <div style={{display:"flex",alignItems:"center",gap:8,marginTop:8}}>
+                {!loading && <span style={{fontSize:12,color:C.textLight}}>{todayEntries.length} entries</span>}
+                <button className="ft-chip" onClick={()=>fetchEntries()} disabled={loading}>Refresh</button>
+              </div>
+            </div>
+            <LiveEntryList entries={[...todayEntries].sort((a,b)=>(a.id||0)-(b.id||0))} onEdit={handleEdit} onDelete={handleDelete} onCheckout={handleCheckout} loading={loading} />
+          </div>
+        )}
+
+        {/* ══════════ BIRTHDAYS ══════════ */}
+        {screen === "home" && section === "birthdays" && (
+          <div className="ft-page">
+            <div className="ft-header">
+              <div>
+                <div className="ft-header-title">Birthdays</div>
+                <div className="ft-header-sub">{birthdays.length} birthdays · {birthdays.filter(b=>(b.status||"not_contacted")!=="not_contacted").length} contacted</div>
+              </div>
+              <div style={{display:"flex",gap:6}}>
+                <button className="ft-chip" onClick={openEnquiry}>+ Enquiry</button>
+                <button className="ft-chip" onClick={()=>fetchBirthdays()} disabled={birthdaysLoading}>Refresh</button>
+              </div>
+            </div>
+            <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
+              <Dropdown flex={1.5} value={birthdayMonth} onChange={changeMonth}
+                options={MONTH_NAMES.map((m,i)=>({value:i+1,label:m}))} />
+              <Dropdown flex={1} value={birthdayYear} onChange={changeYear}
+                options={[new Date().getFullYear()-1, new Date().getFullYear(), new Date().getFullYear()+1].map(y=>({value:y,label:String(y)}))} />
+            </div>
+            <BirthdayCalendar birthdays={birthdays} month={birthdayMonth} year={birthdayYear} loading={birthdaysLoading} onSave={saveBirthdayCall} />
+          </div>
+        )}
+
+        {/* ══════════ CASH REGISTER ══════════ */}
+        {screen === "home" && section === "cash-register" && (
+          <div className="ft-page">
+            <div className="ft-header">
+              <div className="ft-header-title">Cash Register</div>
+            </div>
+            {!statsUnlocked
+              ? <PasswordGate onUnlock={()=>setStatsUnlocked(true)} />
+              : <>
+                <div style={{marginBottom:16}}>
+                  <CalendarFilter mode={calMode} date={filterDate}
+                    rangeStart={rangeStart} rangeEnd={rangeEnd}
+                    onModeChange={onCalModeChange} onDateChange={onCalDateChange}
+                    onRangeChange={onCalRangeChange} onToday={onCalToday} />
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginTop:8}}>
+                    {!loading && <span style={{fontSize:12,color:C.textLight}}>{todayEntries.length} entries</span>}
+                    <button className="ft-chip" onClick={()=>setExpensePopup({date:filterDate,amount:"",description:"",category:"misc"})}>+ Expense</button>
+                    <button className="ft-chip" onClick={()=>fetchEntries()} disabled={loading}>Refresh</button>
                   </div>
-                  {loading ? <div className="empty-state"><Spinner size={26} /><div style={{marginTop:10}}>Loading…</div></div>
-                    : <StatsDashboard entries={todayEntries} expenses={expenses} onDeleteExpense={handleDeleteExpense} />}
-                </>}
-            </>}
+                </div>
+                {loading ? <div className="ft-empty"><Spinner size={24} /><div style={{marginTop:10}}>Loading...</div></div>
+                  : <StatsDashboard entries={todayEntries} expenses={expenses} onDeleteExpense={handleDeleteExpense} />}
+              </>}
+          </div>
+        )}
 
-            {/* ── PROFIT / LOSS SECTION ── */}
-            {section==="expenses" && <>
-              {!statsUnlocked
-                ? <PasswordGate onUnlock={()=>{setStatsUnlocked(true);fetchMonthlyExpenses();fetchPnl();}} />
-                : <>
-                  <PnLReport entries={pnlEntries} expenses={pnlExpenses} monthlyExpenses={monthlyExp}
-                    month={monthlyExpMonth} year={monthlyExpYear}
-                    onChangeMonth={onPnlSectionMonthChange} onChangeYear={onPnlSectionYearChange}
-                    loading={pnlLoading||monthlyExpLoading} />
+        {/* ══════════ PROFIT / LOSS ══════════ */}
+        {screen === "home" && section === "expenses" && (
+          <div className="ft-page">
+            <div className="ft-header">
+              <div className="ft-header-title">Profit & Loss</div>
+            </div>
+            {!statsUnlocked
+              ? <PasswordGate onUnlock={()=>{setStatsUnlocked(true);fetchMonthlyExpenses();fetchPnl();}} />
+              : <>
+                <PnLReport entries={pnlEntries} expenses={pnlExpenses} monthlyExpenses={monthlyExp}
+                  month={monthlyExpMonth} year={monthlyExpYear}
+                  onChangeMonth={onPnlSectionMonthChange} onChangeYear={onPnlSectionYearChange}
+                  loading={pnlLoading||monthlyExpLoading} />
+                <div style={{marginTop:24}}>
                   <MonthlyExpensesDashboard
                     expenses={monthlyExp}
                     month={monthlyExpMonth} year={monthlyExpYear}
@@ -926,53 +973,306 @@ function App() {
                     onDelete={handleDeleteMonthlyExpense}
                     loading={monthlyExpLoading}
                     hideFilter={true} />
-                </>}
-            </>}
+                </div>
+              </>}
+          </div>
+        )}
 
-            {/* ── COMING SOON SECTIONS ── */}
-            {section==="staff" && <>
-              {!statsUnlocked
-                ? <PasswordGate onUnlock={()=>{setStatsUnlocked(true);fetchStaffData();}} />
-                : <StaffSection
-                    staffList={staffList} attendance={staffAtt}
-                    month={staffMonth} year={staffYear}
-                    onChangeMonth={onStaffMonthChange} onChangeYear={onStaffYearChange}
-                    onAddStaff={()=>setStaffPopup({})} onEditStaff={s=>setStaffPopup(s)} onDeleteStaff={handleDeleteStaff}
-                    loading={staffLoading} />}
-            </>}
-            {section==="attendance" && <AttendanceSection
+        {/* ══════════ STAFF ══════════ */}
+        {screen === "home" && section === "staff" && (
+          <div className="ft-page">
+            <div className="ft-header">
+              <div className="ft-header-title">Staff & Salary</div>
+            </div>
+            {!statsUnlocked
+              ? <PasswordGate onUnlock={()=>{setStatsUnlocked(true);fetchStaffData();}} />
+              : <StaffSection
+                  staffList={staffList} attendance={staffAtt}
+                  month={staffMonth} year={staffYear}
+                  onChangeMonth={onStaffMonthChange} onChangeYear={onStaffYearChange}
+                  onAddStaff={()=>setStaffPopup({})} onEditStaff={s=>setStaffPopup(s)} onDeleteStaff={handleDeleteStaff}
+                  loading={staffLoading} />}
+          </div>
+        )}
+
+        {/* ══════════ ATTENDANCE ══════════ */}
+        {screen === "home" && section === "attendance" && (
+          <div className="ft-page">
+            <div className="ft-header">
+              <div className="ft-header-title">Attendance</div>
+            </div>
+            <AttendanceSection
               staffList={staffList} attendance={staffAtt}
               month={staffMonth} year={staffYear}
               attDate={staffAttDate}
               onChangeMonth={onStaffMonthChange} onChangeYear={onStaffYearChange}
               onChangeAttDate={setStaffAttDate}
               onMarkAttendance={handleMarkAttendance}
-              loading={staffLoading} saving={staffSaving} />}
-            {section==="events" && <div className="coming-soon">
-              <div className="coming-soon-icon">🎪</div>
-              <div className="coming-soon-title">Events</div>
-              <div className="coming-soon-text">Plan and manage birthday parties, special events, and bookings. Coming soon!</div>
-            </div>}
-            {section==="marketing" && <div className="coming-soon">
-              <div className="coming-soon-icon">📢</div>
-              <div className="coming-soon-title">Marketing</div>
-              <div className="coming-soon-text">WhatsApp campaigns, offers, and customer engagement. Coming soon!</div>
-            </div>}
+              loading={staffLoading} saving={staffSaving} />
           </div>
+        )}
 
-          {/* New Entry (mobile floating action button) */}
-          {section==="entries" && <div className="new-entry-fab">
-            <button className="btn btn-primary btn-block btn-lg" onClick={()=>startNewEntry("funzone")} style={{boxShadow:`0 6px 22px ${C.accent}45`,animation:"slideUp .35s ease"}}>+ New Entry</button>
-          </div>}
+        {/* ══════════ BOOKING FORM (single-scroll) ══════════ */}
+        {screen === "form" && (
+          <div className="ft-page ft-form-scroll" ref={containerRef}>
+            <div className="ft-header">
+              <div>
+                <div className="ft-header-title">{editTarget ? "Edit Entry" : "New Booking"}</div>
+                <div className="ft-header-sub">{dateDisplay} · {timeDisplay}</div>
+              </div>
+              <div style={{display:"flex",gap:6}}>
+                {!editTarget && <IconMenu trigger={typeMeta.icon} title="Change entry type" activeValue={entryType}
+                  items={CONFIG.ENTRY_TYPES.map(t=>({
+                    value:t.key, icon:t.icon, label:t.label,
+                    onSelect:()=>{ if(t.key!==entryType) setFormType(t.key); },
+                  }))} />}
+                <button className="ft-chip" onClick={resetForm}>Cancel</button>
+              </div>
+            </div>
+
+            <div style={{animation:shakeStep?"shakeX .4s ease":"fadeIn .3s ease"}}>
+
+              {/* Customer section */}
+              <div className="ft-form-section">
+                <SectionHeading label="Customer" />
+                <div className="form-grid">
+                  <InputField label="Mobile" icon="📱" error={errors.phone}>
+                    <div style={{position:"relative"}}>
+                      <input className={`fld${errors.phone?" is-error":""}`} value={form.phone} placeholder="10-digit mobile" type="tel" inputMode="numeric"
+                        onChange={e=>{const v=e.target.value.replace(/\D/g,"").slice(0,10);set("phone",v);if(v.length===10)lookupByPhone(v);}} />
+                      {phoneLookupLoading && <div style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)"}}><Spinner size={16} /></div>}
+                    </div>
+                  </InputField>
+                  <InputField label="No. of Kids" icon="👶">
+                    <NumberStepper value={form.numKids} onChange={v=>set("numKids",v)} min={1} max={10} />
+                  </InputField>
+                </div>
+
+                {Array.from({length:form.numKids},(_,i)=>(
+                  <div key={i} style={{marginTop:8}}>
+                    {form.numKids>1 && <div style={{fontSize:11,fontWeight:700,color:C.textMid,marginBottom:4}}>Kid {i+1}</div>}
+                    <div className="form-grid">
+                      <InputField label={form.numKids>1?"Name":"Kid's Name"} error={i===0?errors.customerName:undefined}>
+                        <input className={`fld${i===0&&errors.customerName?" is-error":""}`}
+                          value={i===0?form.customerName:((form.kidNames&&form.kidNames[i])||"")}
+                          placeholder={`e.g. ${["Priya","Arjun","Meera","Ravi","Ananya"][i%5]}`}
+                          onChange={e=>{
+                            if(i===0) set("customerName",e.target.value);
+                            else { const names=[...(form.kidNames||[])]; names[i]=e.target.value; set("kidNames",names); }
+                          }} />
+                      </InputField>
+                      <InputField label="DOB">
+                        <input className="fld"
+                          value={i===0?form.dob:((form.dobs&&form.dobs[i])||"")}
+                          type="date"
+                          onChange={e=>{
+                            if(i===0) set("dob",e.target.value);
+                            else { const d2=[...(form.dobs||[])]; d2[i]=e.target.value; set("dobs",d2); }
+                          }} />
+                      </InputField>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Booking details */}
+              <div className="ft-form-section">
+                <SectionHeading icon={typeMeta.icon} label={isPlayArea?"Playtime":`${typeMeta.label} Booking`} />
+                <div className="form-grid">
+                  <InputField label="Duration" icon="⏱️">
+                    <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                      <Dropdown flex={1}
+                        value={form.hoursMode==="custom"?"custom":String(form.hours)}
+                        options={[...CONFIG.HOUR_OPTIONS.map(o=>({value:o.value,label:o.label})),{value:"custom",label:"Custom..."}]}
+                        onChange={v=>{
+                          if(v==="custom") set("hoursMode","custom");
+                          else { set("hoursMode","preset"); setHours(v,isPlayArea); }
+                        }} />
+                      {form.hoursMode==="custom" &&
+                        <input className="fld" value={form.hours} onChange={e=>setHours(e.target.value.replace(/[^\d.]/g,""),isPlayArea)}
+                          placeholder="hrs" type="tel" inputMode="decimal" style={{width:74,flexShrink:0,textAlign:"center"}} />}
+                    </div>
+                    <div style={{display:"flex",gap:6,alignItems:"center",marginTop:6,fontSize:12,color:C.textMid}}>
+                      <span>🕐</span>
+                      <input className="fld" value={form.timeIn} onChange={e=>set("timeIn",e.target.value)} type="time" style={{maxWidth:100,fontSize:12}} />
+                      {form.timeIn && <span>→ {formatTime12(computeTimeOut(form.timeIn,form.hours))}</span>}
+                    </div>
+                  </InputField>
+                  <InputField label="Date" icon="📅">
+                    <input className="fld" type="date" value={form.date} onChange={e=>set("date",e.target.value)} />
+                  </InputField>
+                  <InputField label={isPlayArea?"Playtime Amount":"Amount"} icon="💰" error={errors.amount}>
+                    <div style={{position:"relative"}}>
+                      <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",fontWeight:700,color:C.textMid}}>₹</span>
+                      <input className={`fld${errors.amount?" is-error":""}`} value={form.amount} type="tel" inputMode="numeric" placeholder="300"
+                        style={{paddingLeft:28,fontSize:18,fontWeight:700}}
+                        onChange={e=>set("amount",e.target.value.replace(/\D/g,""))} />
+                    </div>
+                    {isPlayArea && form.numKids>1 && <div style={{fontSize:11,color:C.textLight,marginTop:4}}>{form.numKids} kids x ₹{computeAmountForHours(form.hours)} per kid</div>}
+                  </InputField>
+                </div>
+              </div>
+
+              {/* Socks */}
+              {isPlayArea && (
+                <div className="ft-form-section">
+                  <SectionHeading icon="🧦" label="Socks" />
+                  <div className="form-grid">
+                    <InputField label="Pairs">
+                      <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                        <Dropdown flex={1}
+                          value={form.sockMode==="custom"?"custom":String(form.sockCount||0)}
+                          options={[...CONFIG.SOCK_COUNT_OPTIONS.map(n=>({value:String(n),label:n===0?"None":`${n} pair${n>1?"s":""}`})),{value:"custom",label:"Custom..."}]}
+                          onChange={v=>{
+                            if(v==="custom") set("sockMode","custom");
+                            else { set("sockMode","preset"); setSockCount(parseInt(v)); }
+                          }} />
+                        {form.sockMode==="custom" &&
+                          <input className="fld" value={form.sockCount||""} placeholder="pairs" type="tel" inputMode="numeric"
+                            onChange={e=>{const v=e.target.value.replace(/\D/g,"");setSockCount(v===""?0:parseInt(v));}}
+                            style={{width:74,flexShrink:0,textAlign:"center"}} />}
+                      </div>
+                    </InputField>
+                    {form.socks>0 && <InputField label="Socks Amount" icon="💰">
+                      <div style={{position:"relative"}}>
+                        <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",fontWeight:700,color:C.textMid}}>₹</span>
+                        <input className="fld" value={form.socks} type="tel" inputMode="numeric" placeholder="15"
+                          style={{paddingLeft:28,fontSize:16,fontWeight:700}}
+                          onChange={e=>set("socks",e.target.value===""?0:parseInt(e.target.value.replace(/\D/g,""))||0)} />
+                      </div>
+                    </InputField>}
+                  </div>
+                </div>
+              )}
+
+              {/* Payment */}
+              <div className="ft-form-section">
+                <SectionHeading icon="💳" label={`Payment · ₹${totalAmount.toLocaleString("en-IN")}`} />
+
+                <div style={{marginBottom:12}}>
+                  <div style={{fontSize:12,fontWeight:600,color:C.textMid,marginBottom:6}}>Playtime · ₹{parseInt(form.amount)||0}</div>
+                  <InputField label="Paid via" error={errors.playMop}>
+                    <ChipSelect options={CONFIG.MOP_OPTIONS.map(o=>({value:o.value,label:o.label}))} value={form.playMop} onChange={v=>{
+                      set("playMop",v);
+                      if(v!=="UPI + Cash"){set("playUpiAmount","");set("playCashAmount","");}
+                    }} />
+                  </InputField>
+                  {form.playMop==="UPI + Cash" && <div className="form-grid" style={{marginTop:6}}>
+                    <InputField label="UPI Amount" icon="📱">
+                      <input className="fld" value={form.playUpiAmount} type="tel" inputMode="numeric" placeholder="0"
+                        onChange={e=>{
+                          const v=e.target.value.replace(/\D/g,"");
+                          const playAmt=parseInt(form.amount)||0;
+                          set("playUpiAmount",v);
+                          set("playCashAmount",String(Math.max(0,playAmt-(parseInt(v)||0))));
+                        }} />
+                    </InputField>
+                    <InputField label="Cash Amount" icon="💵">
+                      <input className="fld" value={form.playCashAmount} type="tel" inputMode="numeric" placeholder="0"
+                        onChange={e=>{
+                          const v=e.target.value.replace(/\D/g,"");
+                          const playAmt=parseInt(form.amount)||0;
+                          set("playCashAmount",v);
+                          set("playUpiAmount",String(Math.max(0,playAmt-(parseInt(v)||0))));
+                        }} />
+                    </InputField>
+                  </div>}
+                </div>
+
+                {socksCharge > 0 && <div>
+                  <div style={{fontSize:12,fontWeight:600,color:C.textMid,marginBottom:6}}>Socks · ₹{socksCharge}</div>
+                  <InputField label="Paid via" error={errors.socksMop}>
+                    <ChipSelect options={CONFIG.MOP_OPTIONS.map(o=>({value:o.value,label:o.label}))} value={form.socksMop} onChange={v=>{
+                      set("socksMop",v);
+                      if(v!=="UPI + Cash"){set("socksUpiAmount","");set("socksCashAmount","");}
+                    }} />
+                  </InputField>
+                  {form.socksMop==="UPI + Cash" && <div className="form-grid" style={{marginTop:6}}>
+                    <InputField label="UPI Amount" icon="📱">
+                      <input className="fld" value={form.socksUpiAmount} type="tel" inputMode="numeric" placeholder="0"
+                        onChange={e=>{
+                          const v=e.target.value.replace(/\D/g,"");
+                          set("socksUpiAmount",v);
+                          set("socksCashAmount",String(Math.max(0,socksCharge-(parseInt(v)||0))));
+                        }} />
+                    </InputField>
+                    <InputField label="Cash Amount" icon="💵">
+                      <input className="fld" value={form.socksCashAmount} type="tel" inputMode="numeric" placeholder="0"
+                        onChange={e=>{
+                          const v=e.target.value.replace(/\D/g,"");
+                          set("socksCashAmount",v);
+                          set("socksUpiAmount",String(Math.max(0,socksCharge-(parseInt(v)||0))));
+                        }} />
+                    </InputField>
+                  </div>}
+                </div>}
+              </div>
+            </div>
+
+            {/* Pinned submit footer */}
+            <div className="ft-form-footer">
+              <div className="ft-form-footer-total">
+                <span style={{fontSize:12,color:C.textMid}}>Total</span>
+                <span style={{fontSize:22,fontWeight:800}}>₹{totalAmount.toLocaleString("en-IN")}</span>
+              </div>
+              <button className="ft-btn-primary ft-btn-primary--lg" disabled={saving}
+                onClick={editTarget ? handleUpdateSubmit : submitEntry}>
+                {editTarget ? "Update entry" : "Save entry"}
+              </button>
+            </div>
+          </div>
+        )}
+
+      </div>
+
+      {/* ── Bottom Tab Bar (mobile) ── */}
+      {screen === "home" && (
+        <nav className="ft-tabs">
+          <button className={`ft-tab${tab==="today"?" ft-tab--active":""}`} onClick={()=>switchTab("today")}>
+            <TabIconToday active={tab==="today"} />
+            <span>Today</span>
+          </button>
+          <button className={`ft-tab${tab==="entries"?" ft-tab--active":""}`} onClick={()=>switchTab("entries")}>
+            <TabIconEntries active={tab==="entries"} />
+            <span>Entries</span>
+          </button>
+          <button className={`ft-tab${tab==="birthdays"?" ft-tab--active":""}`} onClick={()=>switchTab("birthdays")}>
+            <TabIconBirthdays active={tab==="birthdays"} />
+            <span>Birthdays</span>
+          </button>
+          <button className={`ft-tab${tab==="more"?" ft-tab--active":""}`} onClick={()=>setMoreOpen(!moreOpen)}>
+            <TabIconMore active={tab==="more"} />
+            <span>More</span>
+          </button>
+        </nav>
+      )}
+
+      {/* ── More menu (bottom sheet) ── */}
+      {moreOpen && <>
+        <div style={{position:"fixed",inset:0,zIndex:90,background:"rgba(0,0,0,.3)"}} onClick={()=>setMoreOpen(false)} />
+        <div className="ft-more-menu ft-more-menu--bottom">
+          {[
+            {key:"cash-register",icon:"💰",label:"Cash Register"},
+            {key:"expenses",icon:"📊",label:"Profit / Loss"},
+            {key:"staff",icon:"👥",label:"Staff & Salary"},
+            {key:"attendance",icon:"📋",label:"Attendance"},
+          ].map(item => (
+            <button key={item.key} className={`ft-more-item${section===item.key?" ft-more-item--active":""}`}
+              onClick={()=>switchSection(item.key)}>
+              <span>{item.icon}</span>{item.label}
+            </button>
+          ))}
         </div>
       </>}
 
-      {/* ══════════ BIRTHDAY ENQUIRY ══════════ */}
-      {enquiry && <div className="overlay" onClick={()=>!enquirySaving&&setEnquiry(null)}>
-        <div className="modal" style={{maxWidth:460,textAlign:"left",padding:"20px"}} onClick={e=>e.stopPropagation()}>
+      {/* ══════════ POPUPS ══════════ */}
+
+      {/* Enquiry */}
+      {enquiry && <div className="ft-confirm-overlay" onClick={()=>!enquirySaving&&setEnquiry(null)}>
+        <div className="ft-confirm-dialog" style={{maxWidth:460,textAlign:"left"}} onClick={e=>e.stopPropagation()}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
-            <span className="card-title">🎂 Birthday enquiry</span>
-            <button className="btn btn-sm btn-icon" onClick={()=>setEnquiry(null)} disabled={enquirySaving} aria-label="Close">✕</button>
+            <span style={{fontWeight:700,fontSize:15}}>Birthday enquiry</span>
+            <button className="ft-entry-act-btn" onClick={()=>setEnquiry(null)} disabled={enquirySaving}>✕</button>
           </div>
           <div className="form-grid">
             <InputField label="Parent Name" icon="👤">
@@ -987,13 +1287,11 @@ function App() {
               <input className="fld" value={enquiry.kidName} placeholder="e.g. Aarav"
                 onChange={e=>setEnquiry({...enquiry,kidName:e.target.value})} />
             </InputField>
-            <InputField label="Kid's Date of Birth" icon="🎂">
-              <input className="fld" value={enquiry.dob} type="date"
-                onChange={e=>setEnquiry({...enquiry,dob:e.target.value})} />
+            <InputField label="Kid's DOB" icon="🎂">
+              <input className="fld" value={enquiry.dob} type="date" onChange={e=>setEnquiry({...enquiry,dob:e.target.value})} />
             </InputField>
             <InputField label="Preferred Party Date" icon="📅">
-              <input className="fld" value={enquiry.preferredDate} type="date"
-                onChange={e=>setEnquiry({...enquiry,preferredDate:e.target.value})} />
+              <input className="fld" value={enquiry.preferredDate} type="date" onChange={e=>setEnquiry({...enquiry,preferredDate:e.target.value})} />
             </InputField>
             <InputField label="Expected Kids" icon="👶">
               <input className="fld" value={enquiry.numKids} type="tel" inputMode="numeric" placeholder="e.g. 20"
@@ -1005,21 +1303,21 @@ function App() {
                 onChange={e=>setEnquiry({...enquiry,notes:e.target.value})} />
             </InputField>
           </div>
-          <div style={{display:"flex",gap:8,marginTop:4}}>
-            <button className="btn" onClick={()=>setEnquiry(null)} disabled={enquirySaving} style={{flex:"0 0 90px"}}>Cancel</button>
-            <button className="btn btn-primary" onClick={saveEnquiry} disabled={enquirySaving} style={{flex:1}}>
-              {enquirySaving?"Saving…":"Save enquiry"}
+          <div style={{display:"flex",gap:8,marginTop:12}}>
+            <button className="ft-btn-secondary" onClick={()=>setEnquiry(null)} disabled={enquirySaving} style={{flex:"0 0 90px"}}>Cancel</button>
+            <button className="ft-btn-primary" onClick={saveEnquiry} disabled={enquirySaving} style={{flex:1}}>
+              {enquirySaving?"Saving...":"Save enquiry"}
             </button>
           </div>
         </div>
       </div>}
 
-      {/* ══════════ EXPENSE POPUP ══════════ */}
-      {expensePopup && <div className="overlay" onClick={()=>!expenseSaving&&setExpensePopup(null)}>
-        <div className="modal" style={{maxWidth:400,textAlign:"left",padding:"20px"}} onClick={e=>e.stopPropagation()}>
+      {/* Expense */}
+      {expensePopup && <div className="ft-confirm-overlay" onClick={()=>!expenseSaving&&setExpensePopup(null)}>
+        <div className="ft-confirm-dialog" style={{maxWidth:400,textAlign:"left"}} onClick={e=>e.stopPropagation()}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
-            <span className="card-title">+ New Expense</span>
-            <button className="btn btn-sm btn-icon" onClick={()=>setExpensePopup(null)} disabled={expenseSaving} aria-label="Close">✕</button>
+            <span style={{fontWeight:700,fontSize:15}}>New Expense</span>
+            <button className="ft-entry-act-btn" onClick={()=>setExpensePopup(null)} disabled={expenseSaving}>✕</button>
           </div>
           <div className="form-grid">
             <InputField label="Amount" icon="₹">
@@ -1041,22 +1339,21 @@ function App() {
                 onChange={e=>setExpensePopup({...expensePopup,date:e.target.value})} />
             </InputField>
           </div>
-          <div style={{display:"flex",gap:8,marginTop:4}}>
-            <button className="btn" onClick={()=>setExpensePopup(null)} disabled={expenseSaving} style={{flex:"0 0 90px"}}>Cancel</button>
-            <button className="btn btn-primary" onClick={handleSaveExpense} disabled={expenseSaving} style={{flex:1}}>
-              {expenseSaving?"Saving…":"Save expense"}
+          <div style={{display:"flex",gap:8,marginTop:12}}>
+            <button className="ft-btn-secondary" onClick={()=>setExpensePopup(null)} disabled={expenseSaving} style={{flex:"0 0 90px"}}>Cancel</button>
+            <button className="ft-btn-primary" onClick={handleSaveExpense} disabled={expenseSaving} style={{flex:1}}>
+              {expenseSaving?"Saving...":"Save expense"}
             </button>
           </div>
         </div>
       </div>}
 
-
-      {/* ══════════ MONTHLY EXPENSE POPUP ══════════ */}
-      {monthlyExpPopup && <div className="overlay" onClick={()=>!monthlyExpSaving&&setMonthlyExpPopup(null)}>
-        <div className="modal" style={{maxWidth:400,textAlign:"left",padding:"20px"}} onClick={e=>e.stopPropagation()}>
+      {/* Monthly Expense */}
+      {monthlyExpPopup && <div className="ft-confirm-overlay" onClick={()=>!monthlyExpSaving&&setMonthlyExpPopup(null)}>
+        <div className="ft-confirm-dialog" style={{maxWidth:400,textAlign:"left"}} onClick={e=>e.stopPropagation()}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
-            <span className="card-title">+ Monthly Expense</span>
-            <button className="btn btn-sm btn-icon" onClick={()=>setMonthlyExpPopup(null)} disabled={monthlyExpSaving} aria-label="Close">✕</button>
+            <span style={{fontWeight:700,fontSize:15}}>Monthly Expense</span>
+            <button className="ft-entry-act-btn" onClick={()=>setMonthlyExpPopup(null)} disabled={monthlyExpSaving}>✕</button>
           </div>
           <div style={{fontSize:12,color:C.textMid,fontWeight:600,marginBottom:12}}>
             Adding to {MONTH_NAMES[(monthlyExpMonth||1)-1]} {monthlyExpYear}
@@ -1077,23 +1374,23 @@ function App() {
                 onChange={e=>setMonthlyExpPopup({...monthlyExpPopup,description:e.target.value})} />
             </InputField>
           </div>
-          <div style={{display:"flex",gap:8,marginTop:4}}>
-            <button className="btn" onClick={()=>setMonthlyExpPopup(null)} disabled={monthlyExpSaving} style={{flex:"0 0 90px"}}>Cancel</button>
-            <button className="btn btn-primary" onClick={handleSaveMonthlyExpense} disabled={monthlyExpSaving} style={{flex:1}}>
-              {monthlyExpSaving?"Saving…":"Save expense"}
+          <div style={{display:"flex",gap:8,marginTop:12}}>
+            <button className="ft-btn-secondary" onClick={()=>setMonthlyExpPopup(null)} disabled={monthlyExpSaving} style={{flex:"0 0 90px"}}>Cancel</button>
+            <button className="ft-btn-primary" onClick={handleSaveMonthlyExpense} disabled={monthlyExpSaving} style={{flex:1}}>
+              {monthlyExpSaving?"Saving...":"Save expense"}
             </button>
           </div>
         </div>
       </div>}
 
-      {/* ══════════ STAFF POPUP ══════════ */}
+      {/* Staff Popup */}
       {staffPopup && <StaffFormPopup
         staff={staffPopup.id ? staffPopup : null}
         onSave={handleAddStaff}
         onCancel={()=>setStaffPopup(null)}
         saving={staffSaving} />}
 
-      {/* ══════════ CONFIRM ACTION DIALOG ══════════ */}
+      {/* Confirm Dialog */}
       {confirmAction && <ConfirmDialog
         message={confirmAction.message}
         needsPassword={confirmAction.needsPassword}
@@ -1101,318 +1398,6 @@ function App() {
         onConfirm={()=>{confirmAction.onConfirm();setConfirmAction(null);}}
         onCancel={()=>setConfirmAction(null)} />}
 
-      {/* ══════════ FORM ══════════ */}
-      {screen==="form" && <>
-        <header className="appbar">
-          <div className="container container--entry appbar-inner">
-            <div className="appbar-brand">
-              <img className="appbar-logo" src="icons/logo-header.png" alt="" />
-              <span className="card-title">
-                {editTarget?"Edit entry":`${CONFIG.APP_NAME} — Booking`}
-              </span>
-            </div>
-            <div className="appbar-actions">
-              {!editTarget && <IconMenu trigger={typeMeta.icon} title="Change entry type" activeValue={entryType}
-                items={CONFIG.ENTRY_TYPES.map(t=>({
-                  value:t.key, icon:t.icon, label:t.label,
-                  onSelect:()=>{ if(t.key!==entryType) setFormType(t.key); },
-                }))} />}
-              <button className="btn btn-sm" onClick={resetForm} title="Dashboard">📊 Dashboard</button>
-            </div>
-          </div>
-        </header>
-
-        {/* Form Body */}
-        <div ref={containerRef} className="container container--entry page" style={{paddingBottom:0}}>
-          <div style={{animation:shakeStep?"shake .4s ease":"springIn .3s ease"}}>
-
-            {/* ── Step 0 — Customer + Booking Details ── */}
-            {step===0&&<>
-              <div className="entry-columns">
-                <div className="entry-col">
-                  <div className="section">
-                    <SectionHeading label="Customer" />
-                    <div className="form-grid">
-                      <InputField label="Mobile" icon="📱" error={errors.phone}>
-                        <div style={{position:"relative"}}>
-                          <input className={`fld${errors.phone?" is-error":""}`} value={form.phone} placeholder="10-digit mobile" type="tel" inputMode="numeric"
-                            onChange={e=>{const v=e.target.value.replace(/\D/g,"").slice(0,10);set("phone",v);if(v.length===10)lookupByPhone(v);}} />
-                          {phoneLookupLoading && <div style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)"}}><Spinner size={16} /></div>}
-                        </div>
-                      </InputField>
-                      <InputField label="No. of Kids" icon="👶">
-                        <NumberStepper value={form.numKids} onChange={v=>set("numKids",v)} min={1} max={10} />
-                      </InputField>
-                    </div>
-
-                    {Array.from({length:form.numKids},(_,i)=>(
-                      <div key={i} className="kid-group">
-                        {form.numKids>1 && <div className="kid-group-label">Kid {i+1}</div>}
-                        <InputField label={form.numKids>1?"Name":"Kids Name"} error={i===0?errors.customerName:undefined}>
-                          <input className={`fld${i===0&&errors.customerName?" is-error":""}`}
-                            value={i===0?form.customerName:((form.kidNames&&form.kidNames[i])||"")}
-                            placeholder={`e.g. ${["Priya","Arjun","Meera","Ravi","Ananya"][i%5]}`}
-                            onChange={e=>{
-                              if(i===0) set("customerName",e.target.value);
-                              else { const names=[...(form.kidNames||[])]; names[i]=e.target.value; set("kidNames",names); }
-                            }} />
-                        </InputField>
-                        <InputField label="DOB">
-                          <input className="fld"
-                            value={i===0?form.dob:((form.dobs&&form.dobs[i])||"")}
-                            type="date"
-                            onChange={e=>{
-                              if(i===0) set("dob",e.target.value);
-                              else { const d=[...(form.dobs||[])]; d[i]=e.target.value; set("dobs",d); }
-                            }} />
-                        </InputField>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="entry-col">
-                  <div className="section">
-                    <SectionHeading icon={typeMeta.icon} label={isPlayArea?"Playtime":`${typeMeta.label} Booking`} />
-                    <div className="form-grid">
-                      <InputField label="Duration" icon="⏱️">
-                        <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                          <Dropdown flex={1}
-                            value={form.hoursMode==="custom"?"custom":String(form.hours)}
-                            options={[...CONFIG.HOUR_OPTIONS.map(o=>({value:o.value,label:o.label})),{value:"custom",label:"Custom…"}]}
-                            onChange={v=>{
-                              if(v==="custom"){ set("hoursMode","custom"); }
-                              else { set("hoursMode","preset"); setHours(v,isPlayArea); }
-                            }} />
-                          {form.hoursMode==="custom" &&
-                            <input className="fld" value={form.hours} onChange={e=>setHours(e.target.value.replace(/[^\d.]/g,""),isPlayArea)}
-                              placeholder="hrs" type="tel" inputMode="decimal" style={{width:74,flexShrink:0,textAlign:"center"}} />}
-                        </div>
-                        <div className="time-row">
-                          <span title="Start time">🕐</span>
-                          <input className="fld fld-compact" value={form.timeIn} onChange={e=>set("timeIn",e.target.value)} type="time" />
-                          {form.timeIn && <span>→ {formatTime12(computeTimeOut(form.timeIn,form.hours))}</span>}
-                        </div>
-                      </InputField>
-                      <InputField label="Date" icon="📅">
-                        <input className="fld" type="date" value={form.date} onChange={e=>set("date",e.target.value)} />
-                      </InputField>
-
-                      <InputField label={isPlayArea?"Playtime Amount":"Amount"} icon="💰" error={errors.amount}>
-                        <div style={{position:"relative"}}>
-                          <span className="rupee-prefix">₹</span>
-                          <input className={`fld fld-lg${errors.amount?" is-error":""}`} value={form.amount} type="tel" inputMode="numeric" placeholder="300"
-                            onChange={e=>set("amount",e.target.value.replace(/\D/g,""))} />
-                        </div>
-                        {isPlayArea && form.numKids>1 && <div className="field-hint">{form.numKids} kids × ₹{computeAmountForHours(form.hours)} per kid</div>}
-                        {!isPlayArea && <div className="field-hint">Party pricing is set manually.</div>}
-                      </InputField>
-                    </div>
-                  </div>
-
-                  {isPlayArea && <div className="section">
-                    <SectionHeading icon="🧦" label="Socks" />
-                    <div className="form-grid">
-                      <InputField label="Pairs">
-                        <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                          <Dropdown flex={1}
-                            value={form.sockMode==="custom"?"custom":String(form.sockCount||0)}
-                            options={[...CONFIG.SOCK_COUNT_OPTIONS.map(n=>({value:String(n),label:n===0?"None":`${n} pair${n>1?"s":""}`})),{value:"custom",label:"Custom…"}]}
-                            onChange={v=>{
-                              if(v==="custom"){ set("sockMode","custom"); }
-                              else { set("sockMode","preset"); setSockCount(parseInt(v)); }
-                            }} />
-                          {form.sockMode==="custom" &&
-                            <input className="fld" value={form.sockCount||""} placeholder="pairs" type="tel" inputMode="numeric"
-                              onChange={e=>{const v=e.target.value.replace(/\D/g,"");setSockCount(v===""?0:parseInt(v));}}
-                              style={{width:74,flexShrink:0,textAlign:"center"}} />}
-                        </div>
-                      </InputField>
-                      {form.socks>0&&<InputField label="Socks Amount" icon="💰">
-                        <div style={{position:"relative"}}>
-                          <span className="rupee-prefix">₹</span>
-                          <input className="fld fld-lg" value={form.socks} type="tel" inputMode="numeric" placeholder="15"
-                            onChange={e=>set("socks",e.target.value===""?0:parseInt(e.target.value.replace(/\D/g,""))||0)} />
-                        </div>
-                      </InputField>}
-                    </div>
-                  </div>}
-                </div>
-              </div>
-            </>}
-
-            {/* ── Step 1 — Payment ── */}
-            {step===1&&<>
-              <div style={{maxWidth:540}}>
-                <div className="card card-pad total-card" style={{marginBottom:24}}>
-                  <div>
-                    <div className="stat-label total-label">Total</div>
-                    <div className="total-breakdown">₹{form.amount} playtime{socksCharge>0?` + ₹${socksCharge} socks`:""}</div>
-                  </div>
-                  <div className="total-value">₹{totalAmount.toLocaleString("en-IN")}</div>
-                </div>
-
-                <div className="section">
-                  <SectionHeading icon="💳" label={`Playtime Payment · ₹${parseInt(form.amount)||0}`} />
-                  <div className="form-grid">
-                    <InputField label="Paid via" error={errors.playMop} className="field-tight">
-                      <ChipSelect options={CONFIG.MOP_OPTIONS.map(o=>({value:o.value,label:o.label}))} value={form.playMop} onChange={v=>{
-                        set("playMop",v);
-                        if(v!=="UPI + Cash"){set("playUpiAmount","");set("playCashAmount","");}
-                      }} />
-                    </InputField>
-                    {form.playMop==="UPI + Cash"&&<>
-                      <InputField label="UPI Amount" icon="📱">
-                        <div style={{position:"relative"}}>
-                          <span className="rupee-prefix">₹</span>
-                          <input className="fld fld-lg" value={form.playUpiAmount} type="tel" inputMode="numeric" placeholder="0"
-                            onChange={e=>{
-                              const v=e.target.value.replace(/\D/g,"");
-                              const playAmt=parseInt(form.amount)||0;
-                              set("playUpiAmount",v);
-                              set("playCashAmount",String(Math.max(0,playAmt-(parseInt(v)||0))));
-                            }} />
-                        </div>
-                      </InputField>
-                      <InputField label="Cash Amount" icon="💵">
-                        <div style={{position:"relative"}}>
-                          <span className="rupee-prefix">₹</span>
-                          <input className="fld fld-lg" value={form.playCashAmount} type="tel" inputMode="numeric" placeholder="0"
-                            onChange={e=>{
-                              const v=e.target.value.replace(/\D/g,"");
-                              const playAmt=parseInt(form.amount)||0;
-                              set("playCashAmount",v);
-                              set("playUpiAmount",String(Math.max(0,playAmt-(parseInt(v)||0))));
-                            }} />
-                        </div>
-                      </InputField>
-                    </>}
-                  </div>
-                </div>
-
-                {socksCharge>0 && <div className="section">
-                  <SectionHeading icon="🧦" label={`Socks Payment · ₹${socksCharge}`} />
-                  <div className="form-grid">
-                    <InputField label="Paid via" error={errors.socksMop} className="field-tight">
-                      <ChipSelect options={CONFIG.MOP_OPTIONS.map(o=>({value:o.value,label:o.label}))} value={form.socksMop} onChange={v=>{
-                        set("socksMop",v);
-                        if(v!=="UPI + Cash"){set("socksUpiAmount","");set("socksCashAmount","");}
-                      }} />
-                    </InputField>
-                    {form.socksMop==="UPI + Cash"&&<>
-                      <InputField label="UPI Amount" icon="📱">
-                        <div style={{position:"relative"}}>
-                          <span className="rupee-prefix">₹</span>
-                          <input className="fld fld-lg" value={form.socksUpiAmount} type="tel" inputMode="numeric" placeholder="0"
-                            onChange={e=>{
-                              const v=e.target.value.replace(/\D/g,"");
-                              set("socksUpiAmount",v);
-                              set("socksCashAmount",String(Math.max(0,socksCharge-(parseInt(v)||0))));
-                            }} />
-                        </div>
-                      </InputField>
-                      <InputField label="Cash Amount" icon="💵">
-                        <div style={{position:"relative"}}>
-                          <span className="rupee-prefix">₹</span>
-                          <input className="fld fld-lg" value={form.socksCashAmount} type="tel" inputMode="numeric" placeholder="0"
-                            onChange={e=>{
-                              const v=e.target.value.replace(/\D/g,"");
-                              set("socksCashAmount",v);
-                              set("socksUpiAmount",String(Math.max(0,socksCharge-(parseInt(v)||0))));
-                            }} />
-                        </div>
-                      </InputField>
-                    </>}
-                  </div>
-                </div>}
-              </div>
-            </>}
-
-            {/* ── Step 2 — Invoice Review ── */}
-            {step===2&&<>
-              <div className="invoice">
-                <div className="invoice-header">
-                  <div>
-                    <div className="invoice-brand">{CONFIG.APP_NAME}</div>
-                    <div className="invoice-meta">{formatDateDDMMYYYY(form.date)} · {formatTime12(form.timeIn)}</div>
-                  </div>
-                  <div className="invoice-badge">{typeMeta.icon} {typeMeta.label}</div>
-                </div>
-
-                <div className="invoice-section">
-                  <div className="invoice-section-title">Customer</div>
-                  <div className="invoice-customer">
-                    <div className="invoice-name">{form.customerName||"—"}</div>
-                    {form.phone && <div className="invoice-phone">{form.phone}</div>}
-                    {form.numKids>1 && <div className="invoice-kids">
-                      {[form.customerName,...(form.kidNames||[]).slice(1,form.numKids)].filter(Boolean).map((n,i)=>
-                        <span key={i} className="invoice-kid-tag">{n}{form.dobs&&form.dobs[i]?` · ${form.dobs[i]}`:i===0&&form.dob?` · ${form.dob}`:""}</span>
-                      )}
-                    </div>}
-                    {form.numKids<=1 && form.dob && <div className="invoice-phone">DOB: {form.dob}</div>}
-                  </div>
-                </div>
-
-                <div className="invoice-section">
-                  <div className="invoice-section-title">Booking Details</div>
-                  <table className="invoice-table">
-                    <thead><tr><th>Item</th><th>Details</th><th>Amount</th></tr></thead>
-                    <tbody>
-                      <tr>
-                        <td>{isPlayArea?"Playtime":"Booking"}</td>
-                        <td>
-                          {form.numKids>1?`${form.numKids} kids × `:""}{formatHoursLabel(form.hours)}
-                          <div className="invoice-cell-sub">{formatTime12(form.timeIn)} → {formatTime12(computeTimeOut(form.timeIn,form.hours))}</div>
-                        </td>
-                        <td className="invoice-amt">₹{parseInt(form.amount||0).toLocaleString("en-IN")}</td>
-                      </tr>
-                      {socksCharge>0 && <tr>
-                        <td>Socks</td>
-                        <td>{form.sockCount} pair{form.sockCount>1?"s":""}</td>
-                        <td className="invoice-amt">₹{socksCharge}</td>
-                      </tr>}
-                    </tbody>
-                  </table>
-                </div>
-
-                <div className="invoice-section">
-                  <div className="invoice-section-title">Payment</div>
-                  <div className="invoice-pay-rows">
-                    <div className="invoice-pay-row">
-                      <span className="invoice-pay-item">Playtime</span>
-                      {form.playMop==="UPI + Cash"
-                        ?<span className="invoice-pay-detail">UPI ₹{form.playUpiAmount||0} + Cash ₹{form.playCashAmount||0}</span>
-                        :<span className="invoice-pay-detail">{form.playMop}</span>}
-                    </div>
-                    {socksCharge>0 && <div className="invoice-pay-row">
-                      <span className="invoice-pay-item">Socks</span>
-                      {form.socksMop==="UPI + Cash"
-                        ?<span className="invoice-pay-detail">UPI ₹{form.socksUpiAmount||0} + Cash ₹{form.socksCashAmount||0}</span>
-                        :<span className="invoice-pay-detail">{form.socksMop}</span>}
-                    </div>}
-                  </div>
-                </div>
-
-                <div className="invoice-footer">
-                  <div className="invoice-total">
-                    <span className="invoice-total-label">Total</span>
-                    <span className="invoice-total-value">₹{totalAmount.toLocaleString("en-IN")}</span>
-                  </div>
-                </div>
-              </div>
-            </>}
-
-            {/* Actions */}
-            <div className="form-actions">
-              {step>0&&<button className="btn" onClick={prev}>Back</button>}
-              <button className={`btn ${step===LAST_STEP?"btn-success":"btn-primary"}`} disabled={saving}
-                onClick={step===LAST_STEP?(editTarget?handleUpdateSubmit:submitEntry):next}>
-                {step===LAST_STEP?(editTarget?"✓ Update entry":"✓ Save entry"):`Next → ${STEP_LABELS[step+1]}`}
-              </button>
-            </div>
-          </div>
-        </div>
-      </>}
     </div>
   );
 }
