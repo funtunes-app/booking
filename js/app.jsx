@@ -893,7 +893,7 @@ function App() {
                 rangeStart={rangeStart} rangeEnd={rangeEnd}
                 onModeChange={onCalModeChange} onDateChange={onCalDateChange}
                 onRangeChange={onCalRangeChange} onToday={onCalToday} />
-              <div style={{display:"flex",alignItems:"center",gap:8,marginTop:8}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginTop:8,padding:"0 22px"}}>
                 {!loading && <span style={{fontSize:12,color:C.textLight}}>{todayEntries.length} entries</span>}
                 <button className="ft-chip" onClick={()=>fetchEntries()} disabled={loading}>Refresh</button>
               </div>
@@ -915,7 +915,7 @@ function App() {
                 <button className="ft-chip" onClick={()=>fetchBirthdays()} disabled={birthdaysLoading}>Refresh</button>
               </div>
             </div>
-            <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
+            <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap",padding:"0 22px"}}>
               <Dropdown flex={1.5} value={birthdayMonth} onChange={changeMonth}
                 options={MONTH_NAMES.map((m,i)=>({value:i+1,label:m}))} />
               <Dropdown flex={1} value={birthdayYear} onChange={changeYear}
@@ -939,14 +939,14 @@ function App() {
                     rangeStart={rangeStart} rangeEnd={rangeEnd}
                     onModeChange={onCalModeChange} onDateChange={onCalDateChange}
                     onRangeChange={onCalRangeChange} onToday={onCalToday} />
-                  <div style={{display:"flex",alignItems:"center",gap:8,marginTop:8}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginTop:8,padding:"0 22px"}}>
                     {!loading && <span style={{fontSize:12,color:C.textLight}}>{todayEntries.length} entries</span>}
                     <button className="ft-chip" onClick={()=>setExpensePopup({date:filterDate,amount:"",description:"",category:"misc"})}>+ Expense</button>
                     <button className="ft-chip" onClick={()=>fetchEntries()} disabled={loading}>Refresh</button>
                   </div>
                 </div>
                 {loading ? <div className="ft-empty"><Spinner size={24} /><div style={{marginTop:10}}>Loading...</div></div>
-                  : <StatsDashboard entries={todayEntries} expenses={expenses} onDeleteExpense={handleDeleteExpense} />}
+                  : <div className="ft-section-pad"><StatsDashboard entries={todayEntries} expenses={expenses} onDeleteExpense={handleDeleteExpense} /></div>}
               </>}
           </div>
         )}
@@ -959,7 +959,7 @@ function App() {
             </div>
             {!statsUnlocked
               ? <PasswordGate onUnlock={()=>{setStatsUnlocked(true);fetchMonthlyExpenses();fetchPnl();}} />
-              : <>
+              : <div className="ft-section-pad">
                 <PnLReport entries={pnlEntries} expenses={pnlExpenses} monthlyExpenses={monthlyExp}
                   month={monthlyExpMonth} year={monthlyExpYear}
                   onChangeMonth={onPnlSectionMonthChange} onChangeYear={onPnlSectionYearChange}
@@ -974,7 +974,7 @@ function App() {
                     loading={monthlyExpLoading}
                     hideFilter={true} />
                 </div>
-              </>}
+              </div>}
           </div>
         )}
 
@@ -986,12 +986,12 @@ function App() {
             </div>
             {!statsUnlocked
               ? <PasswordGate onUnlock={()=>{setStatsUnlocked(true);fetchStaffData();}} />
-              : <StaffSection
+              : <div className="ft-section-pad"><StaffSection
                   staffList={staffList} attendance={staffAtt}
                   month={staffMonth} year={staffYear}
                   onChangeMonth={onStaffMonthChange} onChangeYear={onStaffYearChange}
                   onAddStaff={()=>setStaffPopup({})} onEditStaff={s=>setStaffPopup(s)} onDeleteStaff={handleDeleteStaff}
-                  loading={staffLoading} />}
+                  loading={staffLoading} /></div>}
           </div>
         )}
 
@@ -1001,14 +1001,14 @@ function App() {
             <div className="ft-header">
               <div className="ft-header-title">Attendance</div>
             </div>
-            <AttendanceSection
+            <div className="ft-section-pad"><AttendanceSection
               staffList={staffList} attendance={staffAtt}
               month={staffMonth} year={staffYear}
               attDate={staffAttDate}
               onChangeMonth={onStaffMonthChange} onChangeYear={onStaffYearChange}
               onChangeAttDate={setStaffAttDate}
               onMarkAttendance={handleMarkAttendance}
-              loading={staffLoading} saving={staffSaving} />
+              loading={staffLoading} saving={staffSaving} /></div>
           </div>
         )}
 
