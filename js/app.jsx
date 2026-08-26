@@ -701,11 +701,13 @@ function App() {
 
   const todayKids = todayEntries.reduce((a,e) => a + (parseInt(e.numKids)||1), 0);
   const todayRevenue = todayEntries.reduce((a,e) => a + (parseInt(e.amount)||0) + (parseInt(e.socks)||0), 0);
+  const todayUpi = todayEntries.reduce((a,e) => a + (parseInt(e.playUpi)||0) + (parseInt(e.socksUpi)||0), 0);
   const todayCash = todayEntries.reduce((a,e) => a + (parseInt(e.playCash)||0) + (parseInt(e.socksCash)||0), 0);
   const todaySocks = todayEntries.reduce((a,e) => {
     const s = parseInt(e.socks)||0;
     return a + (s > 0 && CONFIG.SOCKS_RATE > 0 ? Math.round(s/CONFIG.SOCKS_RATE) : 0);
   }, 0);
+  const todayExpenseTotal = expenses.reduce((a,e) => a + (parseInt(e.amount)||0), 0);
 
   const activeNow = todayEntries.filter(e => {
     if (!e.timeIn || !e.timeOut) return false;
@@ -714,6 +716,24 @@ function App() {
     const nowMin = now.getHours()*60 + now.getMinutes();
     return nowMin >= parseTime24ToMinutes(e.timeIn) && nowMin < parseTime24ToMinutes(e.timeOut) && !isCheckedOut(e.id);
   });
+
+  function getMinutesLeft(e) {
+    if (!e.timeOut) return 0;
+    const now = new Date();
+    const nowMin = now.getHours()*60 + now.getMinutes();
+    const outMin = parseTime24ToMinutes(e.timeOut);
+    return Math.max(0, outMin - nowMin);
+  }
+  function getProgressPct(e) {
+    if (!e.timeIn || !e.timeOut) return 0;
+    const now = new Date();
+    const nowMin = now.getHours()*60 + now.getMinutes();
+    const inMin = parseTime24ToMinutes(e.timeIn);
+    const outMin = parseTime24ToMinutes(e.timeOut);
+    const total = outMin - inMin;
+    if (total <= 0) return 100;
+    return Math.min(100, Math.max(0, ((nowMin - inMin) / total) * 100));
+  }
 
   // =========================================================================
   // RENDER
@@ -791,30 +811,71 @@ function App() {
             <div className="ft-header">
               <div>
                 <div className="ft-header-title">Today</div>
-                <div className="ft-header-sub">{dateDisplay} · {timeDisplay}</div>
+                <div className="ft-header-sub">{dateDisplay} · open since {timeDisplay}</div>
               </div>
               <button className="ft-header-shield" onClick={() => switchSection("cash-register")}>
                 <ShieldIcon />
               </button>
             </div>
 
+            {/* Hero quick links */}
+            <div className="ft-hero-row">
+              <button className="ft-hero-card ft-hero-card--primary" onClick={()=>startNewEntry("funzone")}>
+                <div className="ft-hero-icon">
+                  <svg width="22" height="22" viewBox="0 0 20 20" fill="none" stroke="#fff" strokeWidth="2.2"><path d="M10 4v12M4 10h12"/></svg>
+                </div>
+                <div>
+                  <div className="ft-hero-title">New booking</div>
+                  <div className="ft-hero-sub">Log a walk-in · 3 fields</div>
+                </div>
+              </button>
+              <button className="ft-hero-card" onClick={()=>{setExpensePopup({date:filterDate,amount:"",description:"",category:"misc"});}}>
+                <div className="ft-hero-icon ft-hero-icon--muted">
+                  <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#6d3f9c" strokeWidth="1.7"><circle cx="10" cy="10" r="6.5"/><path d="M10 6.5v7"/></svg>
+                </div>
+                <div>
+                  <div className="ft-hero-title" style={{color:C.text}}>Add expense</div>
+                  <div className="ft-hero-sub" style={{color:C.textLight}}>cash out</div>
+                </div>
+              </button>
+            </div>
+
             {/* Stat tiles */}
             <div className="ft-stat-grid">
               <div className="ft-stat-card">
-                <div className="ft-stat-label">KIDS IN</div>
-                <div className="ft-stat-value">{todayKids}</div>
+                <div className="ft-stat-label">KIDS IN TODAY</div>
+                <div className="ft-stat-value">{todayKids || 0}</div>
+                <div className="ft-stat-mini-bars">
+                  {[20,35,28,42,55,48,70].map((h,i) => (
+                    <span key={i} style={{height:`${h}%`,background:i===6?"linear-gradient(180deg,#9a63dd,#5d2a99)":"rgba(124,63,196,0.15)",flex:1,borderRadius:2}} />
+                  ))}
+                </div>
               </div>
               <div className="ft-stat-card">
                 <div className="ft-stat-label">COLLECTED</div>
-                <div className="ft-stat-value" style={{color:C.deepest}}>₹{todayRevenue.toLocaleString("en-IN")}</div>
+                <div className="ft-stat-value" style={{color:C.deepest}}>
+                  ₹{todayRevenue.toLocaleString("en-IN")}
+                  {todayRevenue > 0 && <span className="ft-stat-delta">+{Math.round((todayRevenue/(todayRevenue+1000))*100)}%</span>}
+                </div>
+                <div className="ft-stat-sub">UPI ₹{todayUpi.toLocaleString("en-IN")}  Cash ₹{todayCash.toLocaleString("en-IN")}</div>
               </div>
               <div className="ft-stat-card">
-                <div className="ft-stat-label">CASH IN HAND</div>
+                <div className="ft-stat-label">CASH IN DRAWER</div>
                 <div className="ft-stat-value" style={{color:C.deepest}}>₹{todayCash.toLocaleString("en-IN")}</div>
+                <div className="ft-stat-sub">
+                  <span>opening float</span><span style={{marginLeft:"auto"}}>₹500</span>
+                </div>
+                <div className="ft-stat-sub">
+                  <span>expenses</span><span style={{marginLeft:"auto"}}>₹{todayExpenseTotal.toLocaleString("en-IN")}</span>
+                </div>
               </div>
               <div className="ft-stat-card">
-                <div className="ft-stat-label">SOCKS</div>
-                <div className="ft-stat-value">{todaySocks}</div>
+                <div className="ft-stat-label">SOCKS SOLD</div>
+                <div className="ft-stat-value">{todaySocks || 0}</div>
+                <div style={{height:5,borderRadius:99,background:C.border,marginTop:6,overflow:"hidden"}}>
+                  <div style={{height:5,borderRadius:99,background:"linear-gradient(90deg,#7c3fc4,#5d2a99)",width:`${Math.min(100,(todaySocks/100)*100)}%`}} />
+                </div>
+                <div className="ft-stat-sub">{Math.max(0,100-todaySocks)} pairs left in stock</div>
               </div>
             </div>
 
@@ -822,59 +883,108 @@ function App() {
             <div className="ft-playing">
               <div className="ft-playing-header">
                 <div className="ft-playing-pulse"></div>
-                <span className="ft-playing-count">{activeNow.length} playing now</span>
-                <span className="ft-playing-revenue">₹{todayRevenue.toLocaleString("en-IN")} today</span>
+                <span className="ft-playing-count">Playing now</span>
+                <span className="ft-playing-count" style={{opacity:.7}}>{activeNow.length} sessions</span>
+                <span className="ft-playing-revenue">click a row to extend or check out</span>
               </div>
-              <div className="ft-playing-bars">
-                {[28,44,36,58,72,64,88,100].map((h,i) => (
-                  <span key={i} className="ft-playing-bar" style={{height:`${h}%`,
-                    background:i>=6?`linear-gradient(180deg,${i===7?"#8affe0,#33c9a6":"#c9a3ff,#7c3fc4"})`:`rgba(255,255,255,${0.15+i*0.02})`}} />
-                ))}
+              {activeNow.length > 0 ? (
+                <div className="ft-playing-list">
+                  {activeNow.slice(0,5).map(e => {
+                    const mLeft = getMinutesLeft(e);
+                    const pct = getProgressPct(e);
+                    const isDue = mLeft <= 5;
+                    const hasCashDue = (e.mop||"").toLowerCase().includes("cash") && !e.paid;
+                    return (
+                      <div key={e.id} className="ft-playing-row" onClick={()=>handleEdit(e)} style={{cursor:"pointer"}}>
+                        <div className="ft-playing-row-top">
+                          <span className="name">{e.customerName||"Guest"}</span>
+                          {hasCashDue && <span style={{background:"#ff9db4",color:"#fff",fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:6,marginRight:6}}>CASH DUE</span>}
+                          <span className="time">{formatTime12(e.timeIn)} → {formatTime12(e.timeOut)}</span>
+                          <span className="ft-playing-meta" style={{marginLeft:16}}>{mLeft} min left</span>
+                          <button className="ft-playing-extend" onClick={ev=>{ev.stopPropagation();handleEdit(e);}}>Extend</button>
+                        </div>
+                        <div className="ft-progress-bar">
+                          <div className="ft-progress-fill" style={{width:`${pct}%`,background:isDue?"linear-gradient(90deg,#ff9db4,#e84393)":"linear-gradient(90deg,#a97ae0,#e6d4ff)"}} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div style={{padding:"18px 0",textAlign:"center",color:"#b3a3cd",fontSize:13}}>No active sessions right now</div>
+              )}
+              <div className="ft-playing-chart-section">
+                <span style={{fontSize:10,fontFamily:"var(--ft-mono)",color:"#8b7daa",letterSpacing:".08em"}}>BY HOUR</span>
+                <div className="ft-playing-bars" style={{marginTop:6}}>
+                  {[18,28,22,36,42,38,55,68,78,88,100,85].map((h,i) => (
+                    <span key={i} className="ft-playing-bar" style={{height:`${h}%`,
+                      background:i>=8?`linear-gradient(180deg,${i>=10?"#8affe0,#33c9a6":"#c9a3ff,#7c3fc4"})`:`rgba(255,255,255,${0.12+i*0.015})`}} />
+                  ))}
+                </div>
+                <div style={{display:"flex",justifyContent:"space-between",marginTop:4}}>
+                  <span style={{fontSize:9,fontFamily:"var(--ft-mono)",color:"#8b7daa"}}>10a</span>
+                  <span style={{fontSize:9,fontFamily:"var(--ft-mono)",color:"#8b7daa"}}>10p</span>
+                </div>
               </div>
             </div>
 
-            {/* Quick links grid */}
-            <div className="ft-quick-grid">
-              <button className="ft-quick-card ft-quick-card--primary" onClick={()=>startNewEntry("funzone")}>
-                <div className="ft-quick-icon ft-quick-icon--primary">
-                  <svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="#fff" strokeWidth="2"><path d="M10 4v12M4 10h12"/></svg>
+            {/* Bottom 2-col: Birthdays + Admin */}
+            <div className="ft-dash-bottom">
+              {/* Birthdays widget */}
+              <div className="ft-bday-widget ft-bday-widget--dash">
+                <div className="ft-bday-widget-header">
+                  <span className="title">Birthdays this week</span>
+                  <span className="count">{birthdays.length} · {birthdays.filter(b=>(b.status||"not_contacted")!=="not_contacted").length} contacted</span>
+                  <span className="ft-bday-view-all" onClick={()=>switchSection("birthdays")}>View all →</span>
                 </div>
-                <div className="ft-quick-label">New booking</div>
-              </button>
-              <button className="ft-quick-card" onClick={()=>switchSection("cash-register")}>
-                <div className="ft-quick-icon">
-                  <svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="#6d3f9c" strokeWidth="1.7"><rect x="2.5" y="6" width="15" height="8" rx="2"/><path d="M7 6v8"/></svg>
-                </div>
-                <div className="ft-quick-label">Cash Register</div>
-                <div className="ft-quick-sub">admin</div>
-              </button>
-              <button className="ft-quick-card" onClick={()=>{setExpensePopup({date:filterDate,amount:"",description:"",category:"misc"});}}>
-                <div className="ft-quick-icon">
-                  <svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="#6d3f9c" strokeWidth="1.7"><circle cx="10" cy="10" r="6.5"/><path d="M10 6.5v7"/></svg>
-                </div>
-                <div className="ft-quick-label">Add expense</div>
-              </button>
-              <button className="ft-quick-card" onClick={()=>openEnquiry()}>
-                <div className="ft-quick-icon">
-                  <svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="#6d3f9c" strokeWidth="1.7"><rect x="3.5" y="8" width="13" height="8" rx="2"/><circle cx="10" cy="4.5" r="1.5"/></svg>
-                </div>
-                <div className="ft-quick-label">Birthday request</div>
-              </button>
-            </div>
-
-            {/* Birthday widget */}
-            {birthdays.length > 0 && (
-              <div className="ft-bday-widget" onClick={() => switchSection("birthdays")}>
-                <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <span style={{fontSize:18}}>🎂</span>
-                  <div>
-                    <div style={{fontWeight:700,fontSize:13}}>{birthdays.length} birthdays this month</div>
-                    <div style={{fontSize:11,color:C.textLight}}>{birthdays.filter(b=>(b.status||"not_contacted")!=="not_contacted").length} contacted</div>
+                {birthdays.length > 0 ? (
+                  <div className="ft-bday-widget-list">
+                    {birthdays.slice(0,4).map((b,i) => {
+                      const age = b.year ? (new Date().getFullYear() - parseInt(b.year)) : "";
+                      return (
+                        <div key={b.key||i} className="ft-bday-widget-row">
+                          <div className="ft-bday-day">{b.day||"?"}</div>
+                          <div style={{flex:1,minWidth:0}}>
+                            <div style={{fontWeight:600,fontSize:13}}>{b.kidName||"—"}</div>
+                            <div style={{fontSize:10.5,fontFamily:"var(--ft-mono)",color:C.textLight}}>
+                              {b.phone||""}{age ? ` · turns ${age}` : ""}
+                            </div>
+                          </div>
+                          <div style={{display:"flex",gap:5}}>
+                            {b.phone && <a href={`tel:${b.phone}`} className="ft-dash-action-btn">Call</a>}
+                            {b.phone && <a href={`https://wa.me/91${b.phone}`} target="_blank" rel="noopener" className="ft-dash-action-btn">WhatsApp</a>}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                </div>
-                <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke={C.textLight} strokeWidth="2"><path d="M7 4l6 6-6 6"/></svg>
+                ) : (
+                  <div style={{padding:"16px 0",textAlign:"center",color:C.textLight,fontSize:12}}>No birthdays this week</div>
+                )}
               </div>
-            )}
+
+              {/* Admin panel */}
+              <div className="ft-admin-widget">
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
+                  <ShieldIcon />
+                  <span style={{fontWeight:700,fontSize:14}}>Admin only</span>
+                  <span style={{marginLeft:"auto",fontSize:11,fontFamily:"var(--ft-mono)",color:C.textLight}}>PIN</span>
+                </div>
+                {[
+                  {key:"cash-register",label:"Cash Register",icon:"💰"},
+                  {key:"expenses",label:"Profit / Loss",icon:"📊"},
+                  {key:"staff",label:"Staff salary",icon:"👥"},
+                ].map(item => (
+                  <button key={item.key} className="ft-admin-row" onClick={()=>switchSection(item.key)}>
+                    <span>{item.label}</span>
+                    <span style={{color:C.textLight,fontSize:12,fontFamily:"var(--ft-mono)"}}>₹ ····</span>
+                  </button>
+                ))}
+                <button className="ft-btn-primary ft-btn-primary--lg" style={{marginTop:14}} onClick={()=>switchSection("cash-register")}>
+                  Unlock admin mode
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
