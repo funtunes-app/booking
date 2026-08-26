@@ -886,28 +886,28 @@ function App() {
               <div className="ft-playing-header">
                 <div className="ft-playing-pulse"></div>
                 <span className="ft-playing-count">Playing now</span>
-                <span className="ft-playing-count" style={{opacity:.7}}>{activeNow.length} sessions</span>
+                <span className="ft-playing-count" style={{opacity:.6}}>{activeNow.length} sessions</span>
                 <span className="ft-playing-revenue">click a row to extend or check out</span>
               </div>
               {activeNow.length > 0 ? (
                 <div className="ft-playing-list">
-                  {activeNow.slice(0,5).map(e => {
+                  {activeNow.slice(0,6).map(e => {
                     const mLeft = getMinutesLeft(e);
                     const pct = getProgressPct(e);
                     const isDue = mLeft <= 5;
                     const hasCashDue = (e.mop||"").toLowerCase().includes("cash") && !e.paid;
                     return (
                       <div key={e.id} className="ft-playing-row" onClick={()=>handleEdit(e)} style={{cursor:"pointer"}}>
-                        <div className="ft-playing-row-top">
-                          <span className="name">{e.customerName||"Guest"}</span>
-                          {hasCashDue && <span style={{background:"#ff9db4",color:"#fff",fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:6,marginRight:6}}>CASH DUE</span>}
-                          <span className="time">{formatTime12(e.timeIn)} → {formatTime12(e.timeOut)}</span>
-                          <span className="ft-playing-meta" style={{marginLeft:16}}>{mLeft} min left</span>
-                          <button className="ft-playing-extend" onClick={ev=>{ev.stopPropagation();handleEdit(e);}}>Extend</button>
-                        </div>
+                        <span className="name">
+                          {e.customerName||"Guest"}
+                          {hasCashDue && <span className="cash-due">CASH DUE</span>}
+                        </span>
+                        <span className="time">{formatTime12(e.timeIn)} → {formatTime12(e.timeOut)}</span>
                         <div className="ft-progress-bar">
                           <div className="ft-progress-fill" style={{width:`${pct}%`,background:isDue?"linear-gradient(90deg,#ff9db4,#e84393)":"linear-gradient(90deg,#a97ae0,#e6d4ff)"}} />
                         </div>
+                        <span className="ft-playing-meta">{mLeft} min left</span>
+                        <button className="ft-playing-extend" onClick={ev=>{ev.stopPropagation();handleEdit(e);}}>Extend</button>
                       </div>
                     );
                   })}
@@ -916,16 +916,32 @@ function App() {
                 <div style={{padding:"18px 0",textAlign:"center",color:"#b3a3cd",fontSize:13}}>No active sessions right now</div>
               )}
               <div className="ft-playing-chart-section">
-                <span style={{fontSize:10,fontFamily:"var(--ft-mono)",color:"#8b7daa",letterSpacing:".08em"}}>BY HOUR</span>
-                <div className="ft-playing-bars" style={{marginTop:6}}>
-                  {[18,28,22,36,42,38,55,68,78,88,100,85].map((h,i) => (
-                    <span key={i} className="ft-playing-bar" style={{height:`${h}%`,
-                      background:i>=8?`linear-gradient(180deg,${i>=10?"#8affe0,#33c9a6":"#c9a3ff,#7c3fc4"})`:`rgba(255,255,255,${0.12+i*0.015})`}} />
-                  ))}
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                  <span style={{fontSize:10,fontFamily:"var(--ft-mono)",color:"#8b7daa",letterSpacing:".08em"}}>BY HOUR</span>
+                  <span style={{fontSize:9,fontFamily:"var(--ft-mono)",color:"#8b7daa"}}>3p–10p</span>
                 </div>
-                <div style={{display:"flex",justifyContent:"space-between",marginTop:4}}>
-                  <span style={{fontSize:9,fontFamily:"var(--ft-mono)",color:"#8b7daa"}}>10a</span>
-                  <span style={{fontSize:9,fontFamily:"var(--ft-mono)",color:"#8b7daa"}}>10p</span>
+                <div className="ft-playing-bars" style={{marginTop:8}}>
+                  {(() => {
+                    const hourCounts = [0,0,0,0,0,0,0];
+                    todayEntries.forEach(e => {
+                      const tIn = e.timeIn;
+                      if (!tIn) return;
+                      const h = parseInt(tIn.split(":")[0])||0;
+                      if (h >= 15 && h <= 21) hourCounts[h-15]++;
+                    });
+                    const maxC = Math.max(...hourCounts, 1);
+                    return hourCounts.map((c,i) => {
+                      const pctH = Math.max(12, (c/maxC)*100);
+                      const now = new Date().getHours();
+                      const isCurrentHour = now === i+15;
+                      const isPast = now > i+15;
+                      let bg = `rgba(255,255,255,${0.10 + (c/maxC)*0.08})`;
+                      if (c > 0 && isPast) bg = `rgba(160,140,200,${0.3 + (c/maxC)*0.4})`;
+                      if (c > 0 && isCurrentHour) bg = "linear-gradient(180deg,#c9a3ff,#7c3fc4)";
+                      if (c > 0 && i >= 5) bg = `linear-gradient(180deg,${c/maxC>0.7?"#8affe0,#33c9a6":"#c9a3ff,#7c3fc4"})`;
+                      return <span key={i} className="ft-playing-bar" style={{height:`${pctH}%`,background:bg}} />;
+                    });
+                  })()}
                 </div>
               </div>
             </div>
