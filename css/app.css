@@ -794,7 +794,8 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
   margin-top: 10px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 .ft-time-row .ft-time-label {
   font: 600 11px var(--ft-mono);
@@ -805,15 +806,17 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
 }
 .ft-time-row .fld {
   height: 40px;
-  width: 120px;
+  min-width: 0;
+  flex: 1;
+  max-width: 140px;
   text-align: center;
   font-weight: 500;
   font-size: 13.5px;
-  flex-shrink: 0;
 }
 .ft-time-arrow {
   font: 500 14px var(--ft-sans);
   color: var(--ft-muted3);
+  flex-shrink: 0;
 }
 
 /* Socks chips */
@@ -909,17 +912,20 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
   margin-bottom: 4px;
 }
 
-/* ── Form Footer (pinned sticky bar) ── */
+/* ── Form Footer (fixed bottom bar) ── */
 .ft-form-footer {
-  position: sticky;
+  position: fixed;
   bottom: 0;
+  left: 0;
+  right: 0;
   border-top: 1px solid var(--ft-border3);
   padding: 14px 22px;
+  padding-bottom: max(14px, env(safe-area-inset-bottom));
   background: linear-gradient(100deg, #faf7fd, #fdfcfe);
   display: flex;
   align-items: center;
   gap: 10px;
-  z-index: 10;
+  z-index: 50;
 }
 .ft-form-footer-total {
   display: flex;
@@ -1821,6 +1827,7 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
     padding-bottom: 100px;
   }
   .ft-form-footer {
+    left: var(--ft-rail-w);
     padding: 16px 36px;
   }
   .ft-form-desktop-grid {
@@ -1993,9 +2000,6 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
 
 /* ── Form sections ── */
 .ft-form-section { margin-bottom: 20px; }
-.ft-form-footer-total {
-  display: flex; align-items: baseline; gap: 12px; margin-bottom: 10px;
-}
 .ft-btn-primary--lg { height: 54px; font-size: 16px; width: 100%; }
 .ft-btn-secondary {
   height: 46px; border-radius: 13px;

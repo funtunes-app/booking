@@ -492,6 +492,7 @@ function App() {
     if (!form.customerName.trim()) errs.customerName = "Required";
     if (!form.amount || parseInt(form.amount) <= 0) errs.amount = "Enter amount";
     if (!form.playMop) errs.playMop = "Select payment mode";
+    if (socksCharge > 0 && !form.socksMop) errs.socksMop = "Select mode";
     setErrors(errs);
     if (Object.keys(errs).length) { setShakeStep(true); setTimeout(()=>setShakeStep(false),500); }
     return !Object.keys(errs).length;
@@ -507,29 +508,23 @@ function App() {
 
   function getSocksMopString() {
     if(socksCharge<=0) return "";
-    const mop = form.playMop;
-    if(mop==="UPI + Cash"){
-      const pay = computePaymentCols();
-      return `UPI ₹${pay.socksUpi} + Cash ₹${pay.socksCash}`;
+    if(form.socksMop==="UPI + Cash"){
+      const u=parseInt(form.socksUpiAmount)||0, c=parseInt(form.socksCashAmount)||0;
+      return `UPI ₹${u} + Cash ₹${c}`;
     }
-    return mop;
+    return form.socksMop;
   }
 
   function computePaymentCols() {
     const playAmt=parseInt(form.amount)||0;
-    const mop = form.playMop;
     let pu=0,pc=0,su=0,sc=0;
-    if(mop==="UPI"){ pu=playAmt; if(socksCharge>0) su=socksCharge; }
-    else if(mop==="Cash"){ pc=playAmt; if(socksCharge>0) sc=socksCharge; }
-    else if(mop==="UPI + Cash"){
-      const totalAmt = playAmt + socksCharge;
-      const upiAmt = parseInt(form.playUpiAmount)||0;
-      const cashAmt = parseInt(form.playCashAmount)||0;
-      if(socksCharge>0){
-        const socksRatio = socksCharge/totalAmt;
-        su=Math.round(upiAmt*socksRatio); sc=Math.round(cashAmt*socksRatio);
-        pu=upiAmt-su; pc=cashAmt-sc;
-      } else { pu=upiAmt; pc=cashAmt; }
+    if(form.playMop==="UPI") pu=playAmt;
+    else if(form.playMop==="Cash") pc=playAmt;
+    else if(form.playMop==="UPI + Cash"){pu=parseInt(form.playUpiAmount)||0;pc=parseInt(form.playCashAmount)||0;}
+    if(socksCharge>0){
+      if(form.socksMop==="UPI") su=socksCharge;
+      else if(form.socksMop==="Cash") sc=socksCharge;
+      else if(form.socksMop==="UPI + Cash"){su=parseInt(form.socksUpiAmount)||0;sc=parseInt(form.socksCashAmount)||0;}
     }
     return {playUpi:pu,playCash:pc,socksUpi:su,socksCash:sc};
   }
@@ -1434,7 +1429,7 @@ function App() {
 
                   {/* Phone */}
                   <div style={{marginBottom:14}}>
-                    <label className="field-label">Phone</label>
+                    <label className="field-label">Phone {errors.phone && <span className="err-msg">{errors.phone}</span>}</label>
                     <div className="ft-phone-wrap">
                       <input className={`fld${errors.phone?" is-error":""}`} value={form.phone} placeholder="10-digit mobile" type="tel" inputMode="numeric"
                         style={{borderWidth:"1.5px",borderColor:errors.phone?"var(--ft-danger)":"var(--ft-accent-hover)",boxShadow:errors.phone?"0 0 0 3px rgba(194,96,122,.1)":"0 0 0 3px var(--ft-purple-glow)"}}
@@ -1445,17 +1440,7 @@ function App() {
                           ? <span className="ft-phone-badge">RETURNING</span>
                           : <span className="ft-phone-badge ft-phone-badge--new">FIRST VISIT</span>
                       )}
-                      {errors.phone && <span className="err-msg" style={{position:"absolute",right:12,top:-18,fontSize:10}}>{errors.phone}</span>}
                     </div>
-                  </div>
-
-                  {/* Name */}
-                  <div style={{marginBottom:14}}>
-                    <label className="field-label">Name {errors.customerName && <span className="err-msg">{errors.customerName}</span>}</label>
-                    <input className={`fld${errors.customerName?" is-error":""}`}
-                      value={form.customerName} placeholder="Kid's name"
-                      onChange={e=>set("customerName",e.target.value)} />
-                    {form.phone.length===10 && !form.customerName && <div className="ft-form-helper">New number — name is saved for next time</div>}
                   </div>
 
                   {/* Kids stepper */}
@@ -1468,35 +1453,70 @@ function App() {
                   {Array.from({length:form.numKids},(_,i)=>(
                     <div key={i} className="ft-kid-row">
                       <div className="ft-kid-num">{i+1}</div>
-                      <input className="fld"
+                      <input className={`fld${i===0&&errors.customerName?" is-error":""}`}
                         value={i===0?form.customerName:((form.kidNames&&form.kidNames[i])||"")}
-                        placeholder={i===0?"Name (same as above)":`Kid ${i+1} name`}
+                        placeholder={i===0?"Kid's name":`Kid ${i+1} name`}
                         onChange={e=>{
                           if(i===0) set("customerName",e.target.value);
                           else { const names=[...(form.kidNames||[])]; names[i]=e.target.value; set("kidNames",names); }
                         }} />
                       <input className="fld fld-date"
                         value={i===0?form.dob:((form.dobs&&form.dobs[i])||"")}
-                        type="date" placeholder="DOB"
+                        type="date"
                         onChange={e=>{
                           if(i===0) set("dob",e.target.value);
                           else { const d2=[...(form.dobs||[])]; d2[i]=e.target.value; set("dobs",d2); }
                         }} />
                     </div>
                   ))}
-                  {form.numKids>0 && <div className="ft-form-helper" style={{marginTop:6}}>DOB optional — only used for birthday reminders</div>}
 
                   {/* Socks */}
                   {isPlayArea && <div style={{marginTop:18}}>
                     <div className="ft-form-section-label">Socks</div>
-                    <div className="ft-sock-chips">
-                      {[0,1,2,3,4].map(n=>{
-                        const label = n===0?"None":n===1?`1 pair · ₹${CONFIG.SOCKS_RATE}`:`${n} · ₹${n*CONFIG.SOCKS_RATE}`;
-                        const isActive = (form.sockMode!=="custom") && (form.sockCount||0)===n;
-                        return <button key={n} type="button" className={`ft-sock-chip${isActive?" is-active":""}`}
-                          onClick={()=>{set("sockMode","preset");setSockCount(n);}}>{label}</button>;
-                      })}
+                    <div style={{display:"flex",alignItems:"center",gap:12}}>
+                      <NumberStepper value={form.sockCount||0} onChange={v=>{set("sockMode","preset");setSockCount(Math.max(0,v));}} min={0} max={20} />
+                      {socksCharge > 0 && <span style={{font:"500 13px var(--ft-sans)",color:C.textMid}}>₹{socksCharge}</span>}
                     </div>
+                    {socksCharge > 0 && <div style={{marginTop:10}}>
+                      <label className="field-label">Socks paid via {errors.socksMop && <span className="err-msg">{errors.socksMop}</span>}</label>
+                      <div className="ft-pay-chips">
+                        {[{value:"UPI",label:"UPI"},{value:"Cash",label:"Cash"},{value:"UPI + Cash",label:"Split"}].map(o=>(
+                          <button key={o.value} type="button" className={`ft-pay-chip${form.socksMop===o.value?" is-active":""}`}
+                            onClick={()=>{
+                              set("socksMop",o.value);
+                              if(o.value!=="UPI + Cash"){set("socksUpiAmount","");set("socksCashAmount","");}
+                            }}>{o.label}</button>
+                        ))}
+                      </div>
+                      {form.socksMop==="UPI + Cash" && <div className="ft-split-row">
+                        <div>
+                          <div className="ft-split-label">UPI</div>
+                          <div style={{position:"relative"}}>
+                            <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",fontWeight:600,color:C.textMid,fontSize:12}}>₹</span>
+                            <input className="fld" value={form.socksUpiAmount} type="tel" inputMode="numeric" placeholder="0"
+                              style={{paddingLeft:26,height:40,fontSize:13.5,fontWeight:600}}
+                              onChange={e=>{
+                                const v=e.target.value.replace(/\D/g,"");
+                                set("socksUpiAmount",v);
+                                set("socksCashAmount",String(Math.max(0,socksCharge-(parseInt(v)||0))));
+                              }} />
+                          </div>
+                        </div>
+                        <div>
+                          <div className="ft-split-label">Cash</div>
+                          <div style={{position:"relative"}}>
+                            <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",fontWeight:600,color:C.textMid,fontSize:12}}>₹</span>
+                            <input className="fld" value={form.socksCashAmount} type="tel" inputMode="numeric" placeholder="0"
+                              style={{paddingLeft:26,height:40,fontSize:13.5,fontWeight:600}}
+                              onChange={e=>{
+                                const v=e.target.value.replace(/\D/g,"");
+                                set("socksCashAmount",v);
+                                set("socksUpiAmount",String(Math.max(0,socksCharge-(parseInt(v)||0))));
+                              }} />
+                          </div>
+                        </div>
+                      </div>}
+                    </div>}
                   </div>}
                 </div>
               </div>
@@ -1562,50 +1582,50 @@ function App() {
                   {/* Payment */}
                   <div style={{marginTop:18}}>
                     <div className="ft-form-section-label">Payment</div>
+                    <label className="field-label">Playtime paid via {errors.playMop && <span className="err-msg">{errors.playMop}</span>}</label>
                     <div className="ft-pay-chips">
                       {[{value:"UPI",label:"UPI"},{value:"Cash",label:"Cash"},{value:"UPI + Cash",label:"Split"}].map(o=>(
                         <button key={o.value} type="button" className={`ft-pay-chip${form.playMop===o.value?" is-active":""}`}
                           onClick={()=>{
                             set("playMop",o.value);
-                            if(socksCharge>0) set("socksMop",o.value);
-                            if(o.value!=="UPI + Cash"){set("playUpiAmount","");set("playCashAmount","");set("socksUpiAmount","");set("socksCashAmount","");}
+                            if(o.value!=="UPI + Cash"){set("playUpiAmount","");set("playCashAmount","");}
                           }}>{o.label}</button>
                       ))}
                     </div>
-                    {errors.playMop && <div className="ft-form-helper" style={{color:C.danger}}>{errors.playMop}</div>}
 
                     {/* Split amounts */}
                     {form.playMop==="UPI + Cash" && (
                       <div className="ft-split-row">
                         <div>
-                          <div className="ft-split-label">UPI Amount</div>
+                          <div className="ft-split-label">UPI</div>
                           <div style={{position:"relative"}}>
                             <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",fontWeight:600,color:C.textMid,fontSize:12}}>₹</span>
                             <input className="fld" value={form.playUpiAmount} type="tel" inputMode="numeric" placeholder="0"
                               style={{paddingLeft:26,height:40,fontSize:13.5,fontWeight:600}}
                               onChange={e=>{
                                 const v=e.target.value.replace(/\D/g,"");
+                                const playAmt=parseInt(form.amount)||0;
                                 set("playUpiAmount",v);
-                                set("playCashAmount",String(Math.max(0,totalAmount-(parseInt(v)||0))));
+                                set("playCashAmount",String(Math.max(0,playAmt-(parseInt(v)||0))));
                               }} />
                           </div>
                         </div>
                         <div>
-                          <div className="ft-split-label">Cash Amount</div>
+                          <div className="ft-split-label">Cash</div>
                           <div style={{position:"relative"}}>
                             <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",fontWeight:600,color:C.textMid,fontSize:12}}>₹</span>
                             <input className="fld" value={form.playCashAmount} type="tel" inputMode="numeric" placeholder="0"
                               style={{paddingLeft:26,height:40,fontSize:13.5,fontWeight:600}}
                               onChange={e=>{
                                 const v=e.target.value.replace(/\D/g,"");
+                                const playAmt=parseInt(form.amount)||0;
                                 set("playCashAmount",v);
-                                set("playUpiAmount",String(Math.max(0,totalAmount-(parseInt(v)||0))));
+                                set("playUpiAmount",String(Math.max(0,playAmt-(parseInt(v)||0))));
                               }} />
                           </div>
                         </div>
                       </div>
                     )}
-                    <div className="ft-form-helper" style={{marginTop:8}}>One payment for the whole bill — playtime and socks combined</div>
                   </div>
 
                   {/* Bill summary card */}
