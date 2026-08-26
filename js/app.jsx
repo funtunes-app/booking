@@ -61,6 +61,7 @@ function App() {
   const [rangeEnd, setRangeEnd] = useState("");
   const [entrySearch, setEntrySearch] = useState("");
   const [entryMopFilter, setEntryMopFilter] = useState("all");
+  const [exportPinPrompt, setExportPinPrompt] = useState(false);
   const [birthdays, setBirthdays] = useState([]);
   const [birthdaysLoading, setBirthdaysLoading] = useState(false);
   const [birthdayMonth, setBirthdayMonth] = useState(()=>new Date().getMonth()+1);
@@ -1033,7 +1034,7 @@ function App() {
           const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
           const monthLabel = monthNames[fd.getMonth()] + " " + fd.getFullYear();
 
-          function handleExport() {
+          function doExportCsv() {
             const rows = [["Name","Phone","Date","Time In","Time Out","Hours","Kids","MOP","Amount"]];
             filteredEntries.forEach(e => {
               rows.push([
@@ -1047,6 +1048,10 @@ function App() {
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a"); a.href=url; a.download=`entries-${filterDate}.csv`; a.click();
             URL.revokeObjectURL(url);
+          }
+          function handleExport() {
+            if (statsUnlocked) { doExportCsv(); return; }
+            setExportPinPrompt(true);
           }
 
           function prevMonth() {
@@ -1122,8 +1127,19 @@ function App() {
                 <strong style={{marginLeft:12}}>₹{totalAmt.toLocaleString("en-IN")}</strong> total
               </div>
 
-              <button className="ft-export-btn" onClick={handleExport}>export</button>
+              <button className="ft-export-btn" onClick={handleExport} title="Export CSV">
+                <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M6 13l4 4 4-4M10 17V7"/><path d="M3 10V5a2 2 0 012-2h10a2 2 0 012 2v5"/></svg>
+              </button>
             </div>
+
+            {exportPinPrompt && (
+              <div className="ft-pin-overlay" onClick={()=>setExportPinPrompt(false)}>
+                <div className="ft-pin-modal" onClick={e=>e.stopPropagation()}>
+                  <div style={{fontWeight:700,fontSize:15,marginBottom:16,textAlign:"center"}}>Enter PIN to export</div>
+                  <PasswordGate onUnlock={()=>{setExportPinPrompt(false);setStatsUnlocked(true);doExportCsv();}} />
+                </div>
+              </div>
+            )}
 
             <LiveEntryList entries={sortedEntries} onEdit={handleEdit} onDelete={handleDelete} onCheckout={handleCheckout} loading={loading} />
           </div>

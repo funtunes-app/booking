@@ -1878,7 +1878,7 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
 /* ── Entries toolbar ── */
 .ft-entries-toolbar {
   display: flex; flex-wrap: wrap; align-items: center; gap: 14px;
-  padding: 0 22px 16px;
+  padding: 18px 22px 16px;
 }
 .ft-month-nav {
   display: inline-flex; align-items: center; gap: 2px;
@@ -1913,10 +1913,19 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
 }
 .ft-entries-summary strong { font-weight: 700; color: var(--ft-deepest); }
 .ft-export-btn {
-  border: none; background: none; font: 500 13px var(--ft-sans);
-  color: var(--ft-purple-pill); cursor: pointer; padding: 0;
+  border: none; background: none; cursor: pointer; padding: 6px;
+  color: var(--ft-muted2); border-radius: 8px; display: grid; place-items: center;
+  transition: color .15s, background .15s;
 }
-.ft-export-btn:hover { text-decoration: underline; }
+.ft-export-btn:hover { color: var(--ft-purple-pill); background: var(--ft-bg); }
+.ft-pin-overlay {
+  position: fixed; inset: 0; z-index: 500;
+  background: rgba(0,0,0,.45); display: grid; place-items: center;
+}
+.ft-pin-modal {
+  background: #fff; border-radius: 20px; padding: 32px 28px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.25); max-width: 340px; width: 90%;
+}
 
 /* ── Entry table rows ── */
 .ft-egroup { margin-bottom: 4px; }

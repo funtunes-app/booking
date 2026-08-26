@@ -369,8 +369,8 @@ function formatTime12Short(t) {
 
 const EntryRow = ({entry, onEdit, onDelete, onCheckout}) => {
   const name = entry.customerName || entry["Customer name"] || "—";
-  const amt = parseInt(entry.amount || entry["Amount"] || 0);
-  const socksAmt = parseInt(entry.socks || entry["Socks"] || 0);
+  const amt = parseInt(entry.amount) || parseInt(entry["Amount"]) || 0;
+  const socksAmt = parseInt(entry.socks) || parseInt(entry["Socks"]) || 0;
   const mop = entry.mop || entry["MOP"] || "";
   const kids = parseInt(entry.numKids || entry["No of kids"] || 1);
   const phone = entry.phone || entry["Phone number"] || "";
