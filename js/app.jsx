@@ -66,6 +66,9 @@ function App() {
   const [birthdaysLoading, setBirthdaysLoading] = useState(false);
   const [birthdayMonth, setBirthdayMonth] = useState(()=>new Date().getMonth()+1);
   const [birthdayYear, setBirthdayYear] = useState(()=>new Date().getFullYear());
+  const [bdayViewMode, setBdayViewMode] = useState("week");
+  const [bdayStatusFilter, setBdayStatusFilter] = useState("all");
+  const [bdaySearch, setBdaySearch] = useState("");
   const [statsUnlocked, setStatsUnlocked] = useState(false);
   const [phoneLookupLoading, setPhoneLookupLoading] = useState(false);
   const [enquiry, setEnquiry] = useState(null);
@@ -205,6 +208,22 @@ function App() {
 
   function changeMonth(m) { setBirthdayMonth(m); fetchBirthdays(m, birthdayYear); }
   function changeYear(y) { setBirthdayYear(y); fetchBirthdays(birthdayMonth, y); }
+  function bdayPrevMonth() {
+    let m = birthdayMonth - 1, y = birthdayYear;
+    if (m < 1) { m = 12; y--; }
+    setBirthdayMonth(m); setBirthdayYear(y); fetchBirthdays(m, y);
+  }
+  function bdayNextMonth() {
+    let m = birthdayMonth + 1, y = birthdayYear;
+    if (m > 12) { m = 1; y++; }
+    setBirthdayMonth(m); setBirthdayYear(y); fetchBirthdays(m, y);
+  }
+  function bdayToday() {
+    const now = new Date();
+    setBirthdayMonth(now.getMonth()+1); setBirthdayYear(now.getFullYear());
+    setBdayViewMode("week");
+    fetchBirthdays(now.getMonth()+1, now.getFullYear());
+  }
 
   async function saveBirthdayCall(record) {
     try {
@@ -1182,27 +1201,126 @@ function App() {
         })()}
 
         {/* ══════════ BIRTHDAYS ══════════ */}
-        {screen === "home" && section === "birthdays" && (
+        {screen === "home" && section === "birthdays" && (() => {
+          const contactedCount = birthdays.filter(b=>(b.status||"not_contacted")!=="not_contacted").length;
+          const bookedCount = birthdays.filter(b=>b.status==="booking").length;
+
+          let filteredBdays = birthdays;
+          if (bdayStatusFilter === "not_contacted") filteredBdays = filteredBdays.filter(b=>(b.status||"not_contacted")==="not_contacted");
+          else if (bdayStatusFilter === "warm") filteredBdays = filteredBdays.filter(b=>b.status==="warm");
+          else if (bdayStatusFilter === "booking") filteredBdays = filteredBdays.filter(b=>b.status==="booking");
+
+          if (bdaySearch) {
+            const q = bdaySearch.toLowerCase();
+            filteredBdays = filteredBdays.filter(b =>
+              (b.kidName||"").toLowerCase().includes(q) || (b.phone||"").includes(q));
+          }
+
+          if (bdayViewMode === "week") {
+            const today = new Date();
+            const todayDay = today.getDate();
+            const isCur = birthdayMonth === today.getMonth()+1 && birthdayYear === today.getFullYear();
+            if (isCur) filteredBdays = filteredBdays.filter(b => b.day >= todayDay && b.day <= todayDay+7);
+          }
+
+          const daysInMonth = new Date(birthdayYear, birthdayMonth, 0).getDate();
+          const firstDow = (new Date(birthdayYear, birthdayMonth-1, 1).getDay() + 6) % 7;
+          const bdayDays = new Set(birthdays.map(b=>b.day));
+          const todayDate = new Date();
+          const isCurrentMonth = birthdayMonth === todayDate.getMonth()+1 && birthdayYear === todayDate.getFullYear();
+
+          return (
           <div className="ft-page">
             <div className="ft-header">
               <div>
                 <div className="ft-header-title">Birthdays</div>
-                <div className="ft-header-sub">{birthdays.length} birthdays · {birthdays.filter(b=>(b.status||"not_contacted")!=="not_contacted").length} contacted</div>
+                <div className="ft-header-sub">{birthdays.length} this month · {contactedCount} contacted · {bookedCount} booked</div>
               </div>
-              <div style={{display:"flex",gap:6}}>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
                 <button className="ft-chip" onClick={openEnquiry}>+ Enquiry</button>
-                <button className="ft-chip" onClick={()=>fetchBirthdays()} disabled={birthdaysLoading}>Refresh</button>
+                <button className="ft-entry-act-btn" onClick={()=>fetchBirthdays()} disabled={birthdaysLoading} title="Refresh">
+                  <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17.65 6.35A7.96 7.96 0 0010 2a8 8 0 108 8h-2a6 6 0 11-1.76-4.24"/><path d="M18 2v5h-5"/></svg>
+                </button>
               </div>
             </div>
-            <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap",padding:"0 22px"}}>
-              <Dropdown flex={1.5} value={birthdayMonth} onChange={changeMonth}
-                options={MONTH_NAMES.map((m,i)=>({value:i+1,label:m}))} />
-              <Dropdown flex={1} value={birthdayYear} onChange={changeYear}
-                options={[new Date().getFullYear()-1, new Date().getFullYear(), new Date().getFullYear()+1].map(y=>({value:y,label:String(y)}))} />
+
+            <div className="ft-filters">
+              <div className="ft-filters-top">
+                <div className="ft-seg">
+                  {[{v:"week",l:"Next 7 days"},{v:"month",l:"This month"},{v:"pick",l:"Pick month"}].map(t => (
+                    <button key={t.v} className={`ft-seg-item${bdayViewMode===t.v?" ft-seg-item--active":""}`}
+                      onClick={() => { setBdayViewMode(t.v); if(t.v==="month"||t.v==="week") bdayToday(); }}>{t.l}</button>
+                  ))}
+                </div>
+
+                <div className="ft-bday-filter-right">
+                  <div className="ft-mop-chips">
+                    {[{v:"all",l:"All"},{v:"not_contacted",l:"To call"},{v:"warm",l:"Contacted"},{v:"booking",l:"Booked"}].map(f => (
+                      <button key={f.v} className={`ft-chip${bdayStatusFilter===f.v?" ft-chip--active":""}`}
+                        onClick={()=>setBdayStatusFilter(f.v)}>{f.l}</button>
+                    ))}
+                  </div>
+                  <div className="ft-search-box">
+                    <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="#a099b5" strokeWidth="2"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M13 13l4 4"/></svg>
+                    <input type="text" placeholder="Name or number" value={bdaySearch} onChange={e=>setBdaySearch(e.target.value)} />
+                  </div>
+                </div>
+              </div>
             </div>
-            <BirthdayCalendar birthdays={birthdays} month={birthdayMonth} year={birthdayYear} loading={birthdaysLoading} onSave={saveBirthdayCall} />
+
+            {bdayViewMode === "pick" && (
+              <div className="ft-filters" style={{paddingTop:0}}>
+                <div className="ft-filters-top">
+                  <div className="ft-date-nav">
+                    <button className="ft-date-nav-btn" onClick={bdayPrevMonth}>
+                      <svg width="7" height="12" viewBox="0 0 7 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 1L1 6l5 5"/></svg>
+                    </button>
+                    <span className="ft-date-nav-label">{MONTH_NAMES[birthdayMonth-1]}</span>
+                    <button className="ft-date-nav-btn" onClick={bdayNextMonth}>
+                      <svg width="7" height="12" viewBox="0 0 7 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M1 1l5 5-5 5"/></svg>
+                    </button>
+                  </div>
+                  <button className="ft-today-btn" onClick={bdayToday} title="Jump to this month">
+                    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="14" height="14" rx="2"/><path d="M3 8h14"/><path d="M7 2v4M13 2v4"/><circle cx="10" cy="13" r="1.5" fill="currentColor" stroke="none"/></svg>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="ft-bday-layout">
+              <div className="ft-bday-cal-sidebar">
+                <div className="ft-bday-minical">
+                  <div className="ft-bday-minical-header">
+                    <button className="ft-date-nav-btn" onClick={bdayPrevMonth}>
+                      <svg width="6" height="10" viewBox="0 0 7 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 1L1 6l5 5"/></svg>
+                    </button>
+                    <span className="ft-bday-minical-title">{MONTH_NAMES[birthdayMonth-1]}</span>
+                    <button className="ft-date-nav-btn" onClick={bdayNextMonth}>
+                      <svg width="6" height="10" viewBox="0 0 7 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M1 1l5 5-5 5"/></svg>
+                    </button>
+                  </div>
+                  <div className="ft-bday-minical-grid">
+                    {["M","T","W","T","F","S","S"].map((d,i) => <span key={i} className="ft-bday-minical-dow">{d}</span>)}
+                    {Array.from({length:firstDow}).map((_,i) => <span key={"e"+i} />)}
+                    {Array.from({length:daysInMonth}).map((_,i) => {
+                      const d = i+1;
+                      const hasBday = bdayDays.has(d);
+                      const isToday = isCurrentMonth && d === todayDate.getDate();
+                      return <span key={d} className={`ft-bday-minical-day${hasBday?" has-bday":""}${isToday?" is-today":""}`}>{d}</span>;
+                    })}
+                  </div>
+                  <div className="ft-bday-minical-legend">shaded = birthday that day</div>
+                </div>
+              </div>
+
+              <div className="ft-bday-main">
+                <BirthdayList birthdays={filteredBdays} month={birthdayMonth} year={birthdayYear}
+                  loading={birthdaysLoading} onSave={saveBirthdayCall} viewMode={bdayViewMode} />
+              </div>
+            </div>
           </div>
-        )}
+          );
+        })()}
 
         {/* ══════════ CASH REGISTER ══════════ */}
         {screen === "home" && section === "cash-register" && (

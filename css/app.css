@@ -956,71 +956,110 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
 .ft-pnl-row:last-child { border-bottom: none; }
 .ft-pnl-row .label { flex: 1; color: var(--ft-muted); }
 
-/* ── Birthday Call List ── */
-.ft-bday-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 14px 22px 0;
+/* ── Birthday Page ── */
+.ft-bday-layout {
+  display: flex; gap: 24px; padding: 0 22px;
 }
-.ft-bday-card {
-  border: 1px solid var(--ft-border);
-  border-radius: var(--ft-radius);
-  padding: 14px 16px;
-  background: #fff;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.ft-bday-cal-sidebar { flex: none; width: 240px; }
+.ft-bday-main { flex: 1; min-width: 0; }
+.ft-bday-filter-right { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+
+.ft-bday-list { display: flex; flex-direction: column; gap: 0; }
+.ft-bday-group { margin-bottom: 8px; }
+.ft-bday-group-label {
+  font: 700 10px var(--ft-mono); color: var(--ft-muted2);
+  letter-spacing: .1em; text-transform: uppercase;
+  padding: 16px 0 8px; border-bottom: 1px solid var(--ft-border4);
 }
-.ft-bday-card.is-featured {
+
+.ft-bday-row {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 12px; border: 1px solid var(--ft-border4);
+  border-radius: var(--ft-radius); margin-bottom: 8px;
+  background: #fff; transition: all .2s ease; flex-wrap: wrap;
+}
+.ft-bday-row:hover { background: #f9f7fc; }
+.ft-bday-row--featured {
   border-color: #cbb0ea;
   background: linear-gradient(165deg, #f8f3fd, #fff);
-  box-shadow: 0 6px 16px rgba(93,42,153,.08);
-  flex-direction: column;
-  align-items: stretch;
+  box-shadow: 0 4px 14px rgba(93,42,153,.08);
 }
-.ft-bday-avatar {
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
-  background: #f3ecfb;
-  display: grid;
-  place-items: center;
-  font: 700 13px var(--ft-sans);
-  color: var(--ft-primary-dark);
-  flex: none;
+.ft-bday-row--warm { background: #fffbf0; border-color: #f0d88a; }
+.ft-bday-row--warm:hover { background: #fff6de; }
+.ft-bday-row--booking { background: #f3ecfb; border-color: #cbb0ea; }
+.ft-bday-row--booking:hover { background: #ede3f8; }
+
+.ft-bday-date-icon {
+  width: 48px; height: 48px; border-radius: 12px;
+  background: #f3ecfb; display: grid; place-items: center; flex: none;
 }
-.ft-bday-avatar.is-primary {
-  width: 42px;
-  height: 42px;
-  border-radius: 13px;
+.ft-bday-date-icon--tomorrow {
   background: linear-gradient(160deg, #9a63dd, #5d2a99);
   box-shadow: inset 0 1px 0 rgba(255,255,255,.4);
-  color: #fff;
-  font-size: 14px;
 }
-.ft-bday-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 12px;
+.ft-bday-date-icon--tomorrow .ft-bday-date-num { color: #fff; }
+.ft-bday-date-num { font: 700 18px var(--ft-sans); color: var(--ft-primary-dark); }
+
+.ft-bday-info { flex: 1; min-width: 0; }
+.ft-bday-name { font: 600 14px var(--ft-sans); color: var(--ft-text); }
+.ft-bday-meta { font: 400 11.5px var(--ft-mono); color: var(--ft-muted2); margin-top: 3px; display: flex; gap: 6px; flex-wrap: wrap; }
+.ft-bday-meta-note { color: var(--ft-muted); font-style: italic; }
+.ft-bday-meta-note::before { content: "· "; }
+
+.ft-bday-row-actions { display: flex; align-items: center; gap: 6px; flex: none; }
+.ft-bday-action-btn {
+  border: 1px solid var(--ft-border2); background: #fff; border-radius: 8px;
+  padding: 7px 14px; font: 500 12px var(--ft-sans); color: var(--ft-deep);
+  cursor: pointer; text-decoration: none; display: inline-flex; align-items: center;
+  transition: all .2s ease; white-space: nowrap;
 }
-.ft-bday-action {
-  flex: 1;
-  border: 1px solid var(--ft-border5);
-  background: #fff;
-  border-radius: var(--ft-radius-sm);
-  padding: 10px 0;
-  text-align: center;
-  font: 600 12.5px var(--ft-sans);
-  color: var(--ft-deep);
-  cursor: pointer;
-}
-.ft-bday-action.is-primary {
-  flex: 1.2;
-  border: none;
-  background: var(--ft-primary-grad);
+.ft-bday-action-btn:hover { background: var(--ft-deepest); color: #fff; border-color: var(--ft-deepest); }
+.ft-bday-action-btn--primary {
+  background: var(--ft-primary-grad); color: #fff; border-color: transparent;
   box-shadow: inset 0 1px 0 rgba(255,255,255,.4);
-  color: #fff;
+}
+.ft-bday-action-btn--primary:hover { background: var(--ft-deepest); box-shadow: none; }
+.ft-bday-action-btn--icon { padding: 7px 8px; }
+.ft-bday-contacted-tag {
+  font: 500 11px var(--ft-sans); color: var(--ft-green); background: #edf8f4;
+  border: 1px solid #b8e0d2; border-radius: 6px; padding: 5px 10px;
+}
+.ft-bday-booked-tag {
+  font: 500 11px var(--ft-sans); color: #5d2a99; background: #f3ecfb;
+  border: 1px solid #cbb0ea; border-radius: 6px; padding: 5px 10px;
+}
+.ft-bday-notes-edit { flex-basis: 100%; padding: 6px 0 0 62px; }
+.ft-bday-notes-edit .fld { font-size: 12px; resize: vertical; }
+
+/* Mini calendar sidebar */
+.ft-bday-minical {
+  background: #fff; border: 1px solid var(--ft-border4); border-radius: var(--ft-radius);
+  padding: 16px; position: sticky; top: 16px;
+}
+.ft-bday-minical-header {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;
+}
+.ft-bday-minical-title { font: 600 13px var(--ft-sans); color: var(--ft-text); }
+.ft-bday-minical-grid {
+  display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; text-align: center;
+}
+.ft-bday-minical-dow {
+  font: 600 9px var(--ft-mono); color: var(--ft-muted2); padding: 4px 0;
+  letter-spacing: .04em;
+}
+.ft-bday-minical-day {
+  font: 400 11px var(--ft-sans); color: var(--ft-text); padding: 5px 0;
+  border-radius: 6px; cursor: default;
+}
+.ft-bday-minical-day.has-bday {
+  background: #f3ecfb; color: var(--ft-primary-dark); font-weight: 600;
+}
+.ft-bday-minical-day.is-today {
+  background: var(--ft-primary-grad); color: #fff; font-weight: 700;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.4);
+}
+.ft-bday-minical-legend {
+  font: 400 10px var(--ft-mono); color: var(--ft-muted2); margin-top: 10px; text-align: center;
 }
 
 /* ── Staff Cards ── */
@@ -1616,20 +1655,8 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
     padding: 12px 36px 0;
   }
 
-  /* Birthday cards — proper card layout on desktop */
-  .ft-bday-card {
-    flex-wrap: wrap;
-  }
-  .ft-bday-card .ft-bday-badge {
-    margin-left: auto;
-  }
-  .ft-bday-card .ft-bday-actions {
-    width: 100%;
-    flex-basis: 100%;
-  }
-  .ft-bday-card .ft-bday-status-btns {
-    width: 100%;
-  }
+  /* Birthday layout — desktop */
+  .ft-bday-layout { padding: 0 36px; }
 
   /* PIN pad sheet constrained */
   .ft-pin-sheet {
@@ -2031,6 +2058,11 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
   .ft-filters-bottom { gap: 8px; }
   .ft-search-box { max-width: 100%; margin-left: 0; flex-basis: 100%; }
   .ft-mop-chips { margin-left: 0; }
+  .ft-bday-layout { flex-direction: column; padding: 0 16px; }
+  .ft-bday-cal-sidebar { display: none; }
+  .ft-bday-filter-right { flex-wrap: wrap; margin-left: 0; flex-basis: 100%; }
+  .ft-bday-row { flex-wrap: wrap; gap: 10px; }
+  .ft-bday-row-actions { flex-basis: 100%; justify-content: flex-start; }
   .ft-playing-row {
     display: flex; flex-wrap: wrap; gap: 6px 10px;
     padding: 12px 0;
@@ -2125,26 +2157,7 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
 /* ── Attendance button wrapper ── */
 .ft-att-btns { display: flex; flex-wrap: wrap; gap: 6px; }
 
-/* ── Birthday card extras ── */
-.ft-bday-card-top { display: flex; align-items: center; gap: 10px; width: 100%; }
-.ft-bday-info { flex: 1; min-width: 0; }
-.ft-bday-name { font: 600 13.5px var(--ft-sans); }
-.ft-bday-parent { font: 11px var(--ft-sans); color: var(--ft-muted2); margin-top: 2px; }
-.ft-bday-date { font: 10.5px var(--ft-mono); color: var(--ft-muted2); margin-top: 2px; }
-.ft-bday-badge {
-  flex: none; border-radius: 6px; padding: 4px 10px;
-  font: 600 10.5px var(--ft-sans);
-}
-.ft-bday-status-btns { display: flex; gap: 5px; flex-wrap: wrap; }
-.ft-bday-week-label {
-  font: 600 12px var(--ft-sans); color: var(--ft-muted);
-  letter-spacing: .04em; padding: 10px 0 4px;
-}
-.ft-bday-call {
-  display: inline-flex; align-items: center; gap: 5px;
-  font: 500 12px var(--ft-sans); color: var(--ft-purple-pill); cursor: pointer;
-  text-decoration: none;
-}
+/* ── Birthday extras (legacy, cleaned) ── */
 
 /* ── Table ── */
 .ft-table {

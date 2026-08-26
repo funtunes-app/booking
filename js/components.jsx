@@ -229,84 +229,109 @@ const ConfirmDialog = ({message, needsPassword, confirmLabel, onConfirm, onCance
 
 // ── Birthday Components ──
 
-const BirthdayMiniCard = ({record, onSave}) => {
+const BirthdayRow = ({record, onSave, isTomorrow}) => {
   const [status, setStatus] = React.useState(record.status || "not_contacted");
   const [notes, setNotes] = React.useState(record.notes || "");
-  const [editing, setEditing] = React.useState(false);
+  const [editingNotes, setEditingNotes] = React.useState(false);
 
-  const save = (s, n) => {
-    const updated = {...record, status:s, notes:n};
-    onSave(updated);
-  };
+  const save = (s, n) => { onSave({...record, status:s, notes:n}); };
 
-  const statusColors = {
-    not_contacted: {bg:"#f6f1fc", color:C.textMid, label:"Not contacted"},
-    warm: {bg:"#fef8e6", color:C.orange, label:"Warm lead"},
-    booking: {bg:"#e4f7f1", color:C.green, label:"Booking"},
-  };
-  const meta = statusColors[status] || statusColors.not_contacted;
-  const initial = (record.kidName||record.parentName||"?").charAt(0).toUpperCase();
+  const thisYear = new Date().getFullYear();
+  const age = record.year ? thisYear - record.year : null;
+  const turnsLabel = age ? `turns ${age}` : "";
+
+  const rowCls = `ft-bday-row${isTomorrow?" ft-bday-row--featured":""}${status==="warm"?" ft-bday-row--warm":""}${status==="booking"?" ft-bday-row--booking":""}`;
 
   return (
-    <div className="ft-bday-card">
-      <div className="ft-bday-card-top">
-        <div className="ft-bday-avatar">{initial}</div>
-        <div className="ft-bday-info">
-          <div className="ft-bday-name">{record.kidName || "—"}</div>
-          <div className="ft-bday-parent">{record.parentName ? `Parent: ${record.parentName}` : ""}</div>
-          <div className="ft-bday-date">{record.day ? `${record.day} ${MONTH_NAMES[(record.month||1)-1]}` : ""}</div>
-        </div>
-        <span className="ft-bday-badge" style={{background:meta.bg, color:meta.color}}>{meta.label}</span>
+    <div className={rowCls}>
+      <div className={`ft-bday-date-icon${isTomorrow?" ft-bday-date-icon--tomorrow":""}`}>
+        <span className="ft-bday-date-num">{record.day || "?"}</span>
       </div>
-      <div className="ft-bday-actions">
-        {record.phone && (
-          <a href={`tel:${record.phone}`} className="ft-bday-call">
-            <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 3a1 1 0 011-1h3.28a1 1 0 01.95.68l1 3a1 1 0 01-.27 1l-1.5 1.5a11 11 0 005.36 5.36l1.5-1.5a1 1 0 011-.27l3 1a1 1 0 01.68.95V17a1 1 0 01-1 1A16 16 0 012 3z"/></svg>
-            Call
-          </a>
-        )}
-        <div className="ft-bday-status-btns">
-          {["not_contacted","warm","booking"].map(s => (
-            <button key={s} className={`ft-chip${status===s?" ft-chip--active":""}`}
-              style={status===s?{background:statusColors[s].bg,color:statusColors[s].color,borderColor:statusColors[s].color}:{}}
-              onClick={()=>{setStatus(s);save(s,notes);}}>
-              {statusColors[s].label}
-            </button>
-          ))}
+      <div className="ft-bday-info">
+        <div className="ft-bday-name">{record.kidName || "—"}{turnsLabel ? ` ${turnsLabel}` : ""}</div>
+        <div className="ft-bday-meta">
+          {record.phone && <span>{record.phone}</span>}
+          {notes && <span className="ft-bday-meta-note">{notes}</span>}
         </div>
-        <button className="ft-chip" onClick={()=>setEditing(!editing)}>
-          {editing ? "Close" : "Notes"}
+      </div>
+      <div className="ft-bday-row-actions">
+        {record.phone && (
+          <a href={`tel:${record.phone}`} className="ft-bday-action-btn" title="Call">Call</a>
+        )}
+        {record.phone && (
+          <a href={`https://wa.me/${record.phone.replace(/\D/g,"")}`} target="_blank" rel="noopener" className="ft-bday-action-btn" title="WhatsApp">WhatsApp</a>
+        )}
+        {status === "not_contacted" && (
+          <button className={`ft-bday-action-btn ft-bday-action-btn--primary`}
+            onClick={()=>{setStatus("warm");save("warm",notes);}}>Mark contacted</button>
+        )}
+        {status === "warm" && (<>
+          <span className="ft-bday-contacted-tag">Contacted</span>
+          <button className="ft-bday-action-btn" onClick={()=>{setStatus("booking");save("booking",notes);}}>Log booking</button>
+        </>)}
+        {status === "booking" && (
+          <span className="ft-bday-booked-tag">Booked</span>
+        )}
+        <button className="ft-bday-action-btn ft-bday-action-btn--icon" onClick={()=>setEditingNotes(!editingNotes)} title="Notes">
+          <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 4h12v12H4z"/><path d="M7 8h6M7 11h4"/></svg>
         </button>
       </div>
-      {editing && (
-        <div style={{padding:"0 16px 14px"}}>
+      {editingNotes && (
+        <div className="ft-bday-notes-edit">
           <textarea className="fld" rows={2} value={notes} placeholder="Add a note..."
-            style={{fontSize:12,resize:"vertical"}}
             onChange={e => setNotes(e.target.value)}
-            onBlur={() => save(status, notes)} />
+            onBlur={() => {save(status, notes); setEditingNotes(false);}} autoFocus />
         </div>
       )}
     </div>
   );
 };
 
-const BirthdayCalendar = ({birthdays, month, year, loading, onSave}) => {
+const BirthdayList = ({birthdays, month, year, loading, onSave, viewMode}) => {
   if (loading) return <div className="ft-empty"><Spinner size={24} /><div style={{marginTop:10}}>Loading birthdays...</div></div>;
-  if (!birthdays.length) return <div className="ft-empty">No birthdays found for {MONTH_NAMES[(month||1)-1]} {year}.</div>;
+  if (!birthdays.length) return <div className="ft-empty">No birthdays found for {MONTH_NAMES[(month||1)-1]}.</div>;
 
-  const weeks = {};
+  const today = new Date();
+  const todayDay = today.getDate();
+  const todayMonth = today.getMonth() + 1;
+  const todayYear = today.getFullYear();
+  const isCurMonth = month === todayMonth && year === todayYear;
+
+  const groups = {};
   birthdays.forEach(b => {
-    const w = b.day ? Math.ceil(b.day / 7) : 0;
-    if (!weeks[w]) weeks[w] = [];
-    weeks[w].push(b);
+    let label;
+    if (viewMode === "week") {
+      const diff = b.day - todayDay;
+      if (isCurMonth && diff === 1) label = "TOMORROW";
+      else if (isCurMonth && diff === 0) label = "TODAY";
+      else if (isCurMonth && diff > 0 && diff <= 7) label = "THIS WEEK";
+      else label = "THIS MONTH";
+    } else {
+      const w = b.day ? Math.ceil(b.day / 7) : 0;
+      label = "Week " + w;
+    }
+    if (!groups[label]) groups[label] = [];
+    groups[label].push(b);
+  });
+
+  const order = ["TODAY","TOMORROW","THIS WEEK","THIS MONTH"];
+  const sorted = Object.keys(groups).sort((a,b) => {
+    const ia = order.indexOf(a), ib = order.indexOf(b);
+    if (ia !== -1 && ib !== -1) return ia - ib;
+    if (ia !== -1) return -1;
+    if (ib !== -1) return 1;
+    return a.localeCompare(b, undefined, {numeric:true});
   });
 
   return (
     <div className="ft-bday-list">
-      {Object.keys(weeks).sort((a,b)=>a-b).map(w => (
-        <div key={w}>
-          <div className="ft-bday-week-label">Week {w}</div>
-          {weeks[w].map((b,i) => <BirthdayMiniCard key={b.key||i} record={b} onSave={onSave} />)}
+      {sorted.map(label => (
+        <div key={label} className="ft-bday-group">
+          <div className="ft-bday-group-label">{label}</div>
+          {groups[label].map((b,i) => (
+            <BirthdayRow key={b.key||i} record={b} onSave={onSave}
+              isTomorrow={isCurMonth && (b.day - todayDay) === 1} />
+          ))}
         </div>
       ))}
     </div>
