@@ -1064,6 +1064,19 @@ function App() {
             const v = d.toISOString().slice(0,10);
             setFilterDate(v); setCalMode("month"); fetchEntries(v,"month");
           }
+          function prevDay() {
+            const d = new Date(fd); d.setDate(d.getDate()-1);
+            const v = d.toISOString().slice(0,10);
+            setFilterDate(v); fetchEntries(v,"day");
+          }
+          function nextDay() {
+            const d = new Date(fd); d.setDate(d.getDate()+1);
+            const v = d.toISOString().slice(0,10);
+            setFilterDate(v); fetchEntries(v,"day");
+          }
+          const dayShort = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+          const monShort = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+          const dayLabel = `${dayShort[fd.getDay()]}, ${fd.getDate()} ${monShort[fd.getMonth()]} ${fd.getFullYear()}`;
 
           return (
           <div className="ft-page">
@@ -1083,56 +1096,70 @@ function App() {
               </div>
             </div>
 
-            {/* Filter toolbar — Row 1 */}
-            <div className="ft-toolbar-row1">
-              <div className="ft-seg">
-                {[{v:"day",l:"Today"},{v:"month",l:"This month"},{v:"range",l:"Pick dates"}].map(t => (
-                  <button key={t.v} className={`ft-seg-item${calMode===t.v?" ft-seg-item--active":""}`}
-                    onClick={() => onCalModeChange(t.v)}>{t.l}</button>
-                ))}
-              </div>
-
-              {calMode === "month" && (
-                <div className="ft-month-nav">
-                  <button className="ft-month-nav-btn" onClick={prevMonth}>‹</button>
-                  <span className="ft-month-nav-label">{monthLabel}</span>
-                  <button className="ft-month-nav-btn" onClick={nextMonth}>›</button>
+            {/* Filter toolbar */}
+            <div className="ft-filters">
+              <div className="ft-filters-top">
+                <div className="ft-seg">
+                  {[{v:"day",l:"Today"},{v:"month",l:"This month"},{v:"range",l:"Pick dates"}].map(t => (
+                    <button key={t.v} className={`ft-seg-item${calMode===t.v?" ft-seg-item--active":""}`}
+                      onClick={() => onCalModeChange(t.v)}>{t.l}</button>
+                  ))}
                 </div>
-              )}
-              {calMode === "day" && (
-                <input className="fld ft-date-input" type="date" value={filterDate} onChange={e => onCalDateChange(e.target.value)} />
-              )}
-              {calMode === "range" && (
-                <div style={{display:"flex",alignItems:"center",gap:6}}>
-                  <input className="fld ft-date-input" type="date" value={rangeStart||""} onChange={e => onCalRangeChange(e.target.value, rangeEnd)} />
-                  <span style={{fontSize:11,color:C.textMid}}>to</span>
-                  <input className="fld ft-date-input" type="date" value={rangeEnd||""} onChange={e => onCalRangeChange(rangeStart, e.target.value)} />
+
+                {calMode === "month" && (
+                  <div className="ft-date-nav">
+                    <button className="ft-date-nav-btn" onClick={prevMonth}>
+                      <svg width="7" height="12" viewBox="0 0 7 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 1L1 6l5 5"/></svg>
+                    </button>
+                    <span className="ft-date-nav-label">{monthLabel}</span>
+                    <button className="ft-date-nav-btn" onClick={nextMonth}>
+                      <svg width="7" height="12" viewBox="0 0 7 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M1 1l5 5-5 5"/></svg>
+                    </button>
+                  </div>
+                )}
+                {calMode === "day" && (
+                  <div className="ft-date-nav">
+                    <button className="ft-date-nav-btn" onClick={prevDay}>
+                      <svg width="7" height="12" viewBox="0 0 7 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 1L1 6l5 5"/></svg>
+                    </button>
+                    <span className="ft-date-nav-label">{dayLabel}</span>
+                    <button className="ft-date-nav-btn" onClick={nextDay}>
+                      <svg width="7" height="12" viewBox="0 0 7 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M1 1l5 5-5 5"/></svg>
+                    </button>
+                  </div>
+                )}
+                {calMode === "range" && (
+                  <div className="ft-range-inputs">
+                    <input className="fld ft-date-input" type="date" value={rangeStart||""} onChange={e => onCalRangeChange(e.target.value, rangeEnd)} />
+                    <span className="ft-range-to">to</span>
+                    <input className="fld ft-date-input" type="date" value={rangeEnd||""} onChange={e => onCalRangeChange(rangeStart, e.target.value)} />
+                  </div>
+                )}
+
+                <div className="ft-search-box">
+                  <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="#a099b5" strokeWidth="2"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M13 13l4 4"/></svg>
+                  <input type="text" placeholder="Name or mobile" value={entrySearch} onChange={e=>setEntrySearch(e.target.value)} />
                 </div>
-              )}
-
-              <div className="ft-search-box">
-                <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="#a099b5" strokeWidth="2"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M13 13l4 4"/></svg>
-                <input type="text" placeholder="Name or mobile" value={entrySearch} onChange={e=>setEntrySearch(e.target.value)} />
-              </div>
-            </div>
-
-            {/* Filter toolbar — Row 2 */}
-            <div className="ft-toolbar-row2">
-              <div className="ft-entries-summary">
-                <strong>{filteredEntries.length}</strong> entries
-                <span className="ft-summary-sep">|</span>
-                <button className="ft-export-btn" onClick={handleExport} title="Export CSV">
-                  <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M6 13l4 4 4-4M10 17V7"/><path d="M3 10V5a2 2 0 012-2h10a2 2 0 012 2v5"/></svg>
-                </button>
-                <span className="ft-summary-sep">|</span>
-                <strong>₹{totalAmt.toLocaleString("en-IN")}</strong> total
               </div>
 
-              <div className="ft-mop-chips">
-                {[{v:"all",l:"All"},{v:"upi",l:"UPI"},{v:"cash",l:"Cash"},{v:"unpaid",l:"Unpaid"}].map(f => (
-                  <button key={f.v} className={`ft-chip${entryMopFilter===f.v?" ft-chip--active":""}`}
-                    onClick={()=>setEntryMopFilter(f.v)}>{f.l}</button>
-                ))}
+              <div className="ft-filters-bottom">
+                <div className="ft-summary-strip">
+                  <span className="ft-summary-count">{filteredEntries.length}</span>
+                  <span className="ft-summary-label">entries</span>
+                  <span className="ft-summary-dot">·</span>
+                  <span className="ft-summary-amt">₹{totalAmt.toLocaleString("en-IN")}</span>
+                  <span className="ft-summary-label">total</span>
+                  <button className="ft-export-btn" onClick={handleExport} title="Export CSV">
+                    <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M3 14v2a2 2 0 002 2h10a2 2 0 002-2v-2M7 10l3 3 3-3M10 3v10"/></svg>
+                  </button>
+                </div>
+
+                <div className="ft-mop-chips">
+                  {[{v:"all",l:"All"},{v:"upi",l:"UPI"},{v:"cash",l:"Cash"},{v:"unpaid",l:"Unpaid"}].map(f => (
+                    <button key={f.v} className={`ft-chip${entryMopFilter===f.v?" ft-chip--active":""}`}
+                      onClick={()=>setEntryMopFilter(f.v)}>{f.l}</button>
+                  ))}
+                </div>
               </div>
             </div>
 
