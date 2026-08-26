@@ -424,7 +424,7 @@ function App() {
   function onCalModeChange(m) { setCalMode(m); if (m!=="range") fetchEntries(filterDate,m); }
   function onCalDateChange(v) { setFilterDate(v); fetchEntries(v,calMode); }
   function onCalRangeChange(s,e) { setRangeStart(s); setRangeEnd(e); if(s&&e) fetchEntries(filterDate,"range",s,e); }
-  function onCalToday() { const t=new Date().toISOString().slice(0,10); setFilterDate(t); setCalMode("day"); fetchEntries(t,"day"); }
+  function onCalToday() { const t=new Date().toISOString().slice(0,10); setFilterDate(t); fetchEntries(t,calMode); }
 
   async function lookupByPhone(phone) {
     if (phone.length !== 10 || phone === lastLookedUpPhone.current) return;
@@ -1100,7 +1100,7 @@ function App() {
             <div className="ft-filters">
               <div className="ft-filters-top">
                 <div className="ft-seg">
-                  {[{v:"day",l:"Today"},{v:"month",l:"This month"},{v:"range",l:"Pick dates"}].map(t => (
+                  {[{v:"day",l:"Day"},{v:"month",l:"Month"},{v:"range",l:"Period"}].map(t => (
                     <button key={t.v} className={`ft-seg-item${calMode===t.v?" ft-seg-item--active":""}`}
                       onClick={() => onCalModeChange(t.v)}>{t.l}</button>
                   ))}
@@ -1135,6 +1135,10 @@ function App() {
                     <input className="fld ft-date-input" type="date" value={rangeEnd||""} onChange={e => onCalRangeChange(rangeStart, e.target.value)} />
                   </div>
                 )}
+
+                <button className="ft-today-btn" onClick={onCalToday} title="Jump to today">
+                  <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="14" height="14" rx="2"/><path d="M3 8h14"/><path d="M7 2v4M13 2v4"/><circle cx="10" cy="13" r="1.5" fill="currentColor" stroke="none"/></svg>
+                </button>
 
                 <div className="ft-search-box">
                   <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="#a099b5" strokeWidth="2"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M13 13l4 4"/></svg>
