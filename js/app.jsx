@@ -1083,8 +1083,8 @@ function App() {
               </div>
             </div>
 
-            {/* Filter toolbar */}
-            <div className="ft-entries-toolbar">
+            {/* Filter toolbar — Row 1 */}
+            <div className="ft-toolbar-row1">
               <div className="ft-seg">
                 {[{v:"day",l:"Today"},{v:"month",l:"This month"},{v:"range",l:"Pick dates"}].map(t => (
                   <button key={t.v} className={`ft-seg-item${calMode===t.v?" ft-seg-item--active":""}`}
@@ -1114,6 +1114,19 @@ function App() {
                 <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="#a099b5" strokeWidth="2"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M13 13l4 4"/></svg>
                 <input type="text" placeholder="Name or mobile" value={entrySearch} onChange={e=>setEntrySearch(e.target.value)} />
               </div>
+            </div>
+
+            {/* Filter toolbar — Row 2 */}
+            <div className="ft-toolbar-row2">
+              <div className="ft-entries-summary">
+                <strong>{filteredEntries.length}</strong> entries
+                <span className="ft-summary-sep">|</span>
+                <button className="ft-export-btn" onClick={handleExport} title="Export CSV">
+                  <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M6 13l4 4 4-4M10 17V7"/><path d="M3 10V5a2 2 0 012-2h10a2 2 0 012 2v5"/></svg>
+                </button>
+                <span className="ft-summary-sep">|</span>
+                <strong>₹{totalAmt.toLocaleString("en-IN")}</strong> total
+              </div>
 
               <div className="ft-mop-chips">
                 {[{v:"all",l:"All"},{v:"upi",l:"UPI"},{v:"cash",l:"Cash"},{v:"unpaid",l:"Unpaid"}].map(f => (
@@ -1121,15 +1134,6 @@ function App() {
                     onClick={()=>setEntryMopFilter(f.v)}>{f.l}</button>
                 ))}
               </div>
-
-              <div className="ft-entries-summary">
-                <strong>{filteredEntries.length}</strong> entries
-                <strong style={{marginLeft:12}}>₹{totalAmt.toLocaleString("en-IN")}</strong> total
-              </div>
-
-              <button className="ft-export-btn" onClick={handleExport} title="Export CSV">
-                <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M6 13l4 4 4-4M10 17V7"/><path d="M3 10V5a2 2 0 012-2h10a2 2 0 012 2v5"/></svg>
-              </button>
             </div>
 
             {exportPinPrompt && (
