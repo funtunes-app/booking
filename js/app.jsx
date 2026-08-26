@@ -491,8 +491,7 @@ function App() {
     if (!form.phone || form.phone.length !== 10) errs.phone = "10 digits required";
     if (!form.customerName.trim()) errs.customerName = "Required";
     if (!form.amount || parseInt(form.amount) <= 0) errs.amount = "Enter amount";
-    if (!form.playMop) errs.playMop = "Select mode";
-    if (socksCharge > 0 && !form.socksMop) errs.socksMop = "Select mode";
+    if (!form.playMop) errs.playMop = "Select payment mode";
     setErrors(errs);
     if (Object.keys(errs).length) { setShakeStep(true); setTimeout(()=>setShakeStep(false),500); }
     return !Object.keys(errs).length;
@@ -508,23 +507,29 @@ function App() {
 
   function getSocksMopString() {
     if(socksCharge<=0) return "";
-    if(form.socksMop==="UPI + Cash"){
-      const u=parseInt(form.socksUpiAmount)||0, c=parseInt(form.socksCashAmount)||0;
-      return `UPI ₹${u} + Cash ₹${c}`;
+    const mop = form.playMop;
+    if(mop==="UPI + Cash"){
+      const pay = computePaymentCols();
+      return `UPI ₹${pay.socksUpi} + Cash ₹${pay.socksCash}`;
     }
-    return form.socksMop;
+    return mop;
   }
 
   function computePaymentCols() {
     const playAmt=parseInt(form.amount)||0;
+    const mop = form.playMop;
     let pu=0,pc=0,su=0,sc=0;
-    if(form.playMop==="UPI") pu=playAmt;
-    else if(form.playMop==="Cash") pc=playAmt;
-    else if(form.playMop==="UPI + Cash"){pu=parseInt(form.playUpiAmount)||0;pc=parseInt(form.playCashAmount)||0;}
-    if(socksCharge>0){
-      if(form.socksMop==="UPI") su=socksCharge;
-      else if(form.socksMop==="Cash") sc=socksCharge;
-      else if(form.socksMop==="UPI + Cash"){su=parseInt(form.socksUpiAmount)||0;sc=parseInt(form.socksCashAmount)||0;}
+    if(mop==="UPI"){ pu=playAmt; if(socksCharge>0) su=socksCharge; }
+    else if(mop==="Cash"){ pc=playAmt; if(socksCharge>0) sc=socksCharge; }
+    else if(mop==="UPI + Cash"){
+      const totalAmt = playAmt + socksCharge;
+      const upiAmt = parseInt(form.playUpiAmount)||0;
+      const cashAmt = parseInt(form.playCashAmount)||0;
+      if(socksCharge>0){
+        const socksRatio = socksCharge/totalAmt;
+        su=Math.round(upiAmt*socksRatio); sc=Math.round(cashAmt*socksRatio);
+        pu=upiAmt-su; pc=cashAmt-sc;
+      } else { pu=upiAmt; pc=cashAmt; }
     }
     return {playUpi:pu,playCash:pc,socksUpi:su,socksCash:sc};
   }
@@ -1401,9 +1406,14 @@ function App() {
         {screen === "form" && (
           <div className="ft-page ft-form-scroll" ref={containerRef}>
             <div className="ft-header">
-              <div>
-                <div className="ft-header-title">{editTarget ? "Edit Entry" : "New Booking"}</div>
-                <div className="ft-header-sub">{dateDisplay} · {timeDisplay}</div>
+              <div style={{display:"flex",alignItems:"center",gap:10}}>
+                <button onClick={resetForm} style={{background:"none",border:"none",padding:4,cursor:"pointer",display:"grid",placeItems:"center"}}>
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M12.5 15L7.5 10L12.5 5" stroke={C.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </button>
+                <div>
+                  <div className="ft-header-title">{editTarget ? "Edit Entry" : "New Booking"}</div>
+                  <div className="ft-header-sub">{dateDisplay} · {timeDisplay}</div>
+                </div>
               </div>
               <div style={{display:"flex",gap:6}}>
                 {!editTarget && <IconMenu trigger={typeMeta.icon} title="Change entry type" activeValue={entryType}
@@ -1411,198 +1421,230 @@ function App() {
                     value:t.key, icon:t.icon, label:t.label,
                     onSelect:()=>{ if(t.key!==entryType) setFormType(t.key); },
                   }))} />}
-                <button className="ft-chip" onClick={resetForm}>Cancel</button>
               </div>
             </div>
 
             <div style={{animation:shakeStep?"shakeX .4s ease":"fadeIn .3s ease"}}>
+              <div className="ft-form-desktop-grid">
 
-              {/* Customer section */}
-              <div className="ft-form-section">
-                <SectionHeading label="Customer" />
-                <div className="form-grid">
-                  <InputField label="Mobile" icon="📱" error={errors.phone}>
-                    <div style={{position:"relative"}}>
+              {/* ── LEFT COLUMN: Customer ── */}
+              <div>
+                <div className="ft-form-section">
+                  <div className="ft-form-section-label">Customer</div>
+
+                  {/* Phone */}
+                  <div style={{marginBottom:14}}>
+                    <label className="field-label">Phone</label>
+                    <div className="ft-phone-wrap">
                       <input className={`fld${errors.phone?" is-error":""}`} value={form.phone} placeholder="10-digit mobile" type="tel" inputMode="numeric"
+                        style={{borderWidth:"1.5px",borderColor:errors.phone?"var(--ft-danger)":"var(--ft-accent-hover)",boxShadow:errors.phone?"0 0 0 3px rgba(194,96,122,.1)":"0 0 0 3px var(--ft-purple-glow)"}}
                         onChange={e=>{const v=e.target.value.replace(/\D/g,"").slice(0,10);set("phone",v);if(v.length===10)lookupByPhone(v);}} />
                       {phoneLookupLoading && <div style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)"}}><Spinner size={16} /></div>}
-                    </div>
-                  </InputField>
-                  <InputField label="No. of Kids" icon="👶">
-                    <NumberStepper value={form.numKids} onChange={v=>set("numKids",v)} min={1} max={10} />
-                  </InputField>
-                </div>
-
-                {Array.from({length:form.numKids},(_,i)=>(
-                  <div key={i} style={{marginTop:8}}>
-                    {form.numKids>1 && <div style={{fontSize:11,fontWeight:700,color:C.textMid,marginBottom:4}}>Kid {i+1}</div>}
-                    <div className="form-grid">
-                      <InputField label={form.numKids>1?"Name":"Kid's Name"} error={i===0?errors.customerName:undefined}>
-                        <input className={`fld${i===0&&errors.customerName?" is-error":""}`}
-                          value={i===0?form.customerName:((form.kidNames&&form.kidNames[i])||"")}
-                          placeholder={`e.g. ${["Priya","Arjun","Meera","Ravi","Ananya"][i%5]}`}
-                          onChange={e=>{
-                            if(i===0) set("customerName",e.target.value);
-                            else { const names=[...(form.kidNames||[])]; names[i]=e.target.value; set("kidNames",names); }
-                          }} />
-                      </InputField>
-                      <InputField label="DOB">
-                        <input className="fld"
-                          value={i===0?form.dob:((form.dobs&&form.dobs[i])||"")}
-                          type="date"
-                          onChange={e=>{
-                            if(i===0) set("dob",e.target.value);
-                            else { const d2=[...(form.dobs||[])]; d2[i]=e.target.value; set("dobs",d2); }
-                          }} />
-                      </InputField>
+                      {form.phone.length===10 && !phoneLookupLoading && (
+                        lastLookedUpPhone.current===form.phone
+                          ? <span className="ft-phone-badge">RETURNING</span>
+                          : <span className="ft-phone-badge ft-phone-badge--new">FIRST VISIT</span>
+                      )}
+                      {errors.phone && <span className="err-msg" style={{position:"absolute",right:12,top:-18,fontSize:10}}>{errors.phone}</span>}
                     </div>
                   </div>
-                ))}
+
+                  {/* Name */}
+                  <div style={{marginBottom:14}}>
+                    <label className="field-label">Name {errors.customerName && <span className="err-msg">{errors.customerName}</span>}</label>
+                    <input className={`fld${errors.customerName?" is-error":""}`}
+                      value={form.customerName} placeholder="Kid's name"
+                      onChange={e=>set("customerName",e.target.value)} />
+                    {form.phone.length===10 && !form.customerName && <div className="ft-form-helper">New number — name is saved for next time</div>}
+                  </div>
+
+                  {/* Kids stepper */}
+                  <div style={{marginBottom:14}}>
+                    <label className="field-label">Kids</label>
+                    <NumberStepper value={form.numKids} onChange={v=>set("numKids",v)} min={1} max={10} />
+                  </div>
+
+                  {/* Kid rows */}
+                  {Array.from({length:form.numKids},(_,i)=>(
+                    <div key={i} className="ft-kid-row">
+                      <div className="ft-kid-num">{i+1}</div>
+                      <input className="fld"
+                        value={i===0?form.customerName:((form.kidNames&&form.kidNames[i])||"")}
+                        placeholder={i===0?"Name (same as above)":`Kid ${i+1} name`}
+                        onChange={e=>{
+                          if(i===0) set("customerName",e.target.value);
+                          else { const names=[...(form.kidNames||[])]; names[i]=e.target.value; set("kidNames",names); }
+                        }} />
+                      <input className="fld fld-date"
+                        value={i===0?form.dob:((form.dobs&&form.dobs[i])||"")}
+                        type="date" placeholder="DOB"
+                        onChange={e=>{
+                          if(i===0) set("dob",e.target.value);
+                          else { const d2=[...(form.dobs||[])]; d2[i]=e.target.value; set("dobs",d2); }
+                        }} />
+                    </div>
+                  ))}
+                  {form.numKids>0 && <div className="ft-form-helper" style={{marginTop:6}}>DOB optional — only used for birthday reminders</div>}
+
+                  {/* Socks */}
+                  {isPlayArea && <div style={{marginTop:18}}>
+                    <div className="ft-form-section-label">Socks</div>
+                    <div className="ft-sock-chips">
+                      {[0,1,2,3,4].map(n=>{
+                        const label = n===0?"None":n===1?`1 pair · ₹${CONFIG.SOCKS_RATE}`:`${n} · ₹${n*CONFIG.SOCKS_RATE}`;
+                        const isActive = (form.sockMode!=="custom") && (form.sockCount||0)===n;
+                        return <button key={n} type="button" className={`ft-sock-chip${isActive?" is-active":""}`}
+                          onClick={()=>{set("sockMode","preset");setSockCount(n);}}>{label}</button>;
+                      })}
+                    </div>
+                  </div>}
+                </div>
               </div>
 
-              {/* Booking details */}
-              <div className="ft-form-section">
-                <SectionHeading icon={typeMeta.icon} label={isPlayArea?"Playtime":`${typeMeta.label} Booking`} />
-                <div className="form-grid">
-                  <InputField label="Duration" icon="⏱️">
-                    <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                      <Dropdown flex={1}
-                        value={form.hoursMode==="custom"?"custom":String(form.hours)}
-                        options={[...CONFIG.HOUR_OPTIONS.map(o=>({value:o.value,label:o.label})),{value:"custom",label:"Custom..."}]}
-                        onChange={v=>{
-                          if(v==="custom") set("hoursMode","custom");
-                          else { set("hoursMode","preset"); setHours(v,isPlayArea); }
+              {/* ── RIGHT COLUMN: Playtime ── */}
+              <div>
+                <div className="ft-form-section">
+                  <div className="ft-form-section-label">{isPlayArea?"Playtime":`${typeMeta.label} Booking`}</div>
+
+                  {/* Duration chips */}
+                  <div className="ft-dur-chips">
+                    {CONFIG.HOUR_OPTIONS.filter(o=>["0.5","1","2"].includes(o.value)).map(o=>{
+                      const isActive = form.hoursMode!=="custom" && String(form.hours)===o.value;
+                      return <button key={o.value} type="button" className={`ft-dur-chip${isActive?" is-active":""}`}
+                        onClick={()=>{set("hoursMode","preset");setHours(o.value,isPlayArea);}}>{o.label}</button>;
+                    })}
+                    <button type="button" className={`ft-dur-chip${form.hoursMode==="custom"?" is-active":""}`}
+                      onClick={()=>set("hoursMode","custom")}>Custom</button>
+                  </div>
+
+                  {/* Custom duration inputs */}
+                  {form.hoursMode==="custom" && (
+                    <div className="ft-custom-dur">
+                      <input className="fld" value={Math.floor(parseFloat(form.hours)||0)} type="tel" inputMode="numeric" placeholder="0"
+                        onChange={e=>{
+                          const hrs=parseInt(e.target.value.replace(/\D/g,""))||0;
+                          const mins=Math.round(((parseFloat(form.hours)||0)%1)*60);
+                          setHours(String(hrs+mins/60),isPlayArea);
                         }} />
-                      {form.hoursMode==="custom" &&
-                        <input className="fld" value={form.hours} onChange={e=>setHours(e.target.value.replace(/[^\d.]/g,""),isPlayArea)}
-                          placeholder="hrs" type="tel" inputMode="decimal" style={{width:74,flexShrink:0,textAlign:"center"}} />}
+                      <span className="ft-custom-dur-label">hr</span>
+                      <input className="fld" value={Math.round(((parseFloat(form.hours)||0)%1)*60)} type="tel" inputMode="numeric" placeholder="0"
+                        onChange={e=>{
+                          const mins=parseInt(e.target.value.replace(/\D/g,""))||0;
+                          const hrs=Math.floor(parseFloat(form.hours)||0);
+                          setHours(String(hrs+Math.min(mins,59)/60),isPlayArea);
+                        }} />
+                      <span className="ft-custom-dur-label">min</span>
                     </div>
-                    <div style={{display:"flex",gap:6,alignItems:"center",marginTop:6,fontSize:12,color:C.textMid}}>
-                      <span>🕐</span>
-                      <input className="fld" value={form.timeIn} onChange={e=>set("timeIn",e.target.value)} type="time" style={{maxWidth:100,fontSize:12}} />
-                      {form.timeIn && <span>→ {formatTime12(computeTimeOut(form.timeIn,form.hours))}</span>}
-                    </div>
-                  </InputField>
-                  <InputField label="Date" icon="📅">
-                    <input className="fld" type="date" value={form.date} onChange={e=>set("date",e.target.value)} />
-                  </InputField>
-                  <InputField label={isPlayArea?"Playtime Amount":"Amount"} icon="💰" error={errors.amount}>
+                  )}
+
+                  {/* Time FROM → TO */}
+                  <div className="ft-time-row">
+                    <span className="ft-time-label">From</span>
+                    <input className="fld" value={form.timeIn} onChange={e=>set("timeIn",e.target.value)} type="time" />
+                    <span className="ft-time-arrow">→</span>
+                    <span className="ft-time-label">To</span>
+                    <input className="fld" value={computeTimeOut(form.timeIn,form.hours)} type="time" readOnly
+                      style={{background:"var(--ft-accent-soft)",color:"var(--ft-deep)"}} />
+                  </div>
+
+                  {/* Amount (hidden as auto-calculated but editable) */}
+                  <div style={{marginTop:14}}>
+                    <label className="field-label">{isPlayArea?"Playtime Amount":"Amount"} {errors.amount && <span className="err-msg">{errors.amount}</span>}</label>
                     <div style={{position:"relative"}}>
                       <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",fontWeight:700,color:C.textMid}}>₹</span>
                       <input className={`fld${errors.amount?" is-error":""}`} value={form.amount} type="tel" inputMode="numeric" placeholder="300"
                         style={{paddingLeft:28,fontSize:18,fontWeight:700}}
                         onChange={e=>set("amount",e.target.value.replace(/\D/g,""))} />
                     </div>
-                    {isPlayArea && form.numKids>1 && <div style={{fontSize:11,color:C.textLight,marginTop:4}}>{form.numKids} kids x ₹{computeAmountForHours(form.hours)} per kid</div>}
-                  </InputField>
-                </div>
-              </div>
+                    {isPlayArea && form.numKids>1 && <div className="ft-form-helper">{form.numKids} kids x ₹{computeAmountForHours(form.hours)} per kid</div>}
+                  </div>
 
-              {/* Socks */}
-              {isPlayArea && (
-                <div className="ft-form-section">
-                  <SectionHeading icon="🧦" label="Socks" />
-                  <div className="form-grid">
-                    <InputField label="Pairs">
-                      <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                        <Dropdown flex={1}
-                          value={form.sockMode==="custom"?"custom":String(form.sockCount||0)}
-                          options={[...CONFIG.SOCK_COUNT_OPTIONS.map(n=>({value:String(n),label:n===0?"None":`${n} pair${n>1?"s":""}`})),{value:"custom",label:"Custom..."}]}
-                          onChange={v=>{
-                            if(v==="custom") set("sockMode","custom");
-                            else { set("sockMode","preset"); setSockCount(parseInt(v)); }
-                          }} />
-                        {form.sockMode==="custom" &&
-                          <input className="fld" value={form.sockCount||""} placeholder="pairs" type="tel" inputMode="numeric"
-                            onChange={e=>{const v=e.target.value.replace(/\D/g,"");setSockCount(v===""?0:parseInt(v));}}
-                            style={{width:74,flexShrink:0,textAlign:"center"}} />}
+                  {/* Payment */}
+                  <div style={{marginTop:18}}>
+                    <div className="ft-form-section-label">Payment</div>
+                    <div className="ft-pay-chips">
+                      {[{value:"UPI",label:"UPI"},{value:"Cash",label:"Cash"},{value:"UPI + Cash",label:"Split"}].map(o=>(
+                        <button key={o.value} type="button" className={`ft-pay-chip${form.playMop===o.value?" is-active":""}`}
+                          onClick={()=>{
+                            set("playMop",o.value);
+                            if(socksCharge>0) set("socksMop",o.value);
+                            if(o.value!=="UPI + Cash"){set("playUpiAmount","");set("playCashAmount","");set("socksUpiAmount","");set("socksCashAmount","");}
+                          }}>{o.label}</button>
+                      ))}
+                    </div>
+                    {errors.playMop && <div className="ft-form-helper" style={{color:C.danger}}>{errors.playMop}</div>}
+
+                    {/* Split amounts */}
+                    {form.playMop==="UPI + Cash" && (
+                      <div className="ft-split-row">
+                        <div>
+                          <div className="ft-split-label">UPI Amount</div>
+                          <div style={{position:"relative"}}>
+                            <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",fontWeight:600,color:C.textMid,fontSize:12}}>₹</span>
+                            <input className="fld" value={form.playUpiAmount} type="tel" inputMode="numeric" placeholder="0"
+                              style={{paddingLeft:26,height:40,fontSize:13.5,fontWeight:600}}
+                              onChange={e=>{
+                                const v=e.target.value.replace(/\D/g,"");
+                                set("playUpiAmount",v);
+                                set("playCashAmount",String(Math.max(0,totalAmount-(parseInt(v)||0))));
+                              }} />
+                          </div>
+                        </div>
+                        <div>
+                          <div className="ft-split-label">Cash Amount</div>
+                          <div style={{position:"relative"}}>
+                            <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",fontWeight:600,color:C.textMid,fontSize:12}}>₹</span>
+                            <input className="fld" value={form.playCashAmount} type="tel" inputMode="numeric" placeholder="0"
+                              style={{paddingLeft:26,height:40,fontSize:13.5,fontWeight:600}}
+                              onChange={e=>{
+                                const v=e.target.value.replace(/\D/g,"");
+                                set("playCashAmount",v);
+                                set("playUpiAmount",String(Math.max(0,totalAmount-(parseInt(v)||0))));
+                              }} />
+                          </div>
+                        </div>
                       </div>
-                    </InputField>
-                    {form.socks>0 && <InputField label="Socks Amount" icon="💰">
-                      <div style={{position:"relative"}}>
-                        <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",fontWeight:700,color:C.textMid}}>₹</span>
-                        <input className="fld" value={form.socks} type="tel" inputMode="numeric" placeholder="15"
-                          style={{paddingLeft:28,fontSize:16,fontWeight:700}}
-                          onChange={e=>set("socks",e.target.value===""?0:parseInt(e.target.value.replace(/\D/g,""))||0)} />
-                      </div>
-                    </InputField>}
+                    )}
+                    <div className="ft-form-helper" style={{marginTop:8}}>One payment for the whole bill — playtime and socks combined</div>
+                  </div>
+
+                  {/* Bill summary card */}
+                  <div className="ft-bill-card">
+                    <div className="ft-bill-line">
+                      <span>Playtime · {formatHoursLabel(form.hours)}{form.numKids>1?` × ${form.numKids} kids`:""}</span>
+                      <span>₹{(parseInt(form.amount)||0).toLocaleString("en-IN")}</span>
+                    </div>
+                    {socksCharge > 0 && <div className="ft-bill-line">
+                      <span>Socks · {form.sockCount||0} pair{(form.sockCount||0)!==1?"s":""}</span>
+                      <span>₹{socksCharge.toLocaleString("en-IN")}</span>
+                    </div>}
+                    <div className="ft-bill-total">
+                      <span>Total</span>
+                      <span>₹{totalAmount.toLocaleString("en-IN")}</span>
+                    </div>
                   </div>
                 </div>
-              )}
-
-              {/* Payment */}
-              <div className="ft-form-section">
-                <SectionHeading icon="💳" label={`Payment · ₹${totalAmount.toLocaleString("en-IN")}`} />
-
-                <div style={{marginBottom:12}}>
-                  <div style={{fontSize:12,fontWeight:600,color:C.textMid,marginBottom:6}}>Playtime · ₹{parseInt(form.amount)||0}</div>
-                  <InputField label="Paid via" error={errors.playMop}>
-                    <ChipSelect options={CONFIG.MOP_OPTIONS.map(o=>({value:o.value,label:o.label}))} value={form.playMop} onChange={v=>{
-                      set("playMop",v);
-                      if(v!=="UPI + Cash"){set("playUpiAmount","");set("playCashAmount","");}
-                    }} />
-                  </InputField>
-                  {form.playMop==="UPI + Cash" && <div className="form-grid" style={{marginTop:6}}>
-                    <InputField label="UPI Amount" icon="📱">
-                      <input className="fld" value={form.playUpiAmount} type="tel" inputMode="numeric" placeholder="0"
-                        onChange={e=>{
-                          const v=e.target.value.replace(/\D/g,"");
-                          const playAmt=parseInt(form.amount)||0;
-                          set("playUpiAmount",v);
-                          set("playCashAmount",String(Math.max(0,playAmt-(parseInt(v)||0))));
-                        }} />
-                    </InputField>
-                    <InputField label="Cash Amount" icon="💵">
-                      <input className="fld" value={form.playCashAmount} type="tel" inputMode="numeric" placeholder="0"
-                        onChange={e=>{
-                          const v=e.target.value.replace(/\D/g,"");
-                          const playAmt=parseInt(form.amount)||0;
-                          set("playCashAmount",v);
-                          set("playUpiAmount",String(Math.max(0,playAmt-(parseInt(v)||0))));
-                        }} />
-                    </InputField>
-                  </div>}
-                </div>
-
-                {socksCharge > 0 && <div>
-                  <div style={{fontSize:12,fontWeight:600,color:C.textMid,marginBottom:6}}>Socks · ₹{socksCharge}</div>
-                  <InputField label="Paid via" error={errors.socksMop}>
-                    <ChipSelect options={CONFIG.MOP_OPTIONS.map(o=>({value:o.value,label:o.label}))} value={form.socksMop} onChange={v=>{
-                      set("socksMop",v);
-                      if(v!=="UPI + Cash"){set("socksUpiAmount","");set("socksCashAmount","");}
-                    }} />
-                  </InputField>
-                  {form.socksMop==="UPI + Cash" && <div className="form-grid" style={{marginTop:6}}>
-                    <InputField label="UPI Amount" icon="📱">
-                      <input className="fld" value={form.socksUpiAmount} type="tel" inputMode="numeric" placeholder="0"
-                        onChange={e=>{
-                          const v=e.target.value.replace(/\D/g,"");
-                          set("socksUpiAmount",v);
-                          set("socksCashAmount",String(Math.max(0,socksCharge-(parseInt(v)||0))));
-                        }} />
-                    </InputField>
-                    <InputField label="Cash Amount" icon="💵">
-                      <input className="fld" value={form.socksCashAmount} type="tel" inputMode="numeric" placeholder="0"
-                        onChange={e=>{
-                          const v=e.target.value.replace(/\D/g,"");
-                          set("socksCashAmount",v);
-                          set("socksUpiAmount",String(Math.max(0,socksCharge-(parseInt(v)||0))));
-                        }} />
-                    </InputField>
-                  </div>}
-                </div>}
               </div>
+
+              </div>{/* end desktop-grid */}
             </div>
 
             {/* Pinned submit footer */}
             <div className="ft-form-footer">
               <div className="ft-form-footer-total">
-                <span style={{fontSize:12,color:C.textMid}}>Total</span>
-                <span style={{fontSize:22,fontWeight:800}}>₹{totalAmount.toLocaleString("en-IN")}</span>
+                <span className="label">Total</span>
+                <span className="value">₹{totalAmount.toLocaleString("en-IN")}</span>
               </div>
-              <button className="ft-btn-primary ft-btn-primary--lg" disabled={saving}
+              {!editTarget && <button className="ft-btn-outline" disabled={saving}
+                onClick={async()=>{
+                  await submitEntry();
+                  setTimeout(()=>{setFormState(prev=>({...getDefaultForm(),phone:prev.phone,date:prev.date}));setShowSuccess(false);setErrors({});},100);
+                }}>
+                Save & add another
+              </button>}
+              <button className={editTarget?"ft-btn-primary ft-btn-primary--lg":"ft-btn-start"} disabled={saving}
                 onClick={editTarget ? handleUpdateSubmit : submitEntry}>
-                {editTarget ? "Update entry" : "Save entry"}
+                {editTarget ? "Update entry" : "Start playtime"}
               </button>
             </div>
           </div>
