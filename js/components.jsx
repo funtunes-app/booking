@@ -425,8 +425,13 @@ const EntryRow = ({entry, onEdit, onDelete, onCheckout}) => {
         <button className="ft-entry-act-btn" onClick={() => onEdit(entry)} title="Edit">
           <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2"><path d="M13.5 3.5l3 3L7 16H4v-3L13.5 3.5z"/></svg>
         </button>
-        <button className="ft-entry-act-btn" onClick={() => onDelete(entry)} title="More">
-          <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="4" r="1.5"/><circle cx="10" cy="10" r="1.5"/><circle cx="10" cy="16" r="1.5"/></svg>
+        {isActive && onCheckout && (
+          <button className="ft-entry-act-btn ft-entry-act-btn--checkout" onClick={() => onCheckout(entry)} title="Checkout">
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2l4 4-4 4"/><path d="M18 6H8"/><path d="M6 4H3v14h3"/></svg>
+          </button>
+        )}
+        <button className="ft-entry-act-btn ft-entry-act-btn--danger" onClick={() => onDelete(entry)} title="Delete">
+          <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 5h12M8 5V3h4v2M6 5v11a1 1 0 001 1h6a1 1 0 001-1V5"/><path d="M9 8v6M11 8v6"/></svg>
         </button>
       </div>
     </div>
