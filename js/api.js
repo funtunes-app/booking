@@ -187,6 +187,53 @@ var api = {
     return { success: true, data: results };
   },
 
+  searchBirthdays: async function (query) {
+    var q = (query || "").trim();
+    if (!q) return { success: true, data: [] };
+    var { data, error } = await supabaseClient
+      .from("entries")
+      .select("customer_name, phone, dob")
+      .neq("dob", "")
+      .or("customer_name.ilike.%" + q + "%,phone.ilike.%" + q + "%")
+      .order("created_at", { ascending: false });
+    if (error) return { success: false, error: error.message };
+
+    var seen = {};
+    var results = [];
+    (data || []).forEach(function(row) {
+      if (!row.dob || row.dob.length < 10) return;
+      var key = (row.customer_name || "").trim().toLowerCase() + "|" + row.dob;
+      if (seen[key]) return;
+      seen[key] = true;
+      var parts = row.dob.split("-");
+      results.push({
+        key: key,
+        kidName: row.customer_name || "",
+        phone: row.phone || "",
+        dob: row.dob,
+        day: parseInt(parts[2]) || 1,
+        month: parseInt(parts[1]) || 1,
+        year: parseInt(parts[0]) || 2020,
+      });
+    });
+
+    results.sort(function(a, b) { return a.month === b.month ? a.day - b.day : a.month - b.month; });
+
+    try {
+      var crm = JSON.parse(localStorage.getItem("funtunes_bday_crm") || "{}");
+      results.forEach(function(r) {
+        var saved = crm[r.key];
+        if (saved) {
+          r.status = saved.status || "not_contacted";
+          r.notes = saved.notes || "";
+          if (saved.phone) r.phone = saved.phone;
+        }
+      });
+    } catch(e) {}
+
+    return { success: true, data: results };
+  },
+
   updateBirthdayCall: async function (record) {
     try {
       var crm = JSON.parse(localStorage.getItem("funtunes_bday_crm") || "{}");

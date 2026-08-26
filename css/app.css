@@ -1020,6 +1020,10 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
 }
 .ft-bday-action-btn--primary:hover { background: var(--ft-deepest); box-shadow: none; }
 .ft-bday-action-btn--icon { padding: 7px 8px; }
+.ft-bday-action-btn--muted {
+  font-size: 11px; color: var(--ft-muted2); border-color: var(--ft-border4);
+}
+.ft-bday-action-btn--muted:hover { background: var(--ft-muted2); color: #fff; border-color: var(--ft-muted2); }
 .ft-bday-contacted-tag {
   font: 500 11px var(--ft-sans); color: var(--ft-green); background: #edf8f4;
   border: 1px solid #b8e0d2; border-radius: 6px; padding: 5px 10px;

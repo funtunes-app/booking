@@ -235,6 +235,7 @@ const BirthdayRow = ({record, onSave, isTomorrow}) => {
   const [editingNotes, setEditingNotes] = React.useState(false);
 
   const save = (s, n) => { onSave({...record, status:s, notes:n}); };
+  const changeStatus = (s) => { setStatus(s); save(s, notes); };
 
   const thisYear = new Date().getFullYear();
   const age = record.year ? thisYear - record.year : null;
@@ -251,7 +252,7 @@ const BirthdayRow = ({record, onSave, isTomorrow}) => {
         <div className="ft-bday-name">{record.kidName || "—"}{turnsLabel ? ` ${turnsLabel}` : ""}</div>
         <div className="ft-bday-meta">
           {record.phone && <span>{record.phone}</span>}
-          {notes && <span className="ft-bday-meta-note">{notes}</span>}
+          {notes && !editingNotes && <span className="ft-bday-meta-note">{notes}</span>}
         </div>
       </div>
       <div className="ft-bday-row-actions">
@@ -262,16 +263,17 @@ const BirthdayRow = ({record, onSave, isTomorrow}) => {
           <a href={`https://wa.me/${record.phone.replace(/\D/g,"")}`} target="_blank" rel="noopener" className="ft-bday-action-btn" title="WhatsApp">WhatsApp</a>
         )}
         {status === "not_contacted" && (
-          <button className={`ft-bday-action-btn ft-bday-action-btn--primary`}
-            onClick={()=>{setStatus("warm");save("warm",notes);}}>Mark contacted</button>
+          <button className="ft-bday-action-btn ft-bday-action-btn--primary"
+            onClick={()=>{changeStatus("warm");setEditingNotes(true);}}>Mark contacted</button>
         )}
         {status === "warm" && (<>
-          <span className="ft-bday-contacted-tag">Contacted</span>
-          <button className="ft-bday-action-btn" onClick={()=>{setStatus("booking");save("booking",notes);}}>Log booking</button>
+          <button className="ft-bday-action-btn" onClick={()=>changeStatus("booking")}>Log booking</button>
+          <button className="ft-bday-action-btn ft-bday-action-btn--muted" onClick={()=>changeStatus("not_contacted")}>Undo</button>
         </>)}
-        {status === "booking" && (
+        {status === "booking" && (<>
           <span className="ft-bday-booked-tag">Booked</span>
-        )}
+          <button className="ft-bday-action-btn ft-bday-action-btn--muted" onClick={()=>changeStatus("warm")}>Undo</button>
+        </>)}
         <button className="ft-bday-action-btn ft-bday-action-btn--icon" onClick={()=>setEditingNotes(!editingNotes)} title="Notes">
           <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 4h12v12H4z"/><path d="M7 8h6M7 11h4"/></svg>
         </button>
@@ -287,9 +289,9 @@ const BirthdayRow = ({record, onSave, isTomorrow}) => {
   );
 };
 
-const BirthdayList = ({birthdays, month, year, loading, onSave, viewMode}) => {
+const BirthdayList = ({birthdays, month, year, loading, onSave, viewMode, isSearching}) => {
   if (loading) return <div className="ft-empty"><Spinner size={24} /><div style={{marginTop:10}}>Loading birthdays...</div></div>;
-  if (!birthdays.length) return <div className="ft-empty">No birthdays found for {MONTH_NAMES[(month||1)-1]}.</div>;
+  if (!birthdays.length) return <div className="ft-empty">{isSearching ? "No results found." : `No birthdays found for ${MONTH_NAMES[(month||1)-1]}.`}</div>;
 
   const today = new Date();
   const todayDay = today.getDate();
@@ -300,7 +302,9 @@ const BirthdayList = ({birthdays, month, year, loading, onSave, viewMode}) => {
   const groups = {};
   birthdays.forEach(b => {
     let label;
-    if (viewMode === "week") {
+    if (isSearching) {
+      label = MONTH_NAMES[(b.month||1)-1].toUpperCase();
+    } else if (viewMode === "week") {
       const diff = b.day - todayDay;
       if (isCurMonth && diff === 1) label = "TOMORROW";
       else if (isCurMonth && diff === 0) label = "TODAY";

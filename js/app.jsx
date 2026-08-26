@@ -69,6 +69,8 @@ function App() {
   const [bdayViewMode, setBdayViewMode] = useState("week");
   const [bdayStatusFilter, setBdayStatusFilter] = useState("all");
   const [bdaySearch, setBdaySearch] = useState("");
+  const [bdaySearchResults, setBdaySearchResults] = useState(null);
+  const bdaySearchTimer = React.useRef(null);
   const [statsUnlocked, setStatsUnlocked] = useState(false);
   const [phoneLookupLoading, setPhoneLookupLoading] = useState(false);
   const [enquiry, setEnquiry] = useState(null);
@@ -222,7 +224,17 @@ function App() {
     const now = new Date();
     setBirthdayMonth(now.getMonth()+1); setBirthdayYear(now.getFullYear());
     setBdayViewMode("week");
+    setBdaySearch(""); setBdaySearchResults(null);
     fetchBirthdays(now.getMonth()+1, now.getFullYear());
+  }
+  function onBdaySearchChange(val) {
+    setBdaySearch(val);
+    clearTimeout(bdaySearchTimer.current);
+    if (!val.trim()) { setBdaySearchResults(null); return; }
+    bdaySearchTimer.current = setTimeout(async () => {
+      const res = await api.searchBirthdays(val.trim());
+      if (res.success) setBdaySearchResults(res.data);
+    }, 400);
   }
 
   async function saveBirthdayCall(record) {
@@ -1205,18 +1217,13 @@ function App() {
           const contactedCount = birthdays.filter(b=>(b.status||"not_contacted")!=="not_contacted").length;
           const bookedCount = birthdays.filter(b=>b.status==="booking").length;
 
-          let filteredBdays = birthdays;
+          const isSearching = bdaySearch.trim().length > 0;
+          let filteredBdays = isSearching && bdaySearchResults ? bdaySearchResults : birthdays;
           if (bdayStatusFilter === "not_contacted") filteredBdays = filteredBdays.filter(b=>(b.status||"not_contacted")==="not_contacted");
           else if (bdayStatusFilter === "warm") filteredBdays = filteredBdays.filter(b=>b.status==="warm");
           else if (bdayStatusFilter === "booking") filteredBdays = filteredBdays.filter(b=>b.status==="booking");
 
-          if (bdaySearch) {
-            const q = bdaySearch.toLowerCase();
-            filteredBdays = filteredBdays.filter(b =>
-              (b.kidName||"").toLowerCase().includes(q) || (b.phone||"").includes(q));
-          }
-
-          if (bdayViewMode === "week") {
+          if (!isSearching && bdayViewMode === "week") {
             const today = new Date();
             const todayDay = today.getDate();
             const isCur = birthdayMonth === today.getMonth()+1 && birthdayYear === today.getFullYear();
@@ -1234,10 +1241,10 @@ function App() {
             <div className="ft-header">
               <div>
                 <div className="ft-header-title">Birthdays</div>
-                <div className="ft-header-sub">{birthdays.length} this month · {contactedCount} contacted · {bookedCount} booked</div>
+                <div className="ft-header-sub">{isSearching ? `${filteredBdays.length} results across all months` : `${birthdays.length} this month · ${contactedCount} contacted · ${bookedCount} booked`}</div>
               </div>
               <div style={{display:"flex",alignItems:"center",gap:8}}>
-                <button className="ft-chip" onClick={openEnquiry}>+ Enquiry</button>
+                <button className="ft-btn-primary" onClick={openEnquiry}>+ Enquiry</button>
                 <button className="ft-entry-act-btn" onClick={()=>fetchBirthdays()} disabled={birthdaysLoading} title="Refresh">
                   <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17.65 6.35A7.96 7.96 0 0010 2a8 8 0 108 8h-2a6 6 0 11-1.76-4.24"/><path d="M18 2v5h-5"/></svg>
                 </button>
@@ -1247,45 +1254,26 @@ function App() {
             <div className="ft-filters">
               <div className="ft-filters-top">
                 <div className="ft-seg">
-                  {[{v:"week",l:"Next 7 days"},{v:"month",l:"This month"},{v:"pick",l:"Pick month"}].map(t => (
+                  {[{v:"week",l:"Next 7 days"},{v:"month",l:"This month"}].map(t => (
                     <button key={t.v} className={`ft-seg-item${bdayViewMode===t.v?" ft-seg-item--active":""}`}
-                      onClick={() => { setBdayViewMode(t.v); if(t.v==="month"||t.v==="week") bdayToday(); }}>{t.l}</button>
+                      onClick={() => { setBdayViewMode(t.v); bdayToday(); }}>{t.l}</button>
                   ))}
                 </div>
 
                 <div className="ft-bday-filter-right">
                   <div className="ft-mop-chips">
-                    {[{v:"all",l:"All"},{v:"not_contacted",l:"To call"},{v:"warm",l:"Contacted"},{v:"booking",l:"Booked"}].map(f => (
+                    {[{v:"all",l:"All"},{v:"not_contacted",l:"To call"},{v:"warm",l:"Warm"},{v:"booking",l:"Booked"}].map(f => (
                       <button key={f.v} className={`ft-chip${bdayStatusFilter===f.v?" ft-chip--active":""}`}
                         onClick={()=>setBdayStatusFilter(f.v)}>{f.l}</button>
                     ))}
                   </div>
                   <div className="ft-search-box">
                     <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="#a099b5" strokeWidth="2"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M13 13l4 4"/></svg>
-                    <input type="text" placeholder="Name or number" value={bdaySearch} onChange={e=>setBdaySearch(e.target.value)} />
+                    <input type="text" placeholder="Name or number" value={bdaySearch} onChange={e=>onBdaySearchChange(e.target.value)} />
                   </div>
                 </div>
               </div>
             </div>
-
-            {bdayViewMode === "pick" && (
-              <div className="ft-filters" style={{paddingTop:0}}>
-                <div className="ft-filters-top">
-                  <div className="ft-date-nav">
-                    <button className="ft-date-nav-btn" onClick={bdayPrevMonth}>
-                      <svg width="7" height="12" viewBox="0 0 7 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 1L1 6l5 5"/></svg>
-                    </button>
-                    <span className="ft-date-nav-label">{MONTH_NAMES[birthdayMonth-1]}</span>
-                    <button className="ft-date-nav-btn" onClick={bdayNextMonth}>
-                      <svg width="7" height="12" viewBox="0 0 7 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M1 1l5 5-5 5"/></svg>
-                    </button>
-                  </div>
-                  <button className="ft-today-btn" onClick={bdayToday} title="Jump to this month">
-                    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="14" height="14" rx="2"/><path d="M3 8h14"/><path d="M7 2v4M13 2v4"/><circle cx="10" cy="13" r="1.5" fill="currentColor" stroke="none"/></svg>
-                  </button>
-                </div>
-              </div>
-            )}
 
             <div className="ft-bday-layout">
               <div className="ft-bday-cal-sidebar">
@@ -1315,7 +1303,7 @@ function App() {
 
               <div className="ft-bday-main">
                 <BirthdayList birthdays={filteredBdays} month={birthdayMonth} year={birthdayYear}
-                  loading={birthdaysLoading} onSave={saveBirthdayCall} viewMode={bdayViewMode} />
+                  loading={birthdaysLoading} onSave={saveBirthdayCall} viewMode={bdayViewMode} isSearching={isSearching} />
               </div>
             </div>
           </div>
