@@ -1558,39 +1558,42 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
 
   .ft-stat-grid {
     grid-template-columns: repeat(4, 1fr);
-    gap: 13px;
+    gap: 14px;
     padding: 22px 30px 0;
-    max-width: 680px;
+    max-width: 820px;
   }
-  .ft-stat-value { font-size: 27px; }
+  .ft-stat-card {
+    padding: 16px 18px;
+  }
+  .ft-stat-value { font-size: 26px; }
   .ft-playing {
     margin: 18px 30px 0;
-    padding: 15px 17px;
+    padding: 16px 20px;
     border-radius: 17px;
-    max-width: 620px;
+    max-width: 820px;
   }
   .ft-bday-widget {
     margin: 18px 30px 0;
     padding: 16px 19px;
-    max-width: 500px;
+    max-width: 600px;
   }
   .ft-entry-list {
     padding: 14px 30px 0;
-    max-width: 680px;
+    max-width: 820px;
   }
   .ft-bday-list {
     padding: 14px 30px 0;
-    max-width: 600px;
+    max-width: 820px;
   }
   .ft-section-pad {
     padding: 22px 30px;
-    max-width: 680px;
+    max-width: 820px;
   }
   .ft-quick-grid {
     grid-template-columns: repeat(4, 1fr);
     gap: 14px;
     padding: 22px 30px 0;
-    max-width: 680px;
+    max-width: 820px;
   }
 
   /* Segmented control constrained */
@@ -1716,7 +1719,7 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
   /* Hero quick links row */
   .ft-hero-row {
     padding: 22px 30px 0;
-    max-width: 680px;
+    max-width: 820px;
   }
 
   /* Dashboard bottom 2-col */
@@ -1983,7 +1986,7 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
 }
 
 /* ── Stat card sub line ── */
-.ft-stat-sub { font: 10px var(--ft-mono); color: var(--ft-muted3); margin-top: 4px; }
+.ft-stat-sub { display: flex; align-items: center; font: 10px var(--ft-mono); color: var(--ft-muted3); margin-top: 4px; gap: 6px; }
 
 /* ==========================================================================
    Legacy utility classes (used in components.jsx form elements)

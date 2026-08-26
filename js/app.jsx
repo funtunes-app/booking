@@ -857,7 +857,7 @@ function App() {
                   ₹{todayRevenue.toLocaleString("en-IN")}
                   {todayRevenue > 0 && <span className="ft-stat-delta">+{Math.round((todayRevenue/(todayRevenue+1000))*100)}%</span>}
                 </div>
-                <div className="ft-stat-sub">UPI ₹{todayUpi.toLocaleString("en-IN")}  Cash ₹{todayCash.toLocaleString("en-IN")}</div>
+                <div className="ft-stat-sub"><span>UPI ₹{todayUpi.toLocaleString("en-IN")}</span><span style={{marginLeft:"auto"}}>Cash ₹{todayCash.toLocaleString("en-IN")}</span></div>
               </div>
               <div className="ft-stat-card">
                 <div className="ft-stat-label">CASH IN DRAWER</div>
@@ -872,10 +872,10 @@ function App() {
               <div className="ft-stat-card">
                 <div className="ft-stat-label">SOCKS SOLD</div>
                 <div className="ft-stat-value">{todaySocks || 0}</div>
-                <div style={{height:5,borderRadius:99,background:C.border,marginTop:6,overflow:"hidden"}}>
-                  <div style={{height:5,borderRadius:99,background:"linear-gradient(90deg,#7c3fc4,#5d2a99)",width:`${Math.min(100,(todaySocks/100)*100)}%`}} />
+                <div className="ft-entry-progress-bar" style={{marginTop:8}}>
+                  <div className="ft-entry-progress-fill" style={{background:"linear-gradient(90deg,#7c3fc4,#5d2a99)",width:`${Math.min(100,(todaySocks/100)*100)}%`}} />
                 </div>
-                <div className="ft-stat-sub">{Math.max(0,100-todaySocks)} pairs left in stock</div>
+                <div className="ft-stat-sub" style={{marginTop:6}}>{Math.max(0,100-todaySocks)} pairs left</div>
               </div>
             </div>
 
