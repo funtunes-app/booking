@@ -59,6 +59,8 @@ function App() {
   const [calMode, setCalMode] = useState("day");
   const [rangeStart, setRangeStart] = useState("");
   const [rangeEnd, setRangeEnd] = useState("");
+  const [entrySearch, setEntrySearch] = useState("");
+  const [entryMopFilter, setEntryMopFilter] = useState("all");
   const [birthdays, setBirthdays] = useState([]);
   const [birthdaysLoading, setBirthdaysLoading] = useState(false);
   const [birthdayMonth, setBirthdayMonth] = useState(()=>new Date().getMonth()+1);
@@ -989,28 +991,128 @@ function App() {
         )}
 
         {/* ══════════ ENTRIES ══════════ */}
-        {screen === "home" && section === "entries" && (
+        {screen === "home" && section === "entries" && (() => {
+          const sq = entrySearch.trim().toLowerCase();
+          const filteredEntries = todayEntries.filter(e => {
+            if (sq) {
+              const n = (e.customerName||e["Customer name"]||"").toLowerCase();
+              const p = (e.phone||e["Phone number"]||"");
+              if (!n.includes(sq) && !p.includes(sq)) return false;
+            }
+            if (entryMopFilter !== "all") {
+              const mop = (e.mop||e["MOP"]||"").toLowerCase();
+              if (entryMopFilter === "upi" && !mop.includes("upi")) return false;
+              if (entryMopFilter === "cash" && !mop.includes("cash")) return false;
+              if (entryMopFilter === "unpaid") {
+                const paid = e.paid !== false && e.paid !== "false";
+                if (paid && mop) return false;
+              }
+            }
+            return true;
+          });
+          const sortedEntries = [...filteredEntries].sort((a,b)=>(a.id||0)-(b.id||0));
+          const totalAmt = filteredEntries.reduce((s,e)=>s+(parseInt(e.amount||0))+(parseInt(e.socks||0)),0);
+
+          const fd = new Date(filterDate+"T00:00:00");
+          const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+          const monthLabel = monthNames[fd.getMonth()] + " " + fd.getFullYear();
+
+          function handleExport() {
+            const rows = [["Name","Phone","Date","Time In","Time Out","Hours","Kids","MOP","Amount"]];
+            filteredEntries.forEach(e => {
+              rows.push([
+                e.customerName||"", e.phone||"", e.date||"",
+                e.timeIn||"", e.timeOut||"", e.hours||"",
+                e.numKids||1, e.mop||"", (parseInt(e.amount||0)+parseInt(e.socks||0))
+              ]);
+            });
+            const csv = rows.map(r=>r.map(c=>`"${c}"`).join(",")).join("\n");
+            const blob = new Blob([csv],{type:"text/csv"});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a"); a.href=url; a.download=`entries-${filterDate}.csv`; a.click();
+            URL.revokeObjectURL(url);
+          }
+
+          function prevMonth() {
+            const d = new Date(fd); d.setMonth(d.getMonth()-1);
+            const v = d.toISOString().slice(0,10);
+            setFilterDate(v); setCalMode("month"); fetchEntries(v,"month");
+          }
+          function nextMonth() {
+            const d = new Date(fd); d.setMonth(d.getMonth()+1);
+            const v = d.toISOString().slice(0,10);
+            setFilterDate(v); setCalMode("month"); fetchEntries(v,"month");
+          }
+
+          return (
           <div className="ft-page">
             <div className="ft-header">
               <div>
                 <div className="ft-header-title">Entries</div>
-                <div className="ft-header-sub">{dateDisplay}</div>
+                <div className="ft-header-sub">every logged walk-in</div>
               </div>
-              <button className="ft-btn-primary" style={{padding:"8px 16px",fontSize:13}} onClick={()=>startNewEntry("funzone")}>+ New Entry</button>
-            </div>
-            <div style={{marginBottom:16}}>
-              <CalendarFilter mode={calMode} date={filterDate}
-                rangeStart={rangeStart} rangeEnd={rangeEnd}
-                onModeChange={onCalModeChange} onDateChange={onCalDateChange}
-                onRangeChange={onCalRangeChange} onToday={onCalToday} />
-              <div style={{display:"flex",alignItems:"center",gap:8,marginTop:8,padding:"0 22px"}}>
-                {!loading && <span style={{fontSize:12,color:C.textLight}}>{todayEntries.length} entries</span>}
-                <button className="ft-chip" onClick={()=>fetchEntries()} disabled={loading}>Refresh</button>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginLeft:"auto"}}>
+                <button className="ft-btn-primary" onClick={()=>startNewEntry("funzone")}>
+                  <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="#fff" strokeWidth="2.5"><path d="M10 4v12M4 10h12"/></svg>
+                  New entry
+                </button>
+                <button className="ft-header-shield" onClick={() => switchSection("cash-register")}>
+                  <ShieldIcon />
+                </button>
               </div>
             </div>
-            <LiveEntryList entries={[...todayEntries].sort((a,b)=>(a.id||0)-(b.id||0))} onEdit={handleEdit} onDelete={handleDelete} onCheckout={handleCheckout} loading={loading} />
+
+            {/* Filter toolbar */}
+            <div className="ft-entries-toolbar">
+              <div className="ft-seg">
+                {[{v:"day",l:"Today"},{v:"month",l:"This month"},{v:"range",l:"Pick dates"}].map(t => (
+                  <button key={t.v} className={`ft-seg-item${calMode===t.v?" ft-seg-item--active":""}`}
+                    onClick={() => onCalModeChange(t.v)}>{t.l}</button>
+                ))}
+              </div>
+
+              {calMode === "month" && (
+                <div className="ft-month-nav">
+                  <button className="ft-month-nav-btn" onClick={prevMonth}>‹</button>
+                  <span className="ft-month-nav-label">{monthLabel}</span>
+                  <button className="ft-month-nav-btn" onClick={nextMonth}>›</button>
+                </div>
+              )}
+              {calMode === "day" && (
+                <input className="fld ft-date-input" type="date" value={filterDate} onChange={e => onCalDateChange(e.target.value)} />
+              )}
+              {calMode === "range" && (
+                <div style={{display:"flex",alignItems:"center",gap:6}}>
+                  <input className="fld ft-date-input" type="date" value={rangeStart||""} onChange={e => onCalRangeChange(e.target.value, rangeEnd)} />
+                  <span style={{fontSize:11,color:C.textMid}}>to</span>
+                  <input className="fld ft-date-input" type="date" value={rangeEnd||""} onChange={e => onCalRangeChange(rangeStart, e.target.value)} />
+                </div>
+              )}
+
+              <div className="ft-search-box">
+                <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="#a099b5" strokeWidth="2"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M13 13l4 4"/></svg>
+                <input type="text" placeholder="Name or mobile" value={entrySearch} onChange={e=>setEntrySearch(e.target.value)} />
+              </div>
+
+              <div className="ft-mop-chips">
+                {[{v:"all",l:"All"},{v:"upi",l:"UPI"},{v:"cash",l:"Cash"},{v:"unpaid",l:"Unpaid"}].map(f => (
+                  <button key={f.v} className={`ft-chip${entryMopFilter===f.v?" ft-chip--active":""}`}
+                    onClick={()=>setEntryMopFilter(f.v)}>{f.l}</button>
+                ))}
+              </div>
+
+              <div className="ft-entries-summary">
+                <strong>{filteredEntries.length}</strong> entries
+                <strong style={{marginLeft:12}}>₹{totalAmt.toLocaleString("en-IN")}</strong> total
+              </div>
+
+              <button className="ft-export-btn" onClick={handleExport}>export</button>
+            </div>
+
+            <LiveEntryList entries={sortedEntries} onEdit={handleEdit} onDelete={handleDelete} onCheckout={handleCheckout} loading={loading} />
           </div>
-        )}
+          );
+        })()}
 
         {/* ══════════ BIRTHDAYS ══════════ */}
         {screen === "home" && section === "birthdays" && (

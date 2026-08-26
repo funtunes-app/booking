@@ -367,19 +367,18 @@ function formatTime12Short(t) {
 
 // ── Entry Card (replaces LiveEntryRow table row) ──
 
-const EntryCard = ({entry, onEdit, onDelete, onCheckout}) => {
+const EntryRow = ({entry, onEdit, onDelete, onCheckout}) => {
   const name = entry.customerName || entry["Customer name"] || "—";
   const amt = parseInt(entry.amount || entry["Amount"] || 0);
   const socksAmt = parseInt(entry.socks || entry["Socks"] || 0);
   const mop = entry.mop || entry["MOP"] || "";
   const kids = parseInt(entry.numKids || entry["No of kids"] || 1);
-  const typeKey = entry.entryType || entry["Entry Type"] || "funzone";
-  const timing = entry.timing || entry["Timing"] || "";
   const phone = entry.phone || entry["Phone number"] || "";
   const timeIn = entry.timeIn || "";
   const timeOut = entry.timeOut || "";
   const hours = parseFloat(entry.hours || entry["Hours"] || 0);
   const id = entry.id;
+  const age = entry.age || entry["Age"] || "";
 
   const checkedOut = id ? isCheckedOut(id) : false;
   const now = new Date();
@@ -391,64 +390,53 @@ const EntryCard = ({entry, onEdit, onDelete, onCheckout}) => {
   const isExceeded = isToday && !checkedOut && timeIn && timeOut && nowMin >= outMin && outMin > 0;
 
   const total = amt + socksAmt;
-  const typeIcons = {funzone:"🎪", birthday:"🎂", event:"🎪", daycare:"👶"};
 
-  const progressPct = isActive && outMin > inMin
-    ? Math.min(100, Math.round(((nowMin - inMin) / (outMin - inMin)) * 100))
-    : isExceeded ? 100 : 0;
+  const durLabel = hours ? (hours >= 1 ? `${hours}h` : `${Math.round(hours*60)}m`) : "—";
 
-  const mopBadges = [];
-  const pu = parseInt(entry.playUpi || 0), pc = parseInt(entry.playCash || 0);
-  const su = parseInt(entry.socksUpi || 0), sc = parseInt(entry.socksCash || 0);
-  if (pu + su > 0) mopBadges.push({label: `UPI ₹${(pu+su).toLocaleString("en-IN")}`, type: "upi"});
-  if (pc + sc > 0) mopBadges.push({label: `Cash ₹${(pc+sc).toLocaleString("en-IN")}`, type: "cash"});
+  const mopLabel = mop.toLowerCase().includes("upi") && mop.toLowerCase().includes("cash") ? "UPI + Cash"
+    : mop.toLowerCase().includes("upi") ? "UPI"
+    : mop.toLowerCase().includes("cash") ? "Cash" : mop || "—";
+
+  const mopClass = mopLabel.includes("UPI") ? "upi" : mopLabel.includes("Cash") ? "cash" : "";
+
+  const timeLabel = timeIn
+    ? `${formatTime12Short(timeIn)} → ${formatTime12Short(timeOut)}`
+    : null;
+
+  const subInfo = [age ? `${age}y` : null, phone].filter(Boolean).join(" · ");
 
   return (
-    <div className={`ft-entry-card${isActive?" ft-entry-card--active":""}${isExceeded?" ft-entry-card--exceeded":""}${checkedOut?" ft-entry-card--done":""}`}>
-      <div className="ft-entry-card-top">
-        <div className="ft-entry-icon">{typeIcons[typeKey] || "🎪"}</div>
-        <div className="ft-entry-info">
-          <div className="ft-entry-name">{name}{kids > 1 ? ` (${kids} kids)` : ""}</div>
-          <div className="ft-entry-meta">
-            {timing && <span>{timing}</span>}
-            {phone && <span>{phone}</span>}
-          </div>
-        </div>
-        <div className="ft-entry-amount">₹{total.toLocaleString("en-IN")}</div>
+    <div className={`ft-erow${isActive?" ft-erow--active":""}${isExceeded?" ft-erow--exceeded":""}${checkedOut?" ft-erow--done":""}`}
+      onClick={() => onEdit(entry)}>
+      <div className="ft-erow-name">
+        <div className="ft-erow-name-main">{name}{kids > 1 ? ` (${kids})` : ""}</div>
+        {subInfo && <div className="ft-erow-name-sub">{subInfo}</div>}
       </div>
-      {(isActive || isExceeded) && (
-        <div className="ft-entry-progress">
-          <div className="ft-entry-progress-bar">
-            <div className="ft-entry-progress-fill" style={{width:`${progressPct}%`,background:isExceeded?"var(--ft-danger)":"var(--ft-green)"}} />
-          </div>
-          <span className="ft-entry-progress-label">
-            {isExceeded ? "Time exceeded" : `${progressPct}% · ends ${formatTime12Short(timeOut)}`}
-          </span>
-        </div>
-      )}
-      <div className="ft-entry-card-bottom">
-        <div className="ft-entry-badges">
-          {mopBadges.map((b,i) => (
-            <span key={i} className={`ft-entry-mop ft-entry-mop--${b.type}`}>{b.label}</span>
-          ))}
-        </div>
-        <div className="ft-entry-actions">
-          {isActive && !checkedOut && onCheckout && (
-            <button className="ft-chip ft-chip--green" onClick={() => onCheckout(entry)}>Checkout</button>
-          )}
-          <button className="ft-entry-act-btn" onClick={() => onEdit(entry)} title="Edit">
-            <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2"><path d="M13.5 3.5l3 3L7 16H4v-3L13.5 3.5z"/></svg>
-          </button>
-          <button className="ft-entry-act-btn ft-entry-act-btn--danger" onClick={() => onDelete(entry)} title="Delete">
-            <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 5l10 10M15 5L5 15"/></svg>
-          </button>
-        </div>
+      <div className="ft-erow-time">
+        {timeLabel ? <span>{timeLabel}</span>
+          : <span className="ft-erow-missing">— set time</span>}
+      </div>
+      <div className="ft-erow-dur">{durLabel}</div>
+      <div className="ft-erow-mop">
+        <span className={`ft-entry-mop${mopClass?` ft-entry-mop--${mopClass}`:""}`}>{mopLabel}</span>
+      </div>
+      <div className="ft-erow-amt">₹{total.toLocaleString("en-IN")}</div>
+      <div className="ft-erow-actions" onClick={e=>e.stopPropagation()}>
+        <button className="ft-entry-act-btn" onClick={() => onEdit(entry)} title="Edit">
+          <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2"><path d="M13.5 3.5l3 3L7 16H4v-3L13.5 3.5z"/></svg>
+        </button>
+        <button className="ft-entry-act-btn" onClick={() => onDelete(entry)} title="More">
+          <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="4" r="1.5"/><circle cx="10" cy="10" r="1.5"/><circle cx="10" cy="16" r="1.5"/></svg>
+        </button>
       </div>
     </div>
   );
 };
 
 const LiveEntryList = ({entries, onEdit, onDelete, onCheckout, loading}) => {
+  const MAX_PER_GROUP = 10;
+  const [expanded, setExpanded] = React.useState({});
+
   if (loading) return <div className="ft-empty"><Spinner size={24} /><div style={{marginTop:10}}>Loading entries...</div></div>;
   if (!entries.length) return <div className="ft-empty">No entries yet — tap <strong style={{color:C.accent}}>New booking</strong> to start.</div>;
 
@@ -460,20 +448,51 @@ const LiveEntryList = ({entries, onEdit, onDelete, onCheckout, loading}) => {
   });
   const dates = Object.keys(grouped).sort().reverse();
 
+  function formatGroupDate(d) {
+    try {
+      const dt = new Date(d+"T00:00:00");
+      const days = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+      const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      return `${days[dt.getDay()]} ${dt.getDate()} ${months[dt.getMonth()]}`;
+    } catch(e) { return d; }
+  }
+
   return (
     <div className="ft-entry-list">
-      {dates.map(d => (
-        <div key={d}>
-          {dates.length > 1 && (
-            <div className="ft-entry-date-label">
-              {d.split("-").reverse().join("/")} · {grouped[d].length} {grouped[d].length===1?"entry":"entries"}
+      {dates.map(d => {
+        const group = grouped[d];
+        const groupTotal = group.reduce((s,e)=>s+(parseInt(e.amount||0))+(parseInt(e.socks||0)),0);
+        const isExpanded = expanded[d];
+        const visible = isExpanded ? group : group.slice(0, MAX_PER_GROUP);
+        const hasMore = group.length > MAX_PER_GROUP && !isExpanded;
+
+        return (
+          <div key={d} className="ft-egroup">
+            <div className="ft-egroup-header">
+              <span className="ft-egroup-date">{formatGroupDate(d)}</span>
+              <span className="ft-egroup-meta">{group.length} {group.length===1?"entry":"entries"} · ₹{groupTotal.toLocaleString("en-IN")}</span>
             </div>
-          )}
-          {grouped[d].map((e, i) => (
-            <EntryCard key={e.id || i} entry={e} onEdit={onEdit} onDelete={onDelete} onCheckout={onCheckout} />
-          ))}
-        </div>
-      ))}
+            {dates.length > 0 && (
+              <div className="ft-erow-cols">
+                <span className="ft-erow-name">NAME</span>
+                <span className="ft-erow-time">PLAYTIME</span>
+                <span className="ft-erow-dur">DUR</span>
+                <span className="ft-erow-mop">MODE</span>
+                <span className="ft-erow-amt">AMOUNT</span>
+                <span className="ft-erow-actions"></span>
+              </div>
+            )}
+            {visible.map((e, i) => (
+              <EntryRow key={e.id || i} entry={e} onEdit={onEdit} onDelete={onDelete} onCheckout={onCheckout} />
+            ))}
+            {hasMore && (
+              <button className="ft-egroup-more" onClick={()=>setExpanded(p=>({...p,[d]:true}))}>
+                +{group.length - MAX_PER_GROUP} more on this day
+              </button>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 };

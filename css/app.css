@@ -1718,6 +1718,15 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
   .ft-admin-widget {
     min-width: 240px;
   }
+
+  /* Entries toolbar */
+  .ft-entries-toolbar {
+    padding: 0 36px 14px;
+  }
+  .ft-entry-list {
+    padding-left: 36px;
+    padding-right: 36px;
+  }
 }
 
 /* ==========================================================================
@@ -1851,6 +1860,105 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
 .ft-entry-date-label {
   font: 10.5px var(--ft-mono); color: var(--ft-muted2);
   letter-spacing: .07em; padding: 8px 0 4px;
+}
+
+/* ── Entries toolbar ── */
+.ft-entries-toolbar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+  padding: 0 22px 14px; border-bottom: 1px solid var(--ft-border4);
+}
+.ft-month-nav {
+  display: inline-flex; align-items: center; gap: 4px;
+  border: 1px solid var(--ft-border2); border-radius: 10px;
+  padding: 0 4px; height: 38px;
+}
+.ft-month-nav-btn {
+  width: 30px; height: 30px; border: none; background: none;
+  font: 600 18px var(--ft-sans); color: var(--ft-muted);
+  cursor: pointer; display: grid; place-items: center;
+  border-radius: 8px;
+}
+.ft-month-nav-btn:active { background: var(--ft-bg); }
+.ft-month-nav-label { font: 500 13px var(--ft-sans); padding: 0 6px; white-space: nowrap; }
+.ft-date-input { max-width: 150px; height: 38px; font-size: 12px; }
+.ft-search-box {
+  display: flex; align-items: center; gap: 8px;
+  border: 1px solid var(--ft-border2); border-radius: 10px;
+  padding: 0 12px; height: 38px; min-width: 160px; flex: 1; max-width: 240px;
+  background: #fff;
+}
+.ft-search-box input {
+  border: none; outline: none; background: none;
+  font: 400 13px var(--ft-sans); color: var(--ft-text);
+  width: 100%;
+}
+.ft-search-box input::placeholder { color: var(--ft-muted3); }
+.ft-mop-chips { display: flex; gap: 5px; }
+.ft-entries-summary {
+  font: 400 13px var(--ft-sans); color: var(--ft-muted);
+  white-space: nowrap;
+}
+.ft-entries-summary strong { font-weight: 700; color: var(--ft-deepest); }
+.ft-export-btn {
+  border: none; background: none; font: 500 13px var(--ft-sans);
+  color: var(--ft-purple-pill); cursor: pointer; padding: 0;
+}
+.ft-export-btn:hover { text-decoration: underline; }
+
+/* ── Entry table rows ── */
+.ft-egroup { margin-bottom: 8px; }
+.ft-egroup-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 16px 0 8px; border-bottom: 1px solid var(--ft-border4);
+}
+.ft-egroup-date { font: 700 14px var(--ft-sans); }
+.ft-egroup-meta { font: 400 12px var(--ft-mono); color: var(--ft-muted2); }
+.ft-erow-cols {
+  display: grid; grid-template-columns: 2fr 1.5fr .6fr .8fr 1fr 70px;
+  gap: 10px; align-items: center;
+  padding: 10px 0; border-bottom: 1px solid var(--ft-border4);
+  font: 600 10.5px var(--ft-mono); color: var(--ft-muted2);
+  letter-spacing: .07em;
+}
+.ft-erow {
+  display: grid; grid-template-columns: 2fr 1.5fr .6fr .8fr 1fr 70px;
+  gap: 10px; align-items: center;
+  padding: 14px 0; border-bottom: 1px solid var(--ft-border4);
+  cursor: pointer; transition: background .15s;
+}
+.ft-erow:hover { background: var(--ft-accent-soft); }
+.ft-erow--active { background: linear-gradient(90deg, #f0fdf8, #fff); }
+.ft-erow--exceeded { background: var(--ft-danger-bg); }
+.ft-erow--done { opacity: .55; }
+.ft-erow-name-main { font: 600 13.5px var(--ft-sans); }
+.ft-erow-name-sub { font: 400 11px var(--ft-mono); color: var(--ft-muted2); margin-top: 2px; }
+.ft-erow-time { font: 400 13px var(--ft-mono); color: var(--ft-text); }
+.ft-erow-missing { color: var(--ft-danger); font-style: italic; }
+.ft-erow-dur { font: 400 13px var(--ft-sans); color: var(--ft-text); }
+.ft-erow-mop { }
+.ft-erow-amt { font: 700 14px var(--ft-sans); color: var(--ft-deepest); text-align: right; }
+.ft-erow-actions { display: flex; gap: 5px; justify-content: flex-end; }
+.ft-egroup-more {
+  border: none; background: none; font: 400 12px var(--ft-sans);
+  color: var(--ft-muted2); cursor: pointer; padding: 10px 0;
+}
+.ft-egroup-more:hover { color: var(--ft-purple-pill); }
+
+/* Mobile: stack entry rows as cards */
+@media (max-width: 899px) {
+  .ft-erow-cols { display: none; }
+  .ft-erow {
+    display: flex; flex-wrap: wrap; gap: 6px 12px;
+    padding: 12px 0;
+  }
+  .ft-erow-name { flex: 1; min-width: 0; }
+  .ft-erow-amt { margin-left: auto; }
+  .ft-erow-time { font-size: 11px; flex-basis: 100%; order: 5; }
+  .ft-erow-dur { font-size: 11px; color: var(--ft-muted2); }
+  .ft-erow-mop { order: 6; }
+  .ft-erow-actions { order: 7; margin-left: auto; }
+  .ft-entries-toolbar { padding: 0 16px 12px; gap: 8px; }
+  .ft-search-box { max-width: 100%; }
 }
 
 /* ── Playing now card extras ── */
