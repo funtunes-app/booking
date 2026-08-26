@@ -559,6 +559,7 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
   padding: 3px;
   background: #f1ecf8;
   border-radius: var(--ft-radius-sm);
+  flex-shrink: 0;
 }
 .ft-seg-item {
   flex: 1;
@@ -1880,9 +1881,10 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
 }
 .ft-filters-bottom {
   display: flex; flex-wrap: wrap; align-items: center; gap: 12px;
-  padding: 0 0 14px;
+  padding: 4px 0 14px;
   border-bottom: 1px solid var(--ft-border4);
 }
+.ft-filters-top .ft-seg { margin-left: -3px; }
 .ft-date-nav {
   display: inline-flex; align-items: center;
   border: 1px solid var(--ft-border2); border-radius: 10px;
