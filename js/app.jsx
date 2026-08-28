@@ -481,6 +481,7 @@ function App() {
       }
       if (passRes.success && passRes.found) {
         setActivePass(passRes.pass);
+        setBuyPassType(null);
         const pt = CONFIG.PASS_TYPES.find(p=>p.key===passRes.pass.pass_type);
         const label = pt ? pt.label : passRes.pass.pass_type;
         if (passRes.pass.hours_remaining != null) {
