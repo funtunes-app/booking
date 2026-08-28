@@ -780,7 +780,7 @@ function App() {
         <div className="ft-splash">
           <div className="ft-splash-center">
             <div className="ft-splash-ring"></div>
-            <div className="ft-splash-icon">FT</div>
+            <div className="ft-splash-icon"><img src="icons/logo.png" alt="FunTunes" /></div>
             <div className="ft-splash-name">FUNTUNES</div>
             <div className="ft-splash-bar"><div className="ft-splash-bar-fill"></div></div>
           </div>
@@ -817,7 +817,7 @@ function App() {
       {/* ── Desktop Icon Rail ── */}
       {screen === "home" && (
         <nav className="ft-rail">
-          <div className="ft-rail-logo" onClick={() => switchSection("home")}>FT</div>
+          <div className="ft-rail-logo" onClick={() => switchSection("home")}><img src="icons/logo-header.png" alt="FunTunes" /></div>
           {[
             {key:"home", icon:<TabIconToday active={section==="home"} />, label:"Today"},
             {key:"entries", icon:<TabIconEntries active={section==="entries"} />, label:"Entries"},

@@ -149,22 +149,25 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
 }
 .ft-splash-ring {
   position: absolute;
-  width: 118px;
-  height: 118px;
+  width: 170px;
+  height: 170px;
   border-radius: 99px;
   border: 2px solid #c3a0ea;
   animation: ftRing 6s ease-in-out infinite;
 }
 .ft-splash-icon {
-  width: 88px;
-  height: 88px;
-  border-radius: 26px;
-  background: linear-gradient(160deg, #9a63dd, #5d2a99);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.45), 0 14px 30px rgba(93,42,153,.35);
+  width: 140px;
+  height: 140px;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
   display: grid;
   place-items: center;
-  color: #fff;
-  font: 700 22px var(--ft-mono);
+}
+.ft-splash-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 .ft-splash-name {
   position: absolute;
@@ -286,16 +289,20 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
   box-shadow: 2px 0 12px rgba(70,35,120,.06);
 }
 .ft-rail-logo {
-  width: 42px;
-  height: 42px;
+  width: 46px;
+  height: 46px;
   border-radius: 10px;
-  background: linear-gradient(160deg, #a06de0, #5d2a99);
-  box-shadow: var(--ft-gloss), 0 4px 12px rgba(93,42,153,.35);
+  background: none;
   display: grid;
   place-items: center;
-  color: #fff;
-  font: 700 11px var(--ft-mono);
   margin-bottom: 14px;
+  cursor: pointer;
+  overflow: hidden;
+}
+.ft-rail-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 .ft-rail-item {
   width: 52px;
