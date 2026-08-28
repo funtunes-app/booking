@@ -72,21 +72,20 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
   0%, 100% { opacity: .5; }
   50%      { opacity: 1; }
 }
-@keyframes ftLogo {
-  0%   { transform: scale(.7); opacity: 0; }
-  16%  { transform: scale(1.05); opacity: 1; }
-  28%  { transform: scale(1); }
-  66%  { transform: scale(1); opacity: 1; }
-  80%, 100% { transform: scale(.9); opacity: 0; }
+@keyframes ftFadeIn {
+  0%   { transform: scale(.85); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
 }
-@keyframes ftRing {
-  0%   { transform: scale(.5); opacity: 0; }
-  20%  { opacity: .5; }
-  62%, 100% { transform: scale(1.7); opacity: 0; }
+@keyframes ftRipple {
+  0%   { transform: scale(.6); opacity: .6; }
+  100% { transform: scale(2.2); opacity: 0; }
 }
-@keyframes ftLine {
-  0%   { width: 0; }
-  62%, 100% { width: 100%; }
+@keyframes ftBounce {
+  0%, 100% { transform: translateY(0); }
+  20%      { transform: translateY(-12px); }
+  40%      { transform: translateY(0); }
+  55%      { transform: translateY(-6px); }
+  70%      { transform: translateY(0); }
 }
 @keyframes ftTile1 { 0%,52%{opacity:0;transform:translateY(16px) scale(.96)}66%,94%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(16px) scale(.96)} }
 @keyframes ftTile2 { 0%,56%{opacity:0;transform:translateY(16px) scale(.96)}70%,94%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(16px) scale(.96)} }
@@ -145,16 +144,22 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
   position: relative;
   display: grid;
   place-items: center;
-  animation: ftLogo 6s ease-in-out infinite;
 }
-.ft-splash-ring {
+.ft-splash-ripple {
   position: absolute;
-  width: 170px;
-  height: 170px;
-  border-radius: 99px;
-  border: 2px solid #c3a0ea;
-  animation: ftRing 6s ease-in-out infinite;
+  inset: 0;
 }
+.ft-splash-ripple > div {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 140px; height: 140px;
+  margin: -70px 0 0 -70px;
+  border-radius: 50%;
+  border: 2px solid rgba(195, 160, 234, .5);
+  animation: ftRipple 3s ease-out infinite;
+}
+.ft-splash-ripple > div:nth-child(2) { animation-delay: .8s; }
+.ft-splash-ripple > div:nth-child(3) { animation-delay: 1.6s; }
 .ft-splash-icon {
   width: 140px;
   height: 140px;
@@ -176,20 +181,8 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
   color: var(--ft-deep);
   letter-spacing: .14em;
 }
-.ft-splash-bar {
-  position: absolute;
-  bottom: -72px;
-  width: 120px;
-  height: 3px;
-  border-radius: 99px;
-  background: #ece0f8;
-  overflow: hidden;
-}
-.ft-splash-bar-fill {
-  height: 3px;
-  border-radius: 99px;
-  background: linear-gradient(90deg, #9a63dd, #5d2a99);
-  animation: ftLine 6s ease-in-out infinite;
+.ft-splash-bounce {
+  animation: ftBounce 2s ease-in-out infinite;
 }
 
 /* ── Section Header ── */
@@ -763,6 +756,25 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
   transition: all .15s;
 }
 .ft-add-kid-btn:hover { border-color: var(--ft-accent-hover); background: var(--ft-accent-soft); }
+
+/* ── Pass banner ── */
+.ft-pass-banner {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; margin-top: 14px;
+  border-radius: var(--ft-radius-sm);
+  background: linear-gradient(135deg, #f0e6ff, #e8f5e9);
+  border: 1px solid #c5b0ea;
+}
+.ft-pass-banner-icon { font-size: 20px; flex: none; }
+.ft-pass-banner-info { flex: 1; min-width: 0; }
+.ft-pass-banner-title { font: 600 12.5px var(--ft-sans); color: var(--ft-deep); }
+.ft-pass-banner-meta { font: 400 10.5px var(--ft-mono); color: var(--ft-muted2); margin-top: 2px; }
+.ft-pass-banner-skip {
+  border: 1px solid var(--ft-border2); background: #fff; border-radius: 7px;
+  padding: 5px 10px; font: 500 11px var(--ft-sans); color: var(--ft-muted);
+  cursor: pointer; white-space: nowrap; flex: none;
+}
+.ft-pass-banner-skip:hover { color: var(--ft-deep); border-color: var(--ft-deep); }
 
 /* Duration preset chips */
 .ft-dur-chips {
@@ -2335,7 +2347,6 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
 /* ── Splash center alias ── */
 .ft-splash-center {
   position: relative; display: grid; place-items: center;
-  animation: ftLogo 6s ease-in-out infinite;
 }
 
 /* ── Rail label ── */

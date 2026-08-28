@@ -96,6 +96,9 @@ function App() {
   const [staffLoading, setStaffLoading] = useState(false);
   const [staffSaving, setStaffSaving] = useState(false);
   const [staffPopup, setStaffPopup] = useState(null);
+  const [activePass, setActivePass] = useState(null);
+  const [passPopup, setPassPopup] = useState(null);
+  const [passSaving, setPassSaving] = useState(false);
   const containerRef = useRef(null);
   const lastLookedUpPhone = useRef("");
 
@@ -461,8 +464,12 @@ function App() {
     if (phone.length !== 10 || phone === lastLookedUpPhone.current) return;
     lastLookedUpPhone.current = phone;
     setPhoneLookupLoading(true);
+    setActivePass(null);
     try {
-      const res = await api.lookupPhone(phone);
+      const [res, passRes] = await Promise.all([
+        api.lookupPhone(phone),
+        api.getActivePass(phone),
+      ]);
       if (res.success && res.found) {
         setFormState(f => ({
           ...f,
@@ -470,6 +477,16 @@ function App() {
           dob: f.dob || res.dob || f.dob,
         }));
         if (res.customerName || res.dob) showToastMsg("Found previous entry — autofilled","success");
+      }
+      if (passRes.success && passRes.found) {
+        setActivePass(passRes.pass);
+        const pt = CONFIG.PASS_TYPES.find(p=>p.key===passRes.pass.pass_type);
+        const label = pt ? pt.label : passRes.pass.pass_type;
+        if (passRes.pass.sessions_remaining != null) {
+          showToastMsg(`${label} pass active — ${passRes.pass.sessions_remaining} sessions left`,"success");
+        } else {
+          showToastMsg(`${label} pass active`,"success");
+        }
       }
     } catch(e) { console.error("Phone lookup:",e); }
     finally { setPhoneLookupLoading(false); }
@@ -486,12 +503,16 @@ function App() {
   const socksCharge = entryType === "funzone" ? (form.socks||0) : 0;
   const totalAmount = (parseInt(form.amount)||0) + socksCharge;
 
+  const usingPass = activePass && isPlayArea && !editTarget;
+
   const validate = () => {
     const errs = {};
     if (!form.phone || form.phone.length !== 10) errs.phone = "10 digits required";
     if (!form.customerName.trim()) errs.customerName = "Required";
-    if (!form.amount || parseInt(form.amount) <= 0) errs.amount = "Enter amount";
-    if (!form.playMop) errs.playMop = "Select payment mode";
+    if (!usingPass) {
+      if (!form.amount || parseInt(form.amount) <= 0) errs.amount = "Enter amount";
+      if (!form.playMop) errs.playMop = "Select payment mode";
+    }
     if (socksCharge > 0 && !form.socksMop) errs.socksMop = "Select mode";
     setErrors(errs);
     if (Object.keys(errs).length) { setShakeStep(true); setTimeout(()=>setShakeStep(false),500); }
@@ -532,27 +553,29 @@ function App() {
   async function submitEntry() {
     if (!validate()) return;
     const timeOut = computeTimeOut(form.timeIn, form.hours);
-    const totalAmt = parseInt(form.amount)||0;
+    const usePass = usingPass;
+    const totalAmt = usePass ? 0 : (parseInt(form.amount)||0);
     const perKidAmt = form.numKids>1 ? Math.round(totalAmt/form.numKids) : totalAmt;
     const kidNames = form.kidNames || [];
-    const playMopStr = getPlayMopString();
+    const playMopStr = usePass ? "Pass" : getPlayMopString();
     const socksMopStr = getSocksMopString();
-    const pay = computePaymentCols();
+    const pay = usePass ? {playUpi:0,playCash:0,socksUpi:0,socksCash:0} : computePaymentCols();
+    if (usePass && socksCharge > 0) {
+      if(form.socksMop==="UPI") pay.socksUpi=socksCharge;
+      else if(form.socksMop==="Cash") pay.socksCash=socksCharge;
+      else if(form.socksMop==="UPI + Cash"){pay.socksUpi=parseInt(form.socksUpiAmount)||0;pay.socksCash=parseInt(form.socksCashAmount)||0;}
+    }
 
-    if (form.numKids <= 1) {
-      const entry = {...form, mop:playMopStr, socksMop:socksMopStr, entryType, timeIn:form.timeIn, timeOut:timeOut,
-        amount:perKidAmt, numKids:1, socks:socksCharge,
-        playUpi:pay.playUpi, playCash:pay.playCash, socksUpi:pay.socksUpi, socksCash:pay.socksCash};
-      setSaving(true);
-      try {
+    setSaving(true);
+    try {
+      if (form.numKids <= 1) {
+        const entry = {...form, mop:playMopStr, socksMop:socksMopStr, entryType, timeIn:form.timeIn, timeOut:timeOut,
+          amount:perKidAmt, numKids:1, socks:socksCharge,
+          playUpi:pay.playUpi, playCash:pay.playCash, socksUpi:pay.socksUpi, socksCash:pay.socksCash};
         const res = await api.addEntry(entry);
         if(res.success) { showToastMsg("Entry saved!","success"); setShowSuccess(true); fetchEntries(); }
-        else showToastMsg("Error: "+(res.error||"unknown"),"error");
-      } catch(e) { console.error("Save:",e); showToastMsg("Could not save — check internet","error"); }
-      finally { setSaving(false); }
-    } else {
-      setSaving(true);
-      try {
+        else { showToastMsg("Error: "+(res.error||"unknown"),"error"); setSaving(false); return; }
+      } else {
         let ok = 0;
         for (let k=0; k<form.numKids; k++) {
           const name = k===0 ? (form.customerName||"") : (kidNames[k]||form.customerName+" - Kid "+(k+1));
@@ -568,9 +591,20 @@ function App() {
           if(res.success) ok++;
         }
         showToastMsg(`${ok} entries saved!`,"success"); setShowSuccess(true); fetchEntries();
-      } catch(e) { console.error("Save:",e); showToastMsg("Could not save — check internet","error"); }
-      finally { setSaving(false); }
-    }
+      }
+      if (usePass && activePass) {
+        const updates = {};
+        if (activePass.sessions_remaining != null) {
+          updates.sessions_remaining = Math.max(0, activePass.sessions_remaining - 1);
+          if (updates.sessions_remaining === 0) updates.active = false;
+        }
+        if (Object.keys(updates).length) {
+          await api.updatePass(activePass.id, updates);
+          setActivePass(prev => prev ? {...prev, ...updates} : null);
+        }
+      }
+    } catch(e) { console.error("Save:",e); showToastMsg("Could not save — check internet","error"); }
+    finally { setSaving(false); }
   }
 
   function doEdit(entry) {
@@ -691,7 +725,39 @@ function App() {
   function resetForm() {
     setFormState(getDefaultForm()); setErrors({}); setShowSuccess(false);
     setEditTarget(null); setScreen("home"); setEntryType("funzone");
-    lastLookedUpPhone.current = "";
+    setActivePass(null); lastLookedUpPhone.current = "";
+  }
+
+  function openPassSale() {
+    setPassPopup({phone:"",customer_name:"",pass_type:"10_sessions",mop:"UPI"});
+  }
+
+  async function savePass() {
+    if (!passPopup) return;
+    if (!passPopup.phone || passPopup.phone.length !== 10) { showToastMsg("Enter valid 10-digit phone","error"); return; }
+    if (!passPopup.customer_name.trim()) { showToastMsg("Enter customer name","error"); return; }
+    const pt = CONFIG.PASS_TYPES.find(p=>p.key===passPopup.pass_type);
+    if (!pt) return;
+    const today = new Date();
+    const expiry = new Date(today); expiry.setDate(expiry.getDate() + pt.durationDays);
+    setPassSaving(true);
+    try {
+      const res = await api.createPass({
+        phone: passPopup.phone,
+        customer_name: passPopup.customer_name,
+        pass_type: passPopup.pass_type,
+        amount: pt.amount,
+        mop: passPopup.mop,
+        start_date: today.toISOString().slice(0,10),
+        expiry_date: expiry.toISOString().slice(0,10),
+        sessions_remaining: pt.sessions != null ? pt.sessions : null,
+      });
+      if (res.success) {
+        showToastMsg(`${pt.label} pass created for ₹${pt.amount}`,"success");
+        setPassPopup(null);
+      } else showToastMsg("Error: "+(res.error||"unknown"),"error");
+    } catch(e) { console.error("Pass:",e); showToastMsg("Could not save pass","error"); }
+    finally { setPassSaving(false); }
   }
 
   function openEnquiry() {
@@ -779,10 +845,9 @@ function App() {
       {splash && (
         <div className="ft-splash">
           <div className="ft-splash-center">
-            <div className="ft-splash-ring"></div>
-            <div className="ft-splash-icon"><img src="icons/logo.png" alt="FunTunes" /></div>
+            <div className="ft-splash-ripple"><div></div><div></div><div></div></div>
+            <div className="ft-splash-icon ft-splash-bounce"><img src="icons/logo.png" alt="FunTunes" /></div>
             <div className="ft-splash-name">FUNTUNES</div>
-            <div className="ft-splash-bar"><div className="ft-splash-bar-fill"></div></div>
           </div>
         </div>
       )}
@@ -1116,7 +1181,8 @@ function App() {
                 <div className="ft-header-title">Entries</div>
                 <div className="ft-header-sub">every logged walk-in</div>
               </div>
-              <div style={{display:"flex",alignItems:"center",gap:10,marginLeft:"auto"}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginLeft:"auto"}}>
+                <button className="ft-chip" onClick={openPassSale}>🎫 Sell Pass</button>
                 <button className="ft-btn-primary" onClick={()=>startNewEntry("funzone")}>
                   <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="#fff" strokeWidth="2.5"><path d="M10 4v12M4 10h12"/></svg>
                   New entry
@@ -1606,8 +1672,24 @@ function App() {
                       style={{background:"var(--ft-accent-soft)",color:"var(--ft-deep)"}} />
                   </div>
 
+                  {/* Pass banner */}
+                  {usingPass && activePass && (() => {
+                    const pt = CONFIG.PASS_TYPES.find(p=>p.key===activePass.pass_type);
+                    return <div className="ft-pass-banner">
+                      <div className="ft-pass-banner-icon">🎫</div>
+                      <div className="ft-pass-banner-info">
+                        <div className="ft-pass-banner-title">{pt?pt.label:activePass.pass_type} Pass Active</div>
+                        <div className="ft-pass-banner-meta">
+                          Expires {new Date(activePass.expiry_date).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}
+                          {activePass.sessions_remaining != null && ` · ${activePass.sessions_remaining} sessions left`}
+                        </div>
+                      </div>
+                      <button className="ft-pass-banner-skip" onClick={()=>setActivePass(null)}>Pay instead</button>
+                    </div>;
+                  })()}
+
                   {/* Amount (hidden as auto-calculated but editable) */}
-                  <div style={{marginTop:14}}>
+                  {!usingPass && <div style={{marginTop:14}}>
                     <label className="field-label">{isPlayArea?"Playtime Amount":"Amount"} {errors.amount && <span className="err-msg">{errors.amount}</span>}</label>
                     <div style={{position:"relative"}}>
                       <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",fontWeight:700,color:C.textMid}}>₹</span>
@@ -1616,10 +1698,10 @@ function App() {
                         onChange={e=>set("amount",e.target.value.replace(/\D/g,""))} />
                     </div>
                     {isPlayArea && form.numKids>1 && <div className="ft-form-helper">{form.numKids} kids x ₹{computeAmountForHours(form.hours)} per kid</div>}
-                  </div>
+                  </div>}
 
                   {/* Payment */}
-                  <div style={{marginTop:18}}>
+                  {!usingPass && <div style={{marginTop:18}}>
                     <div className="ft-form-section-label">Payment</div>
                     <label className="field-label">Playtime paid via {errors.playMop && <span className="err-msg">{errors.playMop}</span>}</label>
                     <div className="ft-pay-chips">
@@ -1665,21 +1747,34 @@ function App() {
                         </div>
                       </div>
                     )}
-                  </div>
+                  </div>}
 
                   {/* Bill summary card */}
                   <div className="ft-bill-card">
-                    <div className="ft-bill-line">
+                    {usingPass ? <>
+                      <div className="ft-bill-line">
+                        <span>Playtime · {formatHoursLabel(form.hours)}{form.numKids>1?` × ${form.numKids} kids`:""}</span>
+                        <span style={{textDecoration:"line-through",opacity:.5}}>₹{(parseInt(form.amount)||0).toLocaleString("en-IN")}</span>
+                      </div>
+                      <div className="ft-bill-line" style={{color:"#a3f7bf"}}>
+                        <span>🎫 Pass applied</span>
+                        <span>₹0</span>
+                      </div>
+                      {activePass && activePass.sessions_remaining != null && <div className="ft-bill-line" style={{opacity:.7}}>
+                        <span>Sessions after this visit</span>
+                        <span>{Math.max(0,activePass.sessions_remaining - 1)}</span>
+                      </div>}
+                    </> : <div className="ft-bill-line">
                       <span>Playtime · {formatHoursLabel(form.hours)}{form.numKids>1?` × ${form.numKids} kids`:""}</span>
                       <span>₹{(parseInt(form.amount)||0).toLocaleString("en-IN")}</span>
-                    </div>
+                    </div>}
                     {socksCharge > 0 && <div className="ft-bill-line">
                       <span>Socks · {form.sockCount||0} pair{(form.sockCount||0)!==1?"s":""}</span>
                       <span>₹{socksCharge.toLocaleString("en-IN")}</span>
                     </div>}
                     <div className="ft-bill-total">
                       <span>Total</span>
-                      <span>₹{totalAmount.toLocaleString("en-IN")}</span>
+                      <span>₹{(usingPass ? socksCharge : totalAmount).toLocaleString("en-IN")}</span>
                     </div>
                   </div>
                 </div>
@@ -1691,8 +1786,8 @@ function App() {
             {/* Pinned submit footer */}
             <div className="ft-form-footer">
               <div className="ft-form-footer-total">
-                <span className="label">Total</span>
-                <span className="value">₹{totalAmount.toLocaleString("en-IN")}</span>
+                <span className="label">{usingPass ? "Pass" : "Total"}</span>
+                <span className="value">₹{(usingPass ? socksCharge : totalAmount).toLocaleString("en-IN")}</span>
               </div>
               {!editTarget && <button className="ft-btn-outline" disabled={saving}
                 onClick={async()=>{
@@ -1877,6 +1972,49 @@ function App() {
         saving={staffSaving} />}
 
       {/* Confirm Dialog */}
+      {/* ── Sell Pass popup ── */}
+      {passPopup && <div className="ft-confirm-overlay" onClick={()=>!passSaving&&setPassPopup(null)}>
+        <div className="ft-confirm-dialog" onClick={e=>e.stopPropagation()} style={{maxWidth:400}}>
+          <div style={{fontSize:16,fontWeight:700,marginBottom:16}}>Sell Pass</div>
+          <div style={{marginBottom:12}}>
+            <label className="field-label">Phone</label>
+            <input className="fld" value={passPopup.phone} placeholder="10-digit mobile" type="tel" inputMode="numeric"
+              onChange={e=>setPassPopup(p=>({...p,phone:e.target.value.replace(/\D/g,"").slice(0,10)}))} />
+          </div>
+          <div style={{marginBottom:12}}>
+            <label className="field-label">Customer Name</label>
+            <input className="fld" value={passPopup.customer_name} placeholder="Name"
+              onChange={e=>setPassPopup(p=>({...p,customer_name:e.target.value}))} />
+          </div>
+          <div style={{marginBottom:12}}>
+            <label className="field-label">Pass Type</label>
+            <div className="ft-pay-chips">
+              {CONFIG.PASS_TYPES.map(pt=>(
+                <button key={pt.key} type="button" className={`ft-pay-chip${passPopup.pass_type===pt.key?" is-active":""}`}
+                  style={{flex:1}} onClick={()=>setPassPopup(p=>({...p,pass_type:pt.key}))}>
+                  {pt.label}<br/><span style={{fontSize:11,fontWeight:400}}>₹{pt.amount}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+          <div style={{marginBottom:16}}>
+            <label className="field-label">Payment Mode</label>
+            <div className="ft-pay-chips">
+              {CONFIG.MOP_OPTIONS.map(o=>(
+                <button key={o.value} type="button" className={`ft-pay-chip${passPopup.mop===o.value?" is-active":""}`}
+                  onClick={()=>setPassPopup(p=>({...p,mop:o.value}))}>{o.label}</button>
+              ))}
+            </div>
+          </div>
+          <div style={{display:"flex",gap:8}}>
+            <button className="ft-btn-secondary" style={{flex:1}} onClick={()=>setPassPopup(null)} disabled={passSaving}>Cancel</button>
+            <button className="ft-btn-primary" style={{flex:1,height:40,borderRadius:10}} onClick={savePass} disabled={passSaving}>
+              {passSaving?"Saving...":"Create Pass"}
+            </button>
+          </div>
+        </div>
+      </div>}
+
       {confirmAction && <ConfirmDialog
         message={confirmAction.message}
         needsPassword={confirmAction.needsPassword}

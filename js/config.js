@@ -54,4 +54,10 @@ var CONFIG = {
 
   // Default payment mode
   DEFAULT_MOP: "UPI",
+
+  // Unlimited pass options
+  PASS_TYPES: [
+    { key: "10_sessions", label: "10 Sessions", amount: 2500, sessions: 10, durationDays: 30 },
+    { key: "unlimited",   label: "Unlimited",   amount: 3500, sessions: null, durationDays: 30 },
+  ],
 };

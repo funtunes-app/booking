@@ -419,4 +419,57 @@ var api = {
   listEnquiries: async function () {
     return { success: true, data: [] };
   },
+
+  // ── Passes ──
+
+  getActivePass: async function (phone) {
+    var today = new Date().toISOString().slice(0, 10);
+    var { data, error } = await supabaseClient
+      .from("passes")
+      .select("*")
+      .eq("phone", phone)
+      .eq("active", true)
+      .gte("expiry_date", today)
+      .order("created_at", { ascending: false })
+      .limit(1);
+    if (error) return { success: false, error: error.message };
+    if (data && data.length > 0) {
+      return { success: true, found: true, pass: data[0] };
+    }
+    return { success: true, found: false };
+  },
+
+  createPass: async function (pass) {
+    var row = {
+      phone: pass.phone || "",
+      customer_name: pass.customer_name || "",
+      pass_type: pass.pass_type || "10_sessions",
+      amount: parseInt(pass.amount) || 0,
+      mop: pass.mop || "UPI",
+      start_date: pass.start_date || new Date().toISOString().slice(0, 10),
+      expiry_date: pass.expiry_date || "",
+      sessions_remaining: pass.sessions_remaining != null ? parseInt(pass.sessions_remaining) : null,
+      active: true,
+    };
+    var { data, error } = await supabaseClient
+      .from("passes").insert(row).select();
+    if (error) return { success: false, error: error.message };
+    return { success: true, data: data && data[0] ? data[0] : null };
+  },
+
+  updatePass: async function (id, updates) {
+    var { data, error } = await supabaseClient
+      .from("passes").update(updates).eq("id", id).select();
+    if (error) return { success: false, error: error.message };
+    return { success: true, data: data && data[0] ? data[0] : null };
+  },
+
+  listPasses: async function (phone) {
+    var query = supabaseClient.from("passes").select("*")
+      .order("created_at", { ascending: false });
+    if (phone) query = query.eq("phone", phone);
+    var { data, error } = await query.limit(50);
+    if (error) return { success: false, error: error.message };
+    return { success: true, data: data || [] };
+  },
 };
