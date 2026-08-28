@@ -747,6 +747,22 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
   font-size: 13px;
   color: var(--ft-muted);
 }
+.ft-kid-remove {
+  width: 28px; height: 28px; border-radius: 7px;
+  border: 1px solid var(--ft-border2); background: #fff;
+  display: grid; place-items: center; color: var(--ft-muted2);
+  cursor: pointer; flex: none; transition: all .15s;
+}
+.ft-kid-remove:hover { color: var(--ft-danger); border-color: var(--ft-danger-border); background: var(--ft-danger-bg); }
+.ft-add-kid-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  margin-top: 10px; padding: 6px 14px;
+  border: 1px dashed var(--ft-border2); border-radius: 8px;
+  background: none; color: var(--ft-purple-pill);
+  font: 500 12px var(--ft-sans); cursor: pointer;
+  transition: all .15s;
+}
+.ft-add-kid-btn:hover { border-color: var(--ft-accent-hover); background: var(--ft-accent-soft); }
 
 /* Duration preset chips */
 .ft-dur-chips {

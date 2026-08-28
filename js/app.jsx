@@ -1465,39 +1465,56 @@ function App() {
                     </div>
                   </div>
 
-                  {/* Kids stepper */}
-                  <div style={{marginBottom:14}}>
-                    <label className="field-label">Kids</label>
-                    <NumberStepper value={form.numKids} onChange={v=>set("numKids",v)} min={1} max={10} />
-                  </div>
-
                   {/* Kid rows */}
-                  {Array.from({length:form.numKids},(_,i)=>(
-                    <div key={i} className="ft-kid-row">
-                      <div className="ft-kid-num">{i+1}</div>
-                      <input className={`fld${i===0&&errors.customerName?" is-error":""}`}
-                        value={i===0?form.customerName:((form.kidNames&&form.kidNames[i])||"")}
-                        placeholder={i===0?"Kid's name":`Kid ${i+1} name`}
-                        onChange={e=>{
-                          if(i===0) set("customerName",e.target.value);
-                          else { const names=[...(form.kidNames||[])]; names[i]=e.target.value; set("kidNames",names); }
-                        }} />
-                      <input className="fld fld-date"
-                        value={i===0?form.dob:((form.dobs&&form.dobs[i])||"")}
-                        type="date"
-                        onChange={e=>{
-                          if(i===0) set("dob",e.target.value);
-                          else { const d2=[...(form.dobs||[])]; d2[i]=e.target.value; set("dobs",d2); }
-                        }} />
-                    </div>
-                  ))}
+                  <div style={{marginBottom:14}}>
+                    <label className="field-label">Kids {errors.customerName && <span className="err-msg">{errors.customerName}</span>}</label>
+                    {Array.from({length:form.numKids},(_,i)=>(
+                      <div key={i} className="ft-kid-row">
+                        <div className="ft-kid-num">{i+1}</div>
+                        <input className={`fld${i===0&&errors.customerName?" is-error":""}`}
+                          value={i===0?form.customerName:((form.kidNames&&form.kidNames[i])||"")}
+                          placeholder={i===0?"Kid's name":`Kid ${i+1} name`}
+                          onChange={e=>{
+                            if(i===0) set("customerName",e.target.value);
+                            else { const names=[...(form.kidNames||[])]; names[i]=e.target.value; set("kidNames",names); }
+                          }} />
+                        <input className="fld fld-date"
+                          value={i===0?form.dob:((form.dobs&&form.dobs[i])||"")}
+                          type="date"
+                          onChange={e=>{
+                            if(i===0) set("dob",e.target.value);
+                            else { const d2=[...(form.dobs||[])]; d2[i]=e.target.value; set("dobs",d2); }
+                          }} />
+                        {i > 0 && <button type="button" className="ft-kid-remove" onClick={()=>{
+                          const names=[...(form.kidNames||[])]; names.splice(i,1);
+                          const d2=[...(form.dobs||[])]; d2.splice(i,1);
+                          setFormState(f=>({...f, numKids:f.numKids-1, kidNames:names, dobs:d2,
+                            amount:String(computeAmountForHours(f.hours)*(f.numKids-1))}));
+                        }}>
+                          <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 5l10 10M15 5L5 15"/></svg>
+                        </button>}
+                      </div>
+                    ))}
+                    {form.numKids < 10 && <button type="button" className="ft-add-kid-btn" onClick={()=>set("numKids",form.numKids+1)}>
+                      <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M10 4v12M4 10h12"/></svg>
+                      Add kid
+                    </button>}
+                  </div>
 
                   {/* Socks */}
                   {isPlayArea && <div style={{marginTop:18}}>
                     <div className="ft-form-section-label">Socks</div>
-                    <div style={{display:"flex",alignItems:"center",gap:12}}>
+                    <div style={{display:"flex",alignItems:"center",gap:10}}>
                       <NumberStepper value={form.sockCount||0} onChange={v=>{set("sockMode","preset");setSockCount(Math.max(0,v));}} min={0} max={20} />
-                      {socksCharge > 0 && <span style={{font:"500 13px var(--ft-sans)",color:C.textMid}}>₹{socksCharge}</span>}
+                      {(form.sockCount||0) > 0 && <div style={{position:"relative",flex:"0 0 100px"}}>
+                        <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",fontWeight:600,color:C.textMid,fontSize:12}}>₹</span>
+                        <input className="fld" type="tel" inputMode="numeric" value={form.socks||""} placeholder="0"
+                          style={{paddingLeft:24,height:36,fontSize:13,fontWeight:600,textAlign:"right",paddingRight:10}}
+                          onChange={e=>{
+                            const v=e.target.value.replace(/\D/g,"");
+                            setFormState(f=>({...f, socks:parseInt(v)||0, sockMode:"custom"}));
+                          }} />
+                      </div>}
                     </div>
                     {socksCharge > 0 && <div style={{marginTop:10}}>
                       <label className="field-label">Socks paid via {errors.socksMop && <span className="err-msg">{errors.socksMop}</span>}</label>
