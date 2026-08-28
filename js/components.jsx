@@ -20,7 +20,7 @@ const C = {
 
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
-const STATS_PIN = "5284";
+const STATS_PIN = "1504";
 
 const Spinner = ({size=18,color=C.accent}) => (
   <div style={{width:size,height:size,border:`2.5px solid ${color}30`,borderTopColor:color,borderRadius:"50%",animation:"spin .7s linear infinite",display:"inline-block"}} />
