@@ -174,13 +174,6 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
   height: 100%;
   object-fit: contain;
 }
-.ft-splash-name {
-  position: absolute;
-  bottom: -46px;
-  font: 600 13px var(--ft-sans);
-  color: var(--ft-deep);
-  letter-spacing: .14em;
-}
 .ft-splash-bounce {
   animation: ftBounce 2s ease-in-out infinite;
 }
@@ -747,6 +740,7 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
   cursor: pointer; flex: none; transition: all .15s;
 }
 .ft-kid-remove:hover { color: var(--ft-danger); border-color: var(--ft-danger-border); background: var(--ft-danger-bg); }
+.ft-kid-remove-spacer { width: 28px; flex: none; }
 .ft-add-kid-btn {
   display: inline-flex; align-items: center; gap: 6px;
   margin-top: 10px; padding: 6px 14px;

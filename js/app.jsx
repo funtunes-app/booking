@@ -847,7 +847,6 @@ function App() {
           <div className="ft-splash-center">
             <div className="ft-splash-ripple"><div></div><div></div><div></div></div>
             <div className="ft-splash-icon ft-splash-bounce"><img src="icons/logo.png" alt="FunTunes" /></div>
-            <div className="ft-splash-name">FUNTUNES</div>
           </div>
         </div>
       )}
@@ -1551,14 +1550,14 @@ function App() {
                             if(i===0) set("dob",e.target.value);
                             else { const d2=[...(form.dobs||[])]; d2[i]=e.target.value; set("dobs",d2); }
                           }} />
-                        {i > 0 && <button type="button" className="ft-kid-remove" onClick={()=>{
+                        {i > 0 ? <button type="button" className="ft-kid-remove" onClick={()=>{
                           const names=[...(form.kidNames||[])]; names.splice(i,1);
                           const d2=[...(form.dobs||[])]; d2.splice(i,1);
                           setFormState(f=>({...f, numKids:f.numKids-1, kidNames:names, dobs:d2,
                             amount:String(computeAmountForHours(f.hours)*(f.numKids-1))}));
                         }}>
-                          <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 5l10 10M15 5L5 15"/></svg>
-                        </button>}
+                          <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 6h12M8 6V4h4v2M6 6v10a1 1 0 001 1h6a1 1 0 001-1V6M9 9v5M11 9v5"/></svg>
+                        </button> : <div className="ft-kid-remove-spacer"/>}
                       </div>
                     ))}
                     {form.numKids < 10 && <button type="button" className="ft-add-kid-btn" onClick={()=>set("numKids",form.numKids+1)}>
