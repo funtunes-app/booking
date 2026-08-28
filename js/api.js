@@ -443,12 +443,12 @@ var api = {
     var row = {
       phone: pass.phone || "",
       customer_name: pass.customer_name || "",
-      pass_type: pass.pass_type || "10_sessions",
+      pass_type: pass.pass_type || "10_hours",
       amount: parseInt(pass.amount) || 0,
       mop: pass.mop || "UPI",
       start_date: pass.start_date || new Date().toISOString().slice(0, 10),
       expiry_date: pass.expiry_date || "",
-      sessions_remaining: pass.sessions_remaining != null ? parseInt(pass.sessions_remaining) : null,
+      hours_remaining: pass.hours_remaining != null ? parseFloat(pass.hours_remaining) : null,
       active: true,
     };
     var { data, error } = await supabaseClient

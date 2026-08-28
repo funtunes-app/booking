@@ -97,6 +97,7 @@ function App() {
   const [staffSaving, setStaffSaving] = useState(false);
   const [staffPopup, setStaffPopup] = useState(null);
   const [activePass, setActivePass] = useState(null);
+  const [buyPassType, setBuyPassType] = useState(null);
   const [passPopup, setPassPopup] = useState(null);
   const [passSaving, setPassSaving] = useState(false);
   const containerRef = useRef(null);
@@ -482,8 +483,8 @@ function App() {
         setActivePass(passRes.pass);
         const pt = CONFIG.PASS_TYPES.find(p=>p.key===passRes.pass.pass_type);
         const label = pt ? pt.label : passRes.pass.pass_type;
-        if (passRes.pass.sessions_remaining != null) {
-          showToastMsg(`${label} pass active — ${passRes.pass.sessions_remaining} sessions left`,"success");
+        if (passRes.pass.hours_remaining != null) {
+          showToastMsg(`${label} pass active — ${passRes.pass.hours_remaining}h left`,"success");
         } else {
           showToastMsg(`${label} pass active`,"success");
         }
@@ -501,7 +502,8 @@ function App() {
   };
 
   const socksCharge = entryType === "funzone" ? (form.socks||0) : 0;
-  const totalAmount = (parseInt(form.amount)||0) + socksCharge;
+  const buyPassMeta = buyPassType ? CONFIG.PASS_TYPES.find(p=>p.key===buyPassType) : null;
+  const totalAmount = buyPassType ? ((buyPassMeta?buyPassMeta.amount:0) + socksCharge) : ((parseInt(form.amount)||0) + socksCharge);
 
   const usingPass = activePass && isPlayArea && !editTarget;
 
@@ -509,10 +511,11 @@ function App() {
     const errs = {};
     if (!form.phone || form.phone.length !== 10) errs.phone = "10 digits required";
     if (!form.customerName.trim()) errs.customerName = "Required";
-    if (!usingPass) {
+    if (!usingPass && !buyPassType) {
       if (!form.amount || parseInt(form.amount) <= 0) errs.amount = "Enter amount";
-      if (!form.playMop) errs.playMop = "Select payment mode";
     }
+    if (!usingPass && !buyPassType && !form.playMop) errs.playMop = "Select payment mode";
+    if (buyPassType && !form.playMop) errs.playMop = "Select payment mode";
     if (socksCharge > 0 && !form.socksMop) errs.socksMop = "Select mode";
     setErrors(errs);
     if (Object.keys(errs).length) { setShakeStep(true); setTimeout(()=>setShakeStep(false),500); }
@@ -537,7 +540,7 @@ function App() {
   }
 
   function computePaymentCols() {
-    const playAmt=parseInt(form.amount)||0;
+    const playAmt=buyPassType&&buyPassMeta?buyPassMeta.amount:(parseInt(form.amount)||0);
     let pu=0,pc=0,su=0,sc=0;
     if(form.playMop==="UPI") pu=playAmt;
     else if(form.playMop==="Cash") pc=playAmt;
@@ -554,13 +557,14 @@ function App() {
     if (!validate()) return;
     const timeOut = computeTimeOut(form.timeIn, form.hours);
     const usePass = usingPass;
-    const totalAmt = usePass ? 0 : (parseInt(form.amount)||0);
-    const perKidAmt = form.numKids>1 ? Math.round(totalAmt/form.numKids) : totalAmt;
+    const isBuyingPass = !!buyPassType && isPlayArea && !editTarget;
+    const totalAmt = usePass ? 0 : isBuyingPass ? (buyPassMeta?buyPassMeta.amount:0) : (parseInt(form.amount)||0);
+    const perKidAmt = usePass ? 0 : isBuyingPass ? totalAmt : (form.numKids>1 ? Math.round(totalAmt/form.numKids) : totalAmt);
     const kidNames = form.kidNames || [];
     const playMopStr = usePass ? "Pass" : getPlayMopString();
     const socksMopStr = getSocksMopString();
     const pay = usePass ? {playUpi:0,playCash:0,socksUpi:0,socksCash:0} : computePaymentCols();
-    if (usePass && socksCharge > 0) {
+    if ((usePass || isBuyingPass) && socksCharge > 0) {
       if(form.socksMop==="UPI") pay.socksUpi=socksCharge;
       else if(form.socksMop==="Cash") pay.socksCash=socksCharge;
       else if(form.socksMop==="UPI + Cash"){pay.socksUpi=parseInt(form.socksUpiAmount)||0;pay.socksCash=parseInt(form.socksCashAmount)||0;}
@@ -568,12 +572,39 @@ function App() {
 
     setSaving(true);
     try {
+      let createdPass = null;
+      if (isBuyingPass && buyPassMeta) {
+        const today = new Date();
+        const expiry = new Date(today); expiry.setDate(expiry.getDate() + buyPassMeta.durationDays);
+        const hoursAfterFirstVisit = buyPassMeta.hours != null
+          ? Math.max(0, parseFloat((buyPassMeta.hours - (parseFloat(form.hours)||1)*form.numKids).toFixed(1)))
+          : null;
+        const passRes = await api.createPass({
+          phone: form.phone,
+          customer_name: form.customerName,
+          pass_type: buyPassType,
+          amount: buyPassMeta.amount,
+          mop: playMopStr,
+          start_date: today.toISOString().slice(0,10),
+          expiry_date: expiry.toISOString().slice(0,10),
+          hours_remaining: hoursAfterFirstVisit,
+        });
+        if (!passRes.success) { showToastMsg("Error creating pass: "+(passRes.error||"unknown"),"error"); setSaving(false); return; }
+        createdPass = passRes.data;
+        if (hoursAfterFirstVisit != null && hoursAfterFirstVisit <= 0 && createdPass) {
+          await api.updatePass(createdPass.id, {active: false});
+        }
+      }
+
+      const entryMop = isBuyingPass ? `Pass (${playMopStr})` : playMopStr;
+      const entryAmt = isBuyingPass ? totalAmt : (usePass ? 0 : perKidAmt);
+
       if (form.numKids <= 1) {
-        const entry = {...form, mop:playMopStr, socksMop:socksMopStr, entryType, timeIn:form.timeIn, timeOut:timeOut,
-          amount:perKidAmt, numKids:1, socks:socksCharge,
+        const entry = {...form, mop:entryMop, socksMop:socksMopStr, entryType, timeIn:form.timeIn, timeOut:timeOut,
+          amount:entryAmt, numKids:1, socks:socksCharge,
           playUpi:pay.playUpi, playCash:pay.playCash, socksUpi:pay.socksUpi, socksCash:pay.socksCash};
         const res = await api.addEntry(entry);
-        if(res.success) { showToastMsg("Entry saved!","success"); setShowSuccess(true); fetchEntries(); }
+        if(res.success) { showToastMsg(isBuyingPass ? `Pass created + entry saved!` : "Entry saved!","success"); setShowSuccess(true); fetchEntries(); }
         else { showToastMsg("Error: "+(res.error||"unknown"),"error"); setSaving(false); return; }
       } else {
         let ok = 0;
@@ -582,21 +613,22 @@ function App() {
           const dob = k===0 ? (form.dob||"") : ((form.dobs&&form.dobs[k])||"");
           const kidPU = Math.round(pay.playUpi/form.numKids);
           const kidPC = Math.round(pay.playCash/form.numKids);
-          const entry = {...form, mop:playMopStr, socksMop:k===0?socksMopStr:"", entryType, timeIn:form.timeIn, timeOut:timeOut,
-            customerName:name, dob:dob, amount:perKidAmt, numKids:1,
+          const entry = {...form, mop:k===0?entryMop:playMopStr, socksMop:k===0?socksMopStr:"", entryType, timeIn:form.timeIn, timeOut:timeOut,
+            customerName:name, dob:dob, amount:k===0?entryAmt:0, numKids:1,
             socks: k===0 ? socksCharge : 0,
             playUpi:kidPU, playCash:kidPC,
             socksUpi: k===0 ? pay.socksUpi : 0, socksCash: k===0 ? pay.socksCash : 0};
           const res = await api.addEntry(entry);
           if(res.success) ok++;
         }
-        showToastMsg(`${ok} entries saved!`,"success"); setShowSuccess(true); fetchEntries();
+        showToastMsg(isBuyingPass ? `Pass created + ${ok} entries saved!` : `${ok} entries saved!`,"success"); setShowSuccess(true); fetchEntries();
       }
       if (usePass && activePass) {
         const updates = {};
-        if (activePass.sessions_remaining != null) {
-          updates.sessions_remaining = Math.max(0, activePass.sessions_remaining - 1);
-          if (updates.sessions_remaining === 0) updates.active = false;
+        if (activePass.hours_remaining != null) {
+          const hoursUsed = (parseFloat(form.hours)||1) * form.numKids;
+          updates.hours_remaining = Math.max(0, parseFloat((activePass.hours_remaining - hoursUsed).toFixed(1)));
+          if (updates.hours_remaining <= 0) updates.active = false;
         }
         if (Object.keys(updates).length) {
           await api.updatePass(activePass.id, updates);
@@ -725,11 +757,11 @@ function App() {
   function resetForm() {
     setFormState(getDefaultForm()); setErrors({}); setShowSuccess(false);
     setEditTarget(null); setScreen("home"); setEntryType("funzone");
-    setActivePass(null); lastLookedUpPhone.current = "";
+    setActivePass(null); setBuyPassType(null); lastLookedUpPhone.current = "";
   }
 
   function openPassSale() {
-    setPassPopup({phone:"",customer_name:"",pass_type:"10_sessions",mop:"UPI"});
+    setPassPopup({phone:"",customer_name:"",pass_type:"10_hours",mop:"UPI"});
   }
 
   async function savePass() {
@@ -750,7 +782,7 @@ function App() {
         mop: passPopup.mop,
         start_date: today.toISOString().slice(0,10),
         expiry_date: expiry.toISOString().slice(0,10),
-        sessions_remaining: pt.sessions != null ? pt.sessions : null,
+        hours_remaining: pt.hours != null ? pt.hours : null,
       });
       if (res.success) {
         showToastMsg(`${pt.label} pass created for ₹${pt.amount}`,"success");
@@ -1115,6 +1147,7 @@ function App() {
               const mop = (e.mop||e["MOP"]||"").toLowerCase();
               if (entryMopFilter === "upi" && !mop.includes("upi")) return false;
               if (entryMopFilter === "cash" && !mop.includes("cash")) return false;
+              if (entryMopFilter === "pass" && !mop.includes("pass")) return false;
               if (entryMopFilter === "unpaid") {
                 const paid = e.paid !== false && e.paid !== "false";
                 if (paid && mop) return false;
@@ -1181,7 +1214,6 @@ function App() {
                 <div className="ft-header-sub">every logged walk-in</div>
               </div>
               <div style={{display:"flex",alignItems:"center",gap:8,marginLeft:"auto"}}>
-                <button className="ft-chip" onClick={openPassSale}>🎫 Sell Pass</button>
                 <button className="ft-btn-primary" onClick={()=>startNewEntry("funzone")}>
                   <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="#fff" strokeWidth="2.5"><path d="M10 4v12M4 10h12"/></svg>
                   New entry
@@ -1255,7 +1287,7 @@ function App() {
                 </div>
 
                 <div className="ft-mop-chips">
-                  {[{v:"all",l:"All"},{v:"upi",l:"UPI"},{v:"cash",l:"Cash"},{v:"unpaid",l:"Unpaid"}].map(f => (
+                  {[{v:"all",l:"All"},{v:"upi",l:"UPI"},{v:"cash",l:"Cash"},{v:"pass",l:"Pass"},{v:"unpaid",l:"Unpaid"}].map(f => (
                     <button key={f.v} className={`ft-chip${entryMopFilter===f.v?" ft-chip--active":""}`}
                       onClick={()=>setEntryMopFilter(f.v)}>{f.l}</button>
                   ))}
@@ -1680,15 +1712,38 @@ function App() {
                         <div className="ft-pass-banner-title">{pt?pt.label:activePass.pass_type} Pass Active</div>
                         <div className="ft-pass-banner-meta">
                           Expires {new Date(activePass.expiry_date).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}
-                          {activePass.sessions_remaining != null && ` · ${activePass.sessions_remaining} sessions left`}
+                          {activePass.hours_remaining != null && ` · ${activePass.hours_remaining}h left`}
                         </div>
                       </div>
                       <button className="ft-pass-banner-skip" onClick={()=>setActivePass(null)}>Pay instead</button>
                     </div>;
                   })()}
 
+                  {/* Buy Pass toggle */}
+                  {isPlayArea && !usingPass && !editTarget && (
+                    <div style={{marginTop:14}}>
+                      <button type="button" className={`ft-pass-toggle${buyPassType?" is-active":""}`}
+                        onClick={()=>setBuyPassType(buyPassType?null:"10_hours")}>
+                        <span>🎫</span>
+                        <span>{buyPassType ? "Pass selected" : "Buy a Pass"}</span>
+                        {buyPassType && <span className="ft-pass-toggle-x" onClick={e=>{e.stopPropagation();setBuyPassType(null);}}>✕</span>}
+                      </button>
+                      {buyPassType && (
+                        <div className="ft-pass-type-chips">
+                          {CONFIG.PASS_TYPES.map(pt=>(
+                            <button key={pt.key} type="button" className={`ft-pay-chip${buyPassType===pt.key?" is-active":""}`}
+                              style={{flex:1}} onClick={()=>setBuyPassType(pt.key)}>
+                              <div style={{fontWeight:600}}>{pt.label}</div>
+                              <div style={{fontSize:11,opacity:.7}}>₹{pt.amount} · {pt.durationDays}d</div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* Amount (hidden as auto-calculated but editable) */}
-                  {!usingPass && <div style={{marginTop:14}}>
+                  {!usingPass && !buyPassType && <div style={{marginTop:14}}>
                     <label className="field-label">{isPlayArea?"Playtime Amount":"Amount"} {errors.amount && <span className="err-msg">{errors.amount}</span>}</label>
                     <div style={{position:"relative"}}>
                       <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",fontWeight:700,color:C.textMid}}>₹</span>
@@ -1702,7 +1757,7 @@ function App() {
                   {/* Payment */}
                   {!usingPass && <div style={{marginTop:18}}>
                     <div className="ft-form-section-label">Payment</div>
-                    <label className="field-label">Playtime paid via {errors.playMop && <span className="err-msg">{errors.playMop}</span>}</label>
+                    <label className="field-label">{buyPassType ? "Pass paid via" : "Playtime paid via"} {errors.playMop && <span className="err-msg">{errors.playMop}</span>}</label>
                     <div className="ft-pay-chips">
                       {[{value:"UPI",label:"UPI"},{value:"Cash",label:"Cash"},{value:"UPI + Cash",label:"Split"}].map(o=>(
                         <button key={o.value} type="button" className={`ft-pay-chip${form.playMop===o.value?" is-active":""}`}
@@ -1724,7 +1779,7 @@ function App() {
                               style={{paddingLeft:26,height:40,fontSize:13.5,fontWeight:600}}
                               onChange={e=>{
                                 const v=e.target.value.replace(/\D/g,"");
-                                const playAmt=parseInt(form.amount)||0;
+                                const playAmt=buyPassType&&buyPassMeta?buyPassMeta.amount:(parseInt(form.amount)||0);
                                 set("playUpiAmount",v);
                                 set("playCashAmount",String(Math.max(0,playAmt-(parseInt(v)||0))));
                               }} />
@@ -1738,7 +1793,7 @@ function App() {
                               style={{paddingLeft:26,height:40,fontSize:13.5,fontWeight:600}}
                               onChange={e=>{
                                 const v=e.target.value.replace(/\D/g,"");
-                                const playAmt=parseInt(form.amount)||0;
+                                const playAmt=buyPassType&&buyPassMeta?buyPassMeta.amount:(parseInt(form.amount)||0);
                                 set("playCashAmount",v);
                                 set("playUpiAmount",String(Math.max(0,playAmt-(parseInt(v)||0))));
                               }} />
@@ -1759,9 +1814,22 @@ function App() {
                         <span>🎫 Pass applied</span>
                         <span>₹0</span>
                       </div>
-                      {activePass && activePass.sessions_remaining != null && <div className="ft-bill-line" style={{opacity:.7}}>
-                        <span>Sessions after this visit</span>
-                        <span>{Math.max(0,activePass.sessions_remaining - 1)}</span>
+                      {activePass && activePass.hours_remaining != null && <div className="ft-bill-line" style={{opacity:.7}}>
+                        <span>Hours after this visit</span>
+                        <span>{Math.max(0,parseFloat((activePass.hours_remaining - (parseFloat(form.hours)||1)*form.numKids).toFixed(1)))}h</span>
+                      </div>}
+                    </> : buyPassType && buyPassMeta ? <>
+                      <div className="ft-bill-line">
+                        <span>🎫 {buyPassMeta.label} Pass</span>
+                        <span>₹{buyPassMeta.amount.toLocaleString("en-IN")}</span>
+                      </div>
+                      <div className="ft-bill-line" style={{opacity:.7}}>
+                        <span>First visit · {formatHoursLabel(form.hours)}{form.numKids>1?` × ${form.numKids} kids`:""}</span>
+                        <span>included</span>
+                      </div>
+                      {buyPassMeta.hours != null && <div className="ft-bill-line" style={{opacity:.7}}>
+                        <span>Hours after this visit</span>
+                        <span>{Math.max(0,parseFloat((buyPassMeta.hours - (parseFloat(form.hours)||1)*form.numKids).toFixed(1)))}h</span>
                       </div>}
                     </> : <div className="ft-bill-line">
                       <span>Playtime · {formatHoursLabel(form.hours)}{form.numKids>1?` × ${form.numKids} kids`:""}</span>
@@ -1785,7 +1853,7 @@ function App() {
             {/* Pinned submit footer */}
             <div className="ft-form-footer">
               <div className="ft-form-footer-total">
-                <span className="label">{usingPass ? "Pass" : "Total"}</span>
+                <span className="label">{usingPass ? "Pass" : buyPassType ? "Pass" : "Total"}</span>
                 <span className="value">₹{(usingPass ? socksCharge : totalAmount).toLocaleString("en-IN")}</span>
               </div>
               {!editTarget && <button className="ft-btn-outline" disabled={saving}
@@ -1971,49 +2039,6 @@ function App() {
         saving={staffSaving} />}
 
       {/* Confirm Dialog */}
-      {/* ── Sell Pass popup ── */}
-      {passPopup && <div className="ft-confirm-overlay" onClick={()=>!passSaving&&setPassPopup(null)}>
-        <div className="ft-confirm-dialog" onClick={e=>e.stopPropagation()} style={{maxWidth:400}}>
-          <div style={{fontSize:16,fontWeight:700,marginBottom:16}}>Sell Pass</div>
-          <div style={{marginBottom:12}}>
-            <label className="field-label">Phone</label>
-            <input className="fld" value={passPopup.phone} placeholder="10-digit mobile" type="tel" inputMode="numeric"
-              onChange={e=>setPassPopup(p=>({...p,phone:e.target.value.replace(/\D/g,"").slice(0,10)}))} />
-          </div>
-          <div style={{marginBottom:12}}>
-            <label className="field-label">Customer Name</label>
-            <input className="fld" value={passPopup.customer_name} placeholder="Name"
-              onChange={e=>setPassPopup(p=>({...p,customer_name:e.target.value}))} />
-          </div>
-          <div style={{marginBottom:12}}>
-            <label className="field-label">Pass Type</label>
-            <div className="ft-pay-chips">
-              {CONFIG.PASS_TYPES.map(pt=>(
-                <button key={pt.key} type="button" className={`ft-pay-chip${passPopup.pass_type===pt.key?" is-active":""}`}
-                  style={{flex:1}} onClick={()=>setPassPopup(p=>({...p,pass_type:pt.key}))}>
-                  {pt.label}<br/><span style={{fontSize:11,fontWeight:400}}>₹{pt.amount}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-          <div style={{marginBottom:16}}>
-            <label className="field-label">Payment Mode</label>
-            <div className="ft-pay-chips">
-              {CONFIG.MOP_OPTIONS.map(o=>(
-                <button key={o.value} type="button" className={`ft-pay-chip${passPopup.mop===o.value?" is-active":""}`}
-                  onClick={()=>setPassPopup(p=>({...p,mop:o.value}))}>{o.label}</button>
-              ))}
-            </div>
-          </div>
-          <div style={{display:"flex",gap:8}}>
-            <button className="ft-btn-secondary" style={{flex:1}} onClick={()=>setPassPopup(null)} disabled={passSaving}>Cancel</button>
-            <button className="ft-btn-primary" style={{flex:1,height:40,borderRadius:10}} onClick={savePass} disabled={passSaving}>
-              {passSaving?"Saving...":"Create Pass"}
-            </button>
-          </div>
-        </div>
-      </div>}
-
       {confirmAction && <ConfirmDialog
         message={confirmAction.message}
         needsPassword={confirmAction.needsPassword}

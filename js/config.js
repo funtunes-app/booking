@@ -57,7 +57,7 @@ var CONFIG = {
 
   // Unlimited pass options
   PASS_TYPES: [
-    { key: "10_sessions", label: "10 Sessions", amount: 2500, sessions: 10, durationDays: 30 },
-    { key: "unlimited",   label: "Unlimited",   amount: 3500, sessions: null, durationDays: 30 },
+    { key: "10_hours", label: "10 Hours", amount: 2500, hours: 10, durationDays: 30 },
+    { key: "unlimited", label: "Unlimited", amount: 3500, hours: null, durationDays: 30 },
   ],
 };

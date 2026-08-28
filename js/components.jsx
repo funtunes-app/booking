@@ -422,11 +422,13 @@ const EntryRow = ({entry, onEdit, onDelete, onCheckout}) => {
 
   const durLabel = hours ? (hours >= 1 ? `${hours}h` : `${Math.round(hours*60)}m`) : "—";
 
-  const mopLabel = mop.toLowerCase().includes("upi") && mop.toLowerCase().includes("cash") ? "UPI + Cash"
+  const isPass = mop.toLowerCase().includes("pass");
+  const mopLabel = isPass ? "Pass"
+    : mop.toLowerCase().includes("upi") && mop.toLowerCase().includes("cash") ? "UPI + Cash"
     : mop.toLowerCase().includes("upi") ? "UPI"
     : mop.toLowerCase().includes("cash") ? "Cash" : mop || "—";
 
-  const mopClass = mopLabel.includes("UPI") ? "upi" : mopLabel.includes("Cash") ? "cash" : "";
+  const mopClass = isPass ? "pass" : mopLabel.includes("UPI") ? "upi" : mopLabel.includes("Cash") ? "cash" : "";
 
   const timeLabel = timeIn
     ? `${formatTime12Short(timeIn)} → ${formatTime12Short(timeOut)}`

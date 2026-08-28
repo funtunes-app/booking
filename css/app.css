@@ -769,6 +769,23 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
   cursor: pointer; white-space: nowrap; flex: none;
 }
 .ft-pass-banner-skip:hover { color: var(--ft-deep); border-color: var(--ft-deep); }
+.ft-pass-toggle {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  padding: 10px 14px; border-radius: var(--ft-radius-sm);
+  border: 1.5px dashed var(--ft-border2); background: #fff;
+  font: 500 13px var(--ft-sans); color: var(--ft-muted);
+  cursor: pointer; transition: all .15s;
+}
+.ft-pass-toggle.is-active {
+  border-color: var(--ft-purple-pill); border-style: solid;
+  background: var(--ft-accent-soft); color: var(--ft-deep);
+}
+.ft-pass-toggle-x {
+  margin-left: auto; font-size: 12px; opacity: .5;
+}
+.ft-pass-type-chips {
+  display: flex; gap: 8px; margin-top: 10px;
+}
 
 /* Duration preset chips */
 .ft-dur-chips {
@@ -2088,6 +2105,7 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
 }
 .ft-entry-mop--upi { border-color: #c5d5f0; color: #2E86DE; background: #f0f5fc; }
 .ft-entry-mop--cash { border-color: #b8e0d2; color: var(--ft-green); background: #edf8f4; }
+.ft-entry-mop--pass { border-color: #d4bef0; color: #7B2D8E; background: #f5eefb; }
 .ft-entry-actions { display: flex; gap: 5px; flex: none; }
 .ft-entry-act-btn {
   width: 30px; height: 30px; border-radius: 9px;
