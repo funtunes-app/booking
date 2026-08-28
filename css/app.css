@@ -213,15 +213,16 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
   margin-top: 3px;
 }
 .ft-header-back {
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   border-radius: var(--ft-radius-sm);
   border: 1px solid var(--ft-border5);
   background: #fff;
   display: grid;
   place-items: center;
   color: var(--ft-purple-pill);
-  font: 500 15px var(--ft-sans);
+  cursor: pointer;
+  flex: none;
 }
 .ft-admin-btn {
   width: 40px;
@@ -666,7 +667,7 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 16px 22px;
+  padding: 0;
   padding-bottom: 100px;
   display: flex;
   flex-direction: column;
@@ -1836,8 +1837,11 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
 
   /* Form sections */
   .ft-form-scroll {
-    padding: 20px 36px;
+    padding: 0;
     padding-bottom: 90px;
+  }
+  .ft-form-body {
+    padding: 20px 36px 0;
   }
   .ft-form-footer {
     left: var(--ft-rail-w);
@@ -2010,6 +2014,9 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
 /* ── Filter wrapper ── */
 .ft-filter { padding: 12px 22px 0; display: flex; flex-direction: column; gap: 10px; }
 .ft-filter-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+/* ── Form body (content below sticky header) ── */
+.ft-form-body { padding: 16px 22px 0; }
 
 /* ── Form sections ── */
 .ft-form-section { margin-bottom: 20px; }

@@ -1314,7 +1314,13 @@ function App() {
         {screen === "home" && section === "cash-register" && (
           <div className="ft-page">
             <div className="ft-header">
-              <div className="ft-header-title">Cash Register</div>
+              <div>
+                <div className="ft-header-title">Cash Register</div>
+                <div className="ft-header-sub">daily income & expenses</div>
+              </div>
+              <button className="ft-header-shield" onClick={() => switchSection("cash-register")}>
+                <ShieldIcon />
+              </button>
             </div>
             {!statsUnlocked
               ? <PasswordGate onUnlock={()=>setStatsUnlocked(true)} />
@@ -1340,7 +1346,13 @@ function App() {
         {screen === "home" && section === "expenses" && (
           <div className="ft-page">
             <div className="ft-header">
-              <div className="ft-header-title">Profit & Loss</div>
+              <div>
+                <div className="ft-header-title">Profit & Loss</div>
+                <div className="ft-header-sub">monthly revenue & expenses</div>
+              </div>
+              <button className="ft-header-shield" onClick={() => switchSection("cash-register")}>
+                <ShieldIcon />
+              </button>
             </div>
             {!statsUnlocked
               ? <PasswordGate onUnlock={()=>{setStatsUnlocked(true);fetchMonthlyExpenses();fetchPnl();}} />
@@ -1367,7 +1379,13 @@ function App() {
         {screen === "home" && section === "staff" && (
           <div className="ft-page">
             <div className="ft-header">
-              <div className="ft-header-title">Staff & Salary</div>
+              <div>
+                <div className="ft-header-title">Staff & Salary</div>
+                <div className="ft-header-sub">manage team & payroll</div>
+              </div>
+              <button className="ft-header-shield" onClick={() => switchSection("cash-register")}>
+                <ShieldIcon />
+              </button>
             </div>
             {!statsUnlocked
               ? <PasswordGate onUnlock={()=>{setStatsUnlocked(true);fetchStaffData();}} />
@@ -1384,7 +1402,13 @@ function App() {
         {screen === "home" && section === "attendance" && (
           <div className="ft-page">
             <div className="ft-header">
-              <div className="ft-header-title">Attendance</div>
+              <div>
+                <div className="ft-header-title">Attendance</div>
+                <div className="ft-header-sub">daily check-in tracker</div>
+              </div>
+              <button className="ft-header-shield" onClick={() => switchSection("cash-register")}>
+                <ShieldIcon />
+              </button>
             </div>
             <div className="ft-section-pad"><AttendanceSection
               staffList={staffList} attendance={staffAtt}
@@ -1401,16 +1425,14 @@ function App() {
         {screen === "form" && (
           <div className="ft-page ft-form-scroll" ref={containerRef}>
             <div className="ft-header">
-              <div style={{display:"flex",alignItems:"center",gap:10}}>
-                <button onClick={resetForm} style={{background:"none",border:"none",padding:4,cursor:"pointer",display:"grid",placeItems:"center"}}>
-                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M12.5 15L7.5 10L12.5 5" stroke={C.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                </button>
-                <div>
-                  <div className="ft-header-title">{editTarget ? "Edit Entry" : "New Booking"}</div>
-                  <div className="ft-header-sub">{dateDisplay} · {timeDisplay}</div>
-                </div>
+              <button className="ft-header-back" onClick={resetForm}>
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M12.5 15L7.5 10L12.5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </button>
+              <div>
+                <div className="ft-header-title">{editTarget ? "Edit Entry" : "New Booking"}</div>
+                <div className="ft-header-sub">{dateDisplay} · {timeDisplay}</div>
               </div>
-              <div style={{display:"flex",gap:6}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginLeft:"auto"}}>
                 {!editTarget && <IconMenu trigger={typeMeta.icon} title="Change entry type" activeValue={entryType}
                   items={CONFIG.ENTRY_TYPES.map(t=>({
                     value:t.key, icon:t.icon, label:t.label,
@@ -1419,7 +1441,7 @@ function App() {
               </div>
             </div>
 
-            <div style={{animation:shakeStep?"shakeX .4s ease":"fadeIn .3s ease"}}>
+            <div className="ft-form-body" style={{animation:shakeStep?"shakeX .4s ease":"fadeIn .3s ease"}}>
               <div className="ft-form-desktop-grid">
 
               {/* ── LEFT COLUMN: Customer ── */}
