@@ -1860,7 +1860,7 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
     padding: 20px 36px 0;
   }
   .ft-form-footer {
-    left: var(--ft-rail-w);
+    left: 0;
     padding: 14px 36px;
   }
   .ft-form-desktop-grid {
