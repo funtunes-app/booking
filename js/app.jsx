@@ -1704,23 +1704,17 @@ function App() {
                       style={{background:"var(--ft-accent-soft)",color:"var(--ft-deep)"}} />
                   </div>
 
-                  {/* Pass banner */}
+                  {/* Pass status */}
                   {usingPass && activePass && (() => {
                     const pt = CONFIG.PASS_TYPES.find(p=>p.key===activePass.pass_type);
-                    return <div className="ft-pass-banner">
-                      <div className="ft-pass-banner-icon">🎫</div>
-                      <div className="ft-pass-banner-info">
-                        <div className="ft-pass-banner-title">{pt?pt.label:activePass.pass_type} Pass Active</div>
-                        <div className="ft-pass-banner-meta">
-                          Expires {new Date(activePass.expiry_date).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}
-                          {activePass.hours_remaining != null && ` · ${activePass.hours_remaining}h left`}
-                        </div>
-                      </div>
-                      <button className="ft-pass-banner-skip" onClick={()=>setActivePass(null)}>Pay instead</button>
+                    return <div className="ft-pass-active-badge">
+                      <span>🎫 {pt?pt.label:activePass.pass_type} Pass</span>
+                      <span className="ft-pass-active-hours">{activePass.hours_remaining != null ? `${activePass.hours_remaining}h left` : "Unlimited"}</span>
+                      <button className="ft-pass-active-switch" onClick={()=>setActivePass(null)}>Pay instead</button>
                     </div>;
                   })()}
 
-                  {/* Buy Pass toggle */}
+                  {/* Buy Pass toggle — only when no active pass */}
                   {isPlayArea && !usingPass && !editTarget && (
                     <div style={{marginTop:14}}>
                       <button type="button" className={`ft-pass-toggle${buyPassType?" is-active":""}`}
@@ -1743,16 +1737,29 @@ function App() {
                     </div>
                   )}
 
-                  {/* Amount (hidden as auto-calculated but editable) */}
-                  {!usingPass && !buyPassType && <div style={{marginTop:14}}>
-                    <label className="field-label">{isPlayArea?"Playtime Amount":"Amount"} {errors.amount && <span className="err-msg">{errors.amount}</span>}</label>
+                  {/* Amount */}
+                  {!usingPass && <div style={{marginTop:14}}>
+                    <label className="field-label">{buyPassType?"Pass Amount":isPlayArea?"Playtime Amount":"Amount"} {errors.amount && <span className="err-msg">{errors.amount}</span>}</label>
                     <div style={{position:"relative"}}>
                       <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",fontWeight:700,color:C.textMid}}>₹</span>
-                      <input className={`fld${errors.amount?" is-error":""}`} value={form.amount} type="tel" inputMode="numeric" placeholder="300"
+                      <input className={`fld${errors.amount?" is-error":""}`}
+                        value={buyPassType && buyPassMeta ? buyPassMeta.amount : form.amount}
+                        type="tel" inputMode="numeric" placeholder="300"
                         style={{paddingLeft:28,fontSize:18,fontWeight:700}}
-                        onChange={e=>set("amount",e.target.value.replace(/\D/g,""))} />
+                        onChange={e=>set("amount",e.target.value.replace(/\D/g,""))}
+                        readOnly={!!buyPassType} />
                     </div>
-                    {isPlayArea && form.numKids>1 && <div className="ft-form-helper">{form.numKids} kids x ₹{computeAmountForHours(form.hours)} per kid</div>}
+                    {!buyPassType && isPlayArea && form.numKids>1 && <div className="ft-form-helper">{form.numKids} kids x ₹{computeAmountForHours(form.hours)} per kid</div>}
+                  </div>}
+
+                  {/* Amount disabled for pass users */}
+                  {usingPass && <div style={{marginTop:14}}>
+                    <label className="field-label">Amount</label>
+                    <div style={{position:"relative"}}>
+                      <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",fontWeight:700,color:C.textMid}}>₹</span>
+                      <input className="fld" value="0" type="tel" readOnly
+                        style={{paddingLeft:28,fontSize:18,fontWeight:700,opacity:.5,background:"var(--ft-accent-soft)"}} />
+                    </div>
                   </div>}
 
                   {/* Payment */}

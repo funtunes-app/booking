@@ -769,6 +769,25 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
   cursor: pointer; white-space: nowrap; flex: none;
 }
 .ft-pass-banner-skip:hover { color: var(--ft-deep); border-color: var(--ft-deep); }
+.ft-pass-active-badge {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 16px; margin-top: 14px;
+  border-radius: var(--ft-radius-sm);
+  background: var(--ft-deep); color: #fff;
+  font: 600 13px var(--ft-sans);
+}
+.ft-pass-active-hours {
+  margin-left: auto; font: 700 13px var(--ft-mono);
+  background: rgba(255,255,255,.18); padding: 3px 10px;
+  border-radius: 6px;
+}
+.ft-pass-active-switch {
+  border: 1px solid rgba(255,255,255,.3); background: none;
+  border-radius: 6px; padding: 4px 10px;
+  font: 500 11px var(--ft-sans); color: rgba(255,255,255,.8);
+  cursor: pointer; white-space: nowrap; flex: none;
+}
+.ft-pass-active-switch:hover { background: rgba(255,255,255,.12); color: #fff; }
 .ft-pass-toggle {
   display: flex; align-items: center; gap: 8px; width: 100%;
   padding: 10px 14px; border-radius: var(--ft-radius-sm);
