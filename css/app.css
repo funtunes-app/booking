@@ -1175,7 +1175,7 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
 /* ── Birthday action row (search + booked btn) ── */
 .ft-bday-action-row {
   display: flex; align-items: center; gap: 10px;
-  padding: 0 22px; margin: 20px 0 16px; justify-content: flex-end;
+  padding: 0 22px; margin: 20px 0 16px;
 }
 .ft-bday-mobile-filters { display: none; }
 .ft-bday-mobile-select {
@@ -1198,14 +1198,6 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
 .ft-bday-booked-btn.is-active svg { stroke: #fff; }
 .ft-bday-search-row { margin-left: auto; }
 .ft-bday-search-box { min-width: 220px; }
-.ft-bday-back-btn {
-  display: flex; align-items: center; gap: 6px; margin-top: 14px;
-  border: 1px solid var(--ft-border2); background: #fff; border-radius: 8px;
-  padding: 8px 14px; font: 500 12px var(--ft-sans); color: var(--ft-deep);
-  cursor: pointer; transition: all .15s ease; width: 100%;
-}
-.ft-bday-back-btn:hover { background: var(--ft-accent-soft); border-color: var(--ft-accent-hover); }
-.ft-bday-back-btn--mobile { display: none; }
 
 /* ── Birthday layout ── */
 .ft-bday-layout {
@@ -1256,6 +1248,7 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
 }
 .ft-kb-card-info { flex: 1; min-width: 0; }
 .ft-kb-card-name { font: 600 12px var(--ft-sans); color: var(--ft-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ft-kb-card-age { font: italic 300 11px var(--ft-sans); color: var(--ft-muted2); }
 .ft-kb-card-phone { font: 400 10.5px var(--ft-mono); color: var(--ft-muted2); margin-top: 2px; }
 .ft-kb-card-notes { margin-top: 8px; }
 .ft-kb-card-notes .fld { font-size: 11px; resize: vertical; }
@@ -2374,9 +2367,6 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
   .ft-bday-search-box { min-width: 0; width: 100%; }
   .ft-bday-layout { flex-direction: column; padding: 0 16px; }
   .ft-bday-cal-sidebar { display: none; }
-  .ft-bday-back-btn--mobile {
-    display: flex; margin: 0 16px 12px; width: calc(100% - 32px);
-  }
   .ft-kb-board { grid-template-columns: 1fr; min-height: auto; gap: 16px; }
   .ft-kb-col-body { max-height: none; }
   .ft-kb-col--mobile-hide { display: none; }

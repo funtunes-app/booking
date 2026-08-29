@@ -1358,7 +1358,9 @@ function App() {
               </div>
               <button className={`ft-bday-booked-btn${showBooked?" is-active":""}`}
                 onClick={()=>setShowBooked(!showBooked)}>
-                <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 3H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2z"/><path d="M7 8l2 2 4-4"/></svg>
+                {showBooked
+                  ? <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M5 5l10 10M15 5L5 15"/></svg>
+                  : <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 3H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2z"/><path d="M7 8l2 2 4-4"/></svg>}
                 Booked{bookedCount > 0 ? ` (${bookedCount})` : ""}
               </button>
               <div className="ft-bday-search-row">
@@ -1397,17 +1399,9 @@ function App() {
                     })}
                   </div>
                 </div>
-                {showBooked && <button className="ft-bday-back-btn" onClick={()=>setShowBooked(false)}>
-                  <svg width="10" height="10" viewBox="0 0 7 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 1L1 6l5 5"/></svg>
-                  Back to Kanban
-                </button>}
               </div>
 
               <div className="ft-bday-main">
-                {showBooked && <button className="ft-bday-back-btn ft-bday-back-btn--mobile" onClick={()=>setShowBooked(false)}>
-                  <svg width="10" height="10" viewBox="0 0 7 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 1L1 6l5 5"/></svg>
-                  Back to Kanban
-                </button>}
                 <BirthdayKanban birthdays={filteredBdays} month={birthdayMonth} year={birthdayYear}
                   loading={birthdaysLoading} onSave={saveBirthdayCall} isSearching={isSearching}
                   mobileFilter={bdayStatusFilter!=="all"?bdayStatusFilter:null}

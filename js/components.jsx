@@ -245,7 +245,7 @@ const BirthdayCard = ({record, onSave, onMove}) => {
       <div className="ft-kb-card-top">
         <div className="ft-kb-card-day">{record.day || "?"}</div>
         <div className="ft-kb-card-info">
-          <div className="ft-kb-card-name">{record.kidName || "—"}{turnsLabel ? ` ${turnsLabel}` : ""}</div>
+          <div className="ft-kb-card-name">{record.kidName || "—"}{turnsLabel ? <span className="ft-kb-card-age"> · {turnsLabel}</span> : ""}</div>
           {record.phone && <div className="ft-kb-card-phone">{record.phone}</div>}
         </div>
       </div>
@@ -319,7 +319,7 @@ const BookedCard = ({record, onSave}) => {
       <div className="ft-booked-card-header">
         <div className="ft-kb-card-day">{record.day || "?"}</div>
         <div style={{flex:1,minWidth:0}}>
-          <div className="ft-booked-card-name">{record.kidName || "—"}{turnsLabel ? ` ${turnsLabel}` : ""}</div>
+          <div className="ft-booked-card-name">{record.kidName || "—"}{turnsLabel ? <span className="ft-kb-card-age"> · {turnsLabel}</span> : ""}</div>
           {record.phone && <div className="ft-kb-card-phone">{record.phone}</div>}
         </div>
         <div style={{display:"flex",gap:6,alignItems:"center"}}>
