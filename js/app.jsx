@@ -504,7 +504,7 @@ function App() {
 
   const socksCharge = entryType === "funzone" ? (form.socks||0) : 0;
   const buyPassMeta = buyPassType ? CONFIG.PASS_TYPES.find(p=>p.key===buyPassType) : null;
-  const totalAmount = buyPassType ? ((buyPassMeta?buyPassMeta.amount:0) + socksCharge) : ((parseInt(form.amount)||0) + socksCharge);
+  const totalAmount = (parseInt(form.amount)||0) + socksCharge;
 
   const usingPass = activePass && isPlayArea && !editTarget;
 
@@ -541,7 +541,7 @@ function App() {
   }
 
   function computePaymentCols() {
-    const playAmt=buyPassType&&buyPassMeta?buyPassMeta.amount:(parseInt(form.amount)||0);
+    const playAmt=parseInt(form.amount)||0;
     let pu=0,pc=0,su=0,sc=0;
     if(form.playMop==="UPI") pu=playAmt;
     else if(form.playMop==="Cash") pc=playAmt;
@@ -559,7 +559,7 @@ function App() {
     const timeOut = computeTimeOut(form.timeIn, form.hours);
     const usePass = usingPass;
     const isBuyingPass = !!buyPassType && isPlayArea && !editTarget;
-    const totalAmt = usePass ? 0 : isBuyingPass ? (buyPassMeta?buyPassMeta.amount:0) : (parseInt(form.amount)||0);
+    const totalAmt = usePass ? 0 : (parseInt(form.amount)||0);
     const perKidAmt = usePass ? 0 : isBuyingPass ? totalAmt : (form.numKids>1 ? Math.round(totalAmt/form.numKids) : totalAmt);
     const kidNames = form.kidNames || [];
     const playMopStr = usePass ? "Pass" : getPlayMopString();
@@ -584,7 +584,7 @@ function App() {
           phone: form.phone,
           customer_name: form.customerName,
           pass_type: buyPassType,
-          amount: buyPassMeta.amount,
+          amount: parseInt(form.amount)||0,
           mop: playMopStr,
           start_date: today.toISOString().slice(0,10),
           expiry_date: expiry.toISOString().slice(0,10),
@@ -1718,16 +1718,19 @@ function App() {
                   {isPlayArea && !usingPass && !editTarget && (
                     <div style={{marginTop:14}}>
                       <button type="button" className={`ft-pass-toggle${buyPassType?" is-active":""}`}
-                        onClick={()=>setBuyPassType(buyPassType?null:"10_hours")}>
+                        onClick={()=>{
+                          if(buyPassType){setBuyPassType(null);set("amount",String(computeAmountForHours(form.hours)*form.numKids));}
+                          else{const pt0=CONFIG.PASS_TYPES[0];setBuyPassType("10_hours");if(pt0)set("amount",String(pt0.amount));}
+                        }}>
                         <span>🎫</span>
                         <span>{buyPassType ? "Pass selected" : "Buy a Pass"}</span>
-                        {buyPassType && <span className="ft-pass-toggle-x" onClick={e=>{e.stopPropagation();setBuyPassType(null);}}>✕</span>}
+                        {buyPassType && <span className="ft-pass-toggle-x" onClick={e=>{e.stopPropagation();setBuyPassType(null);set("amount",String(computeAmountForHours(form.hours)*form.numKids));}}>✕</span>}
                       </button>
                       {buyPassType && (
                         <div className="ft-pass-type-chips">
                           {CONFIG.PASS_TYPES.map(pt=>(
                             <button key={pt.key} type="button" className={`ft-pay-chip${buyPassType===pt.key?" is-active":""}`}
-                              style={{flex:1}} onClick={()=>setBuyPassType(pt.key)}>
+                              style={{flex:1}} onClick={()=>{setBuyPassType(pt.key);set("amount",String(pt.amount));}}>
                               <div style={{fontWeight:600}}>{pt.label}</div>
                               <div style={{fontSize:11,opacity:.7}}>₹{pt.amount} · {pt.durationDays}d</div>
                             </button>
@@ -1743,11 +1746,10 @@ function App() {
                     <div style={{position:"relative"}}>
                       <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",fontWeight:700,color:C.textMid}}>₹</span>
                       <input className={`fld${errors.amount?" is-error":""}`}
-                        value={buyPassType && buyPassMeta ? buyPassMeta.amount : form.amount}
+                        value={form.amount}
                         type="tel" inputMode="numeric" placeholder="300"
                         style={{paddingLeft:28,fontSize:18,fontWeight:700}}
-                        onChange={e=>set("amount",e.target.value.replace(/\D/g,""))}
-                        readOnly={!!buyPassType} />
+                        onChange={e=>set("amount",e.target.value.replace(/\D/g,""))} />
                     </div>
                     {!buyPassType && isPlayArea && form.numKids>1 && <div className="ft-form-helper">{form.numKids} kids x ₹{computeAmountForHours(form.hours)} per kid</div>}
                   </div>}
@@ -1787,7 +1789,7 @@ function App() {
                               style={{paddingLeft:26,height:40,fontSize:13.5,fontWeight:600}}
                               onChange={e=>{
                                 const v=e.target.value.replace(/\D/g,"");
-                                const playAmt=buyPassType&&buyPassMeta?buyPassMeta.amount:(parseInt(form.amount)||0);
+                                const playAmt=parseInt(form.amount)||0;
                                 set("playUpiAmount",v);
                                 set("playCashAmount",String(Math.max(0,playAmt-(parseInt(v)||0))));
                               }} />
@@ -1801,7 +1803,7 @@ function App() {
                               style={{paddingLeft:26,height:40,fontSize:13.5,fontWeight:600}}
                               onChange={e=>{
                                 const v=e.target.value.replace(/\D/g,"");
-                                const playAmt=buyPassType&&buyPassMeta?buyPassMeta.amount:(parseInt(form.amount)||0);
+                                const playAmt=parseInt(form.amount)||0;
                                 set("playCashAmount",v);
                                 set("playUpiAmount",String(Math.max(0,playAmt-(parseInt(v)||0))));
                               }} />
@@ -1829,7 +1831,7 @@ function App() {
                     </> : buyPassType && buyPassMeta ? <>
                       <div className="ft-bill-line">
                         <span>🎫 {buyPassMeta.label} Pass</span>
-                        <span>₹{buyPassMeta.amount.toLocaleString("en-IN")}</span>
+                        <span>₹{(parseInt(form.amount)||0).toLocaleString("en-IN")}</span>
                       </div>
                       <div className="ft-bill-line" style={{opacity:.7}}>
                         <span>First visit · {formatHoursLabel(form.hours)}{form.numKids>1?` × ${form.numKids} kids`:""}</span>
