@@ -1172,40 +1172,40 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
 .ft-pnl-row .label { flex: 1; color: var(--ft-muted); }
 
 /* ── Birthday Page ── */
-/* ── Birthday toolbar ── */
-.ft-bday-toolbar {
+/* ── Birthday action row (search + booked btn) ── */
+.ft-bday-action-row {
   display: flex; align-items: center; gap: 10px;
-  padding: 0 22px; margin-bottom: 16px; flex-wrap: wrap;
+  padding: 0 22px; margin: 20px 0 16px; justify-content: flex-end;
 }
-.ft-bday-thismonth {
-  border: 1px solid var(--ft-border2); background: #fff; border-radius: 8px;
-  padding: 6px 14px; font: 600 12px var(--ft-sans); color: var(--ft-deep);
-  cursor: pointer; transition: all .15s ease;
-}
-.ft-bday-thismonth.is-active {
-  background: var(--ft-primary-grad); color: #fff; border-color: transparent;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.4);
-}
-.ft-bday-month-nav {
-  display: flex; align-items: center; gap: 8px;
-}
-.ft-bday-month-label {
-  font: 600 13px var(--ft-sans); color: var(--ft-text); min-width: 130px; text-align: center;
-}
-.ft-bday-search-desktop { margin-left: auto; }
 .ft-bday-mobile-filters { display: none; }
-.ft-bday-mobile-search-bar { display: none; }
 .ft-bday-mobile-select {
   border: 1px solid var(--ft-border2); border-radius: 8px;
   padding: 6px 28px 6px 10px; font: 500 12px var(--ft-sans); color: var(--ft-deep);
   background: #fff url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%237c3fc4' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") right 8px center / 10px no-repeat;
   appearance: none; cursor: pointer;
 }
-.ft-bday-search-toggle {
-  width: 34px; height: 34px; border: 1px solid var(--ft-border2); border-radius: 8px;
-  background: #fff; display: grid; place-items: center; cursor: pointer; color: var(--ft-muted2);
+.ft-bday-booked-btn {
+  display: flex; align-items: center; gap: 6px;
+  border: 1.5px solid var(--ft-border2); background: #fff; border-radius: 8px;
+  padding: 8px 16px; font: 600 12px var(--ft-sans); color: var(--ft-deep);
+  cursor: pointer; transition: all .15s ease; white-space: nowrap;
 }
-.ft-bday-search-toggle.is-active { background: var(--ft-accent-soft); color: var(--ft-deep); border-color: var(--ft-deep); }
+.ft-bday-booked-btn:hover { border-color: var(--ft-accent-hover); background: var(--ft-accent-soft); }
+.ft-bday-booked-btn.is-active {
+  background: var(--ft-primary-grad); color: #fff; border-color: transparent;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.4);
+}
+.ft-bday-booked-btn.is-active svg { stroke: #fff; }
+.ft-bday-search-row { margin-left: auto; }
+.ft-bday-search-box { min-width: 220px; }
+.ft-bday-back-btn {
+  display: flex; align-items: center; gap: 6px; margin-top: 14px;
+  border: 1px solid var(--ft-border2); background: #fff; border-radius: 8px;
+  padding: 8px 14px; font: 500 12px var(--ft-sans); color: var(--ft-deep);
+  cursor: pointer; transition: all .15s ease; width: 100%;
+}
+.ft-bday-back-btn:hover { background: var(--ft-accent-soft); border-color: var(--ft-accent-hover); }
+.ft-bday-back-btn--mobile { display: none; }
 
 /* ── Birthday layout ── */
 .ft-bday-layout {
@@ -1216,7 +1216,7 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
 
 /* ── Kanban board ── */
 .ft-kb-board {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; min-height: 400px;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; min-height: 400px;
 }
 .ft-kb-board--single { grid-template-columns: 1fr; }
 .ft-kb-col {
@@ -1280,10 +1280,48 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
   cursor: pointer; transition: all .15s ease; white-space: nowrap;
 }
 .ft-kb-move-btn:hover { background: var(--ft-accent-soft); color: var(--ft-deep); border-color: var(--ft-deep); }
-.ft-kb-move-btn--fwd {
+.ft-kb-move-btn--na {
+  border-color: #e05c5c; color: #c44040; background: #fff;
+}
+.ft-kb-move-btn--na:hover { background: #fdf0f0; color: #a33; border-color: #c44040; }
+.ft-kb-move-btn--follow {
+  border-color: #e6a817; color: #b8860b; background: #fff;
+}
+.ft-kb-move-btn--follow:hover { background: #fef8e6; color: #8b6914; border-color: #b8860b; }
+.ft-kb-move-btn--book {
   background: var(--ft-accent-soft); color: var(--ft-deep); border-color: var(--ft-accent-hover);
 }
-.ft-kb-move-btn--fwd:hover { background: var(--ft-primary-grad); color: #fff; border-color: transparent; }
+.ft-kb-move-btn--book:hover { background: var(--ft-primary-grad); color: #fff; border-color: transparent; }
+
+/* ── Booked card ── */
+.ft-booked-list {
+  display: flex; flex-direction: column; gap: 14px;
+}
+.ft-booked-card {
+  background: #fff; border: 2px solid var(--ft-accent-hover);
+  border-radius: var(--ft-radius); overflow: hidden;
+  box-shadow: 0 2px 8px rgba(124,63,196,.06);
+}
+.ft-booked-card-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px; border-bottom: 1px solid var(--ft-border4);
+}
+.ft-booked-card-name {
+  font: 600 13px var(--ft-sans); color: var(--ft-text);
+}
+.ft-booked-card-body { padding: 14px 16px; }
+.ft-booked-grid {
+  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;
+}
+.ft-booked-field label {
+  display: block; font: 500 10px var(--ft-sans); color: var(--ft-muted2);
+  text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px;
+}
+.ft-booked-field span {
+  font: 400 12px var(--ft-sans); color: var(--ft-text);
+}
+.ft-booked-field .fld { font-size: 12px; }
+.ft-booked-field--wide { grid-column: 1 / -1; }
 
 /* Mini calendar sidebar */
 .ft-bday-minical {
@@ -2330,15 +2368,19 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
   .ft-filters-bottom { gap: 8px; }
   .ft-search-box { max-width: 100%; margin-left: 0; flex-basis: 100%; }
   .ft-mop-chips { margin-left: 0; }
-  .ft-bday-toolbar { padding: 0 16px; gap: 8px; }
-  .ft-bday-search-desktop { display: none; }
-  .ft-bday-mobile-filters { display: flex; align-items: center; gap: 6px; margin-left: auto; }
-  .ft-bday-mobile-search-bar { display: block; padding: 0 16px 10px; }
+  .ft-bday-action-row { padding: 0 16px; margin: 12px 0 12px; gap: 8px; flex-wrap: wrap; }
+  .ft-bday-mobile-filters { display: flex; align-items: center; gap: 6px; }
+  .ft-bday-search-row { flex-basis: 100%; order: 10; margin-left: 0; }
+  .ft-bday-search-box { min-width: 0; width: 100%; }
   .ft-bday-layout { flex-direction: column; padding: 0 16px; }
   .ft-bday-cal-sidebar { display: none; }
+  .ft-bday-back-btn--mobile {
+    display: flex; margin: 0 16px 12px; width: calc(100% - 32px);
+  }
   .ft-kb-board { grid-template-columns: 1fr; min-height: auto; gap: 16px; }
   .ft-kb-col-body { max-height: none; }
   .ft-kb-col--mobile-hide { display: none; }
+  .ft-booked-grid { grid-template-columns: 1fr 1fr; }
   .ft-playing-row {
     display: flex; flex-wrap: wrap; gap: 6px 10px;
     padding: 12px 0;

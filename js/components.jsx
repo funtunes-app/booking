@@ -261,9 +261,6 @@ const BirthdayCard = ({record, onSave, onMove}) => {
         </div>
       )}
       <div className="ft-kb-card-actions">
-        {record.phone && <a href={`tel:${record.phone}`} className="ft-kb-act" title="Call">
-          <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 3h4l2 4-2.5 2a11 11 0 005 5L14 12l4 2v4a2 2 0 01-2 2A16 16 0 013 3z"/></svg>
-        </a>}
         {record.phone && <a href={`https://wa.me/${record.phone.replace(/\D/g,"")}`} target="_blank" rel="noopener" className="ft-kb-act" title="WhatsApp">
           <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M2 18l1.3-4.7a7.5 7.5 0 1110.4 0L18 18l-4.7-1.3"/></svg>
         </a>}
@@ -272,19 +269,19 @@ const BirthdayCard = ({record, onSave, onMove}) => {
         </button>
         <div className="ft-kb-card-move">
           {status === "not_contacted" && <>
-            <button className="ft-kb-move-btn" onClick={()=>{save("na","");onMove&&onMove();}}>NA</button>
-            <button className="ft-kb-move-btn ft-kb-move-btn--fwd" onClick={()=>{save("warm",notes);onMove&&onMove();}}>Follow →</button>
+            <button className="ft-kb-move-btn ft-kb-move-btn--na" onClick={()=>{save("na","");onMove&&onMove();}}>NA</button>
+            <button className="ft-kb-move-btn ft-kb-move-btn--follow" onClick={()=>{save("warm",notes);onMove&&onMove();}}>Follow</button>
           </>}
           {status === "na" && <>
-            <button className="ft-kb-move-btn" onClick={()=>{save("not_contacted",notes);onMove&&onMove();}}>← New</button>
-            <button className="ft-kb-move-btn ft-kb-move-btn--fwd" onClick={()=>{save("warm",notes);onMove&&onMove();}}>Follow →</button>
+            <button className="ft-kb-move-btn" onClick={()=>{save("not_contacted",notes);onMove&&onMove();}}>New</button>
+            <button className="ft-kb-move-btn ft-kb-move-btn--follow" onClick={()=>{save("warm",notes);onMove&&onMove();}}>Follow</button>
           </>}
           {status === "warm" && <>
-            <button className="ft-kb-move-btn" onClick={()=>{save("not_contacted",notes);onMove&&onMove();}}>← New</button>
-            <button className="ft-kb-move-btn ft-kb-move-btn--fwd" onClick={()=>{save("booking",notes);onMove&&onMove();}}>Book →</button>
+            <button className="ft-kb-move-btn" onClick={()=>{save("not_contacted",notes);onMove&&onMove();}}>New</button>
+            <button className="ft-kb-move-btn ft-kb-move-btn--book" onClick={()=>{save("booking",notes);onMove&&onMove();}}>Book</button>
           </>}
           {status === "booking" && <>
-            <button className="ft-kb-move-btn" onClick={()=>{save("warm",notes);onMove&&onMove();}}>← Follow</button>
+            <button className="ft-kb-move-btn" onClick={()=>{save("warm",notes);onMove&&onMove();}}>Follow</button>
           </>}
         </div>
       </div>
@@ -296,17 +293,107 @@ const KANBAN_COLS = [
   {key:"not_contacted", label:"New", color:"#7c3fc4"},
   {key:"na", label:"NA", color:"#a099b5"},
   {key:"warm", label:"Follow", color:"#e6a817"},
-  {key:"booking", label:"Booked", color:"#2ea97d"},
 ];
 
-const BirthdayKanban = ({birthdays, month, year, loading, onSave, isSearching, mobileFilter}) => {
+const BookedCard = ({record, onSave}) => {
+  const [notes, setNotes] = React.useState(record.notes || "");
+  const [pkg, setPkg] = React.useState(record.package || "");
+  const [numKids, setNumKids] = React.useState(record.numKids || "");
+  const [numAdults, setNumAdults] = React.useState(record.numAdults || "");
+  const [services, setServices] = React.useState(record.services || "");
+  const [inclusions, setInclusions] = React.useState(record.inclusions || "");
+  const [editing, setEditing] = React.useState(false);
+
+  const thisYear = new Date().getFullYear();
+  const age = record.year ? thisYear - record.year : null;
+  const turnsLabel = age ? `turns ${age}` : "";
+
+  const doSave = () => {
+    onSave({...record, status:"booking", notes, package:pkg, numKids, numAdults, services, inclusions});
+    setEditing(false);
+  };
+  const moveBack = () => { onSave({...record, status:"warm", notes}); };
+
+  return (
+    <div className="ft-booked-card">
+      <div className="ft-booked-card-header">
+        <div className="ft-kb-card-day">{record.day || "?"}</div>
+        <div style={{flex:1,minWidth:0}}>
+          <div className="ft-booked-card-name">{record.kidName || "—"}{turnsLabel ? ` ${turnsLabel}` : ""}</div>
+          {record.phone && <div className="ft-kb-card-phone">{record.phone}</div>}
+        </div>
+        <div style={{display:"flex",gap:6,alignItems:"center"}}>
+          {record.phone && <a href={`https://wa.me/${record.phone.replace(/\D/g,"")}`} target="_blank" rel="noopener" className="ft-kb-act" title="WhatsApp">
+            <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M2 18l1.3-4.7a7.5 7.5 0 1110.4 0L18 18l-4.7-1.3"/></svg>
+          </a>}
+          <button className="ft-kb-move-btn" onClick={moveBack}>Move to Follow</button>
+          <button className="ft-kb-act" onClick={()=>setEditing(!editing)} title={editing?"Cancel":"Edit"}>
+            <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2"><path d="M13.5 3.5l3 3L7 16H4v-3L13.5 3.5z"/></svg>
+          </button>
+        </div>
+      </div>
+      <div className="ft-booked-card-body">
+        <div className="ft-booked-grid">
+          <div className="ft-booked-field">
+            <label>Package</label>
+            {editing ? <input className="fld" value={pkg} placeholder="e.g. Gold" onChange={e=>setPkg(e.target.value)} />
+              : <span>{pkg || "—"}</span>}
+          </div>
+          <div className="ft-booked-field">
+            <label>Kids</label>
+            {editing ? <input className="fld" value={numKids} placeholder="e.g. 15" type="tel" inputMode="numeric" onChange={e=>setNumKids(e.target.value.replace(/\D/g,""))} />
+              : <span>{numKids || "—"}</span>}
+          </div>
+          <div className="ft-booked-field">
+            <label>Adults</label>
+            {editing ? <input className="fld" value={numAdults} placeholder="e.g. 10" type="tel" inputMode="numeric" onChange={e=>setNumAdults(e.target.value.replace(/\D/g,""))} />
+              : <span>{numAdults || "—"}</span>}
+          </div>
+          <div className="ft-booked-field">
+            <label>Services</label>
+            {editing ? <input className="fld" value={services} placeholder="e.g. Cake, Decoration" onChange={e=>setServices(e.target.value)} />
+              : <span>{services || "—"}</span>}
+          </div>
+          <div className="ft-booked-field ft-booked-field--wide">
+            <label>Inclusions</label>
+            {editing ? <input className="fld" value={inclusions} placeholder="e.g. Return gifts, Food" onChange={e=>setInclusions(e.target.value)} />
+              : <span>{inclusions || "—"}</span>}
+          </div>
+          <div className="ft-booked-field ft-booked-field--wide">
+            <label>Notes</label>
+            {editing ? <textarea className="fld" rows={2} value={notes} placeholder="Any notes..." onChange={e=>setNotes(e.target.value)} />
+              : <span>{notes || "—"}</span>}
+          </div>
+        </div>
+        {editing && <div style={{display:"flex",justifyContent:"flex-end",gap:8,marginTop:10}}>
+          <button className="ft-kb-move-btn" onClick={()=>setEditing(false)}>Cancel</button>
+          <button className="ft-kb-move-btn ft-kb-move-btn--book" onClick={doSave}>Save</button>
+        </div>}
+      </div>
+    </div>
+  );
+};
+
+const BirthdayKanban = ({birthdays, month, year, loading, onSave, isSearching, mobileFilter, showBooked, bookedList}) => {
   if (loading) return <div className="ft-empty"><Spinner size={24} /><div style={{marginTop:10}}>Loading birthdays...</div></div>;
+
+  if (showBooked) {
+    const booked = (bookedList||[]).sort((a,b) => (a.day||0)-(b.day||0));
+    if (!booked.length) return <div className="ft-empty">No booked birthdays for {MONTH_NAMES[(month||1)-1]}.</div>;
+    return (
+      <div className="ft-booked-list">
+        {booked.map((b,i) => <BookedCard key={b.key||i} record={b} onSave={onSave} />)}
+      </div>
+    );
+  }
+
   if (!birthdays.length) return <div className="ft-empty">{isSearching ? "No results found." : `No birthdays found for ${MONTH_NAMES[(month||1)-1]}.`}</div>;
 
   const cols = {};
   KANBAN_COLS.forEach(c => { cols[c.key] = []; });
   birthdays.forEach(b => {
     const s = b.status || "not_contacted";
+    if (s === "booking") return;
     if (!cols[s]) cols[s] = [];
     cols[s].push(b);
   });

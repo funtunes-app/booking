@@ -68,6 +68,7 @@ function App() {
   const [birthdayYear, setBirthdayYear] = useState(()=>new Date().getFullYear());
   const [bdayViewMode, setBdayViewMode] = useState("week");
   const [bdayStatusFilter, setBdayStatusFilter] = useState("all");
+  const [showBooked, setShowBooked] = useState(false);
   const [bdaySearch, setBdaySearch] = useState("");
   const [bdaySearchResults, setBdaySearchResults] = useState(null);
   const bdaySearchTimer = React.useRef(null);
@@ -1316,6 +1317,7 @@ function App() {
           const naCount = birthdays.filter(b=>b.status==="na").length;
           const warmCount = birthdays.filter(b=>b.status==="warm").length;
           const bookedCount = birthdays.filter(b=>b.status==="booking").length;
+          const bookedList = birthdays.filter(b=>b.status==="booking");
 
           const isSearching = bdaySearch.trim().length > 0;
           let filteredBdays = isSearching && bdaySearchResults ? bdaySearchResults : birthdays;
@@ -1342,20 +1344,9 @@ function App() {
               </div>
             </div>
 
-            <div className="ft-bday-toolbar">
-              <button className={`ft-bday-thismonth${isCurrentMonth?" is-active":""}`}
-                onClick={bdayToday}>This month</button>
-              <div className="ft-bday-month-nav">
-                <button className="ft-date-nav-btn" onClick={bdayPrevMonth}>
-                  <svg width="7" height="12" viewBox="0 0 7 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 1L1 6l5 5"/></svg>
-                </button>
-                <span className="ft-bday-month-label">{MONTH_NAMES[birthdayMonth-1]} {birthdayYear}</span>
-                <button className="ft-date-nav-btn" onClick={bdayNextMonth}>
-                  <svg width="7" height="12" viewBox="0 0 7 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M1 1l5 5-5 5"/></svg>
-                </button>
-              </div>
-
-              {/* Mobile: dropdown filter + search icon */}
+            {/* Search + Booked button row */}
+            <div className="ft-bday-action-row">
+              {/* Mobile: dropdown filter */}
               <div className="ft-bday-mobile-filters">
                 <select className="ft-bday-mobile-select" value={bdayStatusFilter}
                   onChange={e=>setBdayStatusFilter(e.target.value)}>
@@ -1363,30 +1354,20 @@ function App() {
                   <option value="not_contacted">New ({newCount})</option>
                   <option value="na">NA ({naCount})</option>
                   <option value="warm">Follow ({warmCount})</option>
-                  <option value="booking">Booked ({bookedCount})</option>
                 </select>
-                <button className={`ft-bday-search-toggle${bdaySearch?" is-active":""}`}
-                  onClick={()=>{if(bdaySearch){setBdaySearch("");setBdaySearchResults(null);}else{const el=document.getElementById("bday-search-input");if(el)el.focus();}}}>
-                  <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M13 13l4 4"/></svg>
-                </button>
               </div>
-
-              {/* Desktop search */}
-              <div className="ft-bday-search-desktop">
-                <div className="ft-search-box">
+              <button className={`ft-bday-booked-btn${showBooked?" is-active":""}`}
+                onClick={()=>setShowBooked(!showBooked)}>
+                <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 3H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2z"/><path d="M7 8l2 2 4-4"/></svg>
+                Booked{bookedCount > 0 ? ` (${bookedCount})` : ""}
+              </button>
+              <div className="ft-bday-search-row">
+                <div className="ft-search-box ft-bday-search-box">
                   <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="#a099b5" strokeWidth="2"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M13 13l4 4"/></svg>
                   <input id="bday-search-input" type="text" placeholder="Name or number" value={bdaySearch} onChange={e=>onBdaySearchChange(e.target.value)} />
                 </div>
               </div>
             </div>
-
-            {/* Mobile search bar (shown when toggled) */}
-            {bdaySearch !== null && <div className="ft-bday-mobile-search-bar">
-              <div className="ft-search-box">
-                <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="#a099b5" strokeWidth="2"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M13 13l4 4"/></svg>
-                <input type="text" placeholder="Name or number" value={bdaySearch} onChange={e=>onBdaySearchChange(e.target.value)} />
-              </div>
-            </div>}
 
             <div className="ft-bday-layout">
               <div className="ft-bday-cal-sidebar">
@@ -1411,17 +1392,26 @@ function App() {
                       return <span key={d}
                         className={`ft-bday-minical-day${hasBday?" has-bday":""}${isToday?" is-today":""}${hasNew?" has-new":""}`}
                         style={{cursor:hasNew?"pointer":"default"}}
-                        onClick={()=>{if(hasNew){setBdayStatusFilter("all");const el=document.getElementById("bday-day-"+d);if(el)el.scrollIntoView({behavior:"smooth",block:"center"});}}}
+                        onClick={()=>{if(hasNew){setShowBooked(false);setBdayStatusFilter("all");const el=document.getElementById("bday-day-"+d);if(el)el.scrollIntoView({behavior:"smooth",block:"center"});}}}
                       >{d}</span>;
                     })}
                   </div>
                 </div>
+                {showBooked && <button className="ft-bday-back-btn" onClick={()=>setShowBooked(false)}>
+                  <svg width="10" height="10" viewBox="0 0 7 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 1L1 6l5 5"/></svg>
+                  Back to Kanban
+                </button>}
               </div>
 
               <div className="ft-bday-main">
+                {showBooked && <button className="ft-bday-back-btn ft-bday-back-btn--mobile" onClick={()=>setShowBooked(false)}>
+                  <svg width="10" height="10" viewBox="0 0 7 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 1L1 6l5 5"/></svg>
+                  Back to Kanban
+                </button>}
                 <BirthdayKanban birthdays={filteredBdays} month={birthdayMonth} year={birthdayYear}
                   loading={birthdaysLoading} onSave={saveBirthdayCall} isSearching={isSearching}
-                  mobileFilter={bdayStatusFilter!=="all"?bdayStatusFilter:null} />
+                  mobileFilter={bdayStatusFilter!=="all"?bdayStatusFilter:null}
+                  showBooked={showBooked} bookedList={bookedList} />
               </div>
             </div>
           </div>
