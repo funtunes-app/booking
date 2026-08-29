@@ -229,113 +229,104 @@ const ConfirmDialog = ({message, needsPassword, confirmLabel, onConfirm, onCance
 
 // ── Birthday Components ──
 
-const BirthdayRow = ({record, onSave, isTomorrow}) => {
-  const [status, setStatus] = React.useState(record.status || "not_contacted");
+const BirthdayCard = ({record, onSave, onMove}) => {
   const [notes, setNotes] = React.useState(record.notes || "");
   const [editingNotes, setEditingNotes] = React.useState(false);
 
   const save = (s, n) => { onSave({...record, status:s, notes:n}); };
-  const changeStatus = (s) => { setStatus(s); save(s, notes); };
 
   const thisYear = new Date().getFullYear();
   const age = record.year ? thisYear - record.year : null;
   const turnsLabel = age ? `turns ${age}` : "";
-
-  const rowCls = `ft-bday-row${isTomorrow?" ft-bday-row--featured":""}${status==="warm"?" ft-bday-row--warm":""}${status==="booking"?" ft-bday-row--booking":""}`;
+  const status = record.status || "not_contacted";
 
   return (
-    <div className={rowCls}>
-      <div className={`ft-bday-date-icon${isTomorrow?" ft-bday-date-icon--tomorrow":""}`}>
-        <span className="ft-bday-date-num">{record.day || "?"}</span>
-      </div>
-      <div className="ft-bday-info">
-        <div className="ft-bday-name">{record.kidName || "—"}{turnsLabel ? ` ${turnsLabel}` : ""}</div>
-        <div className="ft-bday-meta">
-          {record.phone && <span>{record.phone}</span>}
-          {notes && !editingNotes && <span className="ft-bday-meta-note">{notes}</span>}
+    <div className="ft-kb-card" id={`bday-day-${record.day}`}>
+      <div className="ft-kb-card-top">
+        <div className="ft-kb-card-day">{record.day || "?"}</div>
+        <div className="ft-kb-card-info">
+          <div className="ft-kb-card-name">{record.kidName || "—"}{turnsLabel ? ` ${turnsLabel}` : ""}</div>
+          {record.phone && <div className="ft-kb-card-phone">{record.phone}</div>}
         </div>
       </div>
-      <div className="ft-bday-row-actions">
-        {record.phone && (
-          <a href={`tel:${record.phone}`} className="ft-bday-action-btn" title="Call">Call</a>
-        )}
-        {record.phone && (
-          <a href={`https://wa.me/${record.phone.replace(/\D/g,"")}`} target="_blank" rel="noopener" className="ft-bday-action-btn" title="WhatsApp">WhatsApp</a>
-        )}
-        {status === "not_contacted" && (
-          <button className="ft-bday-action-btn ft-bday-action-btn--primary"
-            onClick={()=>{changeStatus("warm");setEditingNotes(true);}}>Mark contacted</button>
-        )}
-        {status === "warm" && (<>
-          <button className="ft-bday-action-btn" onClick={()=>changeStatus("booking")}>Log booking</button>
-          <button className="ft-bday-action-btn ft-bday-action-btn--muted" onClick={()=>changeStatus("not_contacted")}>Undo</button>
-        </>)}
-        {status === "booking" && (<>
-          <span className="ft-bday-booked-tag">Booked</span>
-          <button className="ft-bday-action-btn ft-bday-action-btn--muted" onClick={()=>changeStatus("warm")}>Undo</button>
-        </>)}
-        <button className="ft-bday-action-btn ft-bday-action-btn--icon" onClick={()=>setEditingNotes(!editingNotes)} title="Notes">
-          <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 4h12v12H4z"/><path d="M7 8h6M7 11h4"/></svg>
-        </button>
-      </div>
-      {editingNotes && (
-        <div className="ft-bday-notes-edit">
-          <textarea className="fld" rows={2} value={notes} placeholder="Add a note..."
-            onChange={e => setNotes(e.target.value)}
-            onBlur={() => {save(status, notes); setEditingNotes(false);}} autoFocus />
+      {(notes || editingNotes) && (
+        <div className="ft-kb-card-notes">
+          {editingNotes ? (
+            <textarea className="fld" rows={2} value={notes} placeholder="Add a note..."
+              onChange={e => setNotes(e.target.value)}
+              onBlur={() => {save(status, notes); setEditingNotes(false);}} autoFocus />
+          ) : (
+            <div className="ft-kb-card-note-text" onClick={()=>setEditingNotes(true)}>{notes}</div>
+          )}
         </div>
       )}
+      <div className="ft-kb-card-actions">
+        {record.phone && <a href={`tel:${record.phone}`} className="ft-kb-act" title="Call">
+          <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 3h4l2 4-2.5 2a11 11 0 005 5L14 12l4 2v4a2 2 0 01-2 2A16 16 0 013 3z"/></svg>
+        </a>}
+        {record.phone && <a href={`https://wa.me/${record.phone.replace(/\D/g,"")}`} target="_blank" rel="noopener" className="ft-kb-act" title="WhatsApp">
+          <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M2 18l1.3-4.7a7.5 7.5 0 1110.4 0L18 18l-4.7-1.3"/></svg>
+        </a>}
+        <button className="ft-kb-act" onClick={()=>setEditingNotes(!editingNotes)} title="Notes">
+          <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 4h12v12H4z"/><path d="M7 8h6M7 11h4"/></svg>
+        </button>
+        <div className="ft-kb-card-move">
+          {status === "not_contacted" && <>
+            <button className="ft-kb-move-btn" onClick={()=>{save("na","");onMove&&onMove();}}>NA</button>
+            <button className="ft-kb-move-btn ft-kb-move-btn--fwd" onClick={()=>{save("warm",notes);onMove&&onMove();}}>Follow →</button>
+          </>}
+          {status === "na" && <>
+            <button className="ft-kb-move-btn" onClick={()=>{save("not_contacted",notes);onMove&&onMove();}}>← New</button>
+            <button className="ft-kb-move-btn ft-kb-move-btn--fwd" onClick={()=>{save("warm",notes);onMove&&onMove();}}>Follow →</button>
+          </>}
+          {status === "warm" && <>
+            <button className="ft-kb-move-btn" onClick={()=>{save("not_contacted",notes);onMove&&onMove();}}>← New</button>
+            <button className="ft-kb-move-btn ft-kb-move-btn--fwd" onClick={()=>{save("booking",notes);onMove&&onMove();}}>Book →</button>
+          </>}
+          {status === "booking" && <>
+            <button className="ft-kb-move-btn" onClick={()=>{save("warm",notes);onMove&&onMove();}}>← Follow</button>
+          </>}
+        </div>
+      </div>
     </div>
   );
 };
 
-const BirthdayList = ({birthdays, month, year, loading, onSave, viewMode, isSearching}) => {
+const KANBAN_COLS = [
+  {key:"not_contacted", label:"New", color:"#7c3fc4"},
+  {key:"na", label:"NA", color:"#a099b5"},
+  {key:"warm", label:"Follow", color:"#e6a817"},
+  {key:"booking", label:"Booked", color:"#2ea97d"},
+];
+
+const BirthdayKanban = ({birthdays, month, year, loading, onSave, isSearching, mobileFilter}) => {
   if (loading) return <div className="ft-empty"><Spinner size={24} /><div style={{marginTop:10}}>Loading birthdays...</div></div>;
   if (!birthdays.length) return <div className="ft-empty">{isSearching ? "No results found." : `No birthdays found for ${MONTH_NAMES[(month||1)-1]}.`}</div>;
 
-  const today = new Date();
-  const todayDay = today.getDate();
-  const todayMonth = today.getMonth() + 1;
-  const todayYear = today.getFullYear();
-  const isCurMonth = month === todayMonth && year === todayYear;
-
-  const groups = {};
+  const cols = {};
+  KANBAN_COLS.forEach(c => { cols[c.key] = []; });
   birthdays.forEach(b => {
-    let label;
-    if (isSearching) {
-      label = MONTH_NAMES[(b.month||1)-1].toUpperCase();
-    } else if (viewMode === "week") {
-      const diff = b.day - todayDay;
-      if (isCurMonth && diff === 1) label = "TOMORROW";
-      else if (isCurMonth && diff === 0) label = "TODAY";
-      else if (isCurMonth && diff > 0 && diff <= 7) label = "THIS WEEK";
-      else label = "THIS MONTH";
-    } else {
-      const w = b.day ? Math.ceil(b.day / 7) : 0;
-      label = "Week " + w;
-    }
-    if (!groups[label]) groups[label] = [];
-    groups[label].push(b);
+    const s = b.status || "not_contacted";
+    if (!cols[s]) cols[s] = [];
+    cols[s].push(b);
   });
-
-  const order = ["TODAY","TOMORROW","THIS WEEK","THIS MONTH"];
-  const sorted = Object.keys(groups).sort((a,b) => {
-    const ia = order.indexOf(a), ib = order.indexOf(b);
-    if (ia !== -1 && ib !== -1) return ia - ib;
-    if (ia !== -1) return -1;
-    if (ib !== -1) return 1;
-    return a.localeCompare(b, undefined, {numeric:true});
-  });
+  Object.keys(cols).forEach(k => { cols[k].sort((a,b) => (a.day||0)-(b.day||0)); });
 
   return (
-    <div className="ft-bday-list">
-      {sorted.map(label => (
-        <div key={label} className="ft-bday-group">
-          <div className="ft-bday-group-label">{label}</div>
-          {groups[label].map((b,i) => (
-            <BirthdayRow key={b.key||i} record={b} onSave={onSave}
-              isTomorrow={isCurMonth && (b.day - todayDay) === 1} />
-          ))}
+    <div className="ft-kb-board">
+      {KANBAN_COLS.map(col => (
+        <div key={col.key} className={`ft-kb-col${mobileFilter && mobileFilter !== col.key ? " ft-kb-col--mobile-hide" : ""}`}>
+          <div className="ft-kb-col-header">
+            <span className="ft-kb-col-dot" style={{background:col.color}} />
+            <span className="ft-kb-col-title">{col.label}</span>
+            <span className="ft-kb-col-count">{(cols[col.key]||[]).length}</span>
+          </div>
+          <div className="ft-kb-col-body">
+            {(cols[col.key]||[]).length === 0 && <div className="ft-kb-col-empty">No entries</div>}
+            {(cols[col.key]||[]).map((b,i) => (
+              <BirthdayCard key={b.key||i} record={b} onSave={onSave} />
+            ))}
+          </div>
         </div>
       ))}
     </div>
