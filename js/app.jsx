@@ -127,18 +127,18 @@ function App() {
   const set = useCallback((key,val) => {
     setFormState(f => {
       const next = {...f, [key]:val};
-      if (key === "numKids" && entryType === "funzone") {
+      if (key === "numKids" && entryType === "funzone" && !activePass) {
         next.amount = String(computeAmountForHours(next.hours) * val);
       }
       return next;
     });
     setErrors(e => ({...e, [key]:undefined}));
-  }, [entryType]);
+  }, [entryType, activePass]);
 
   const setHours = useCallback((v, autoPrice) => {
-    setFormState(f => autoPrice ? {...f, hours:v, amount:String(computeAmountForHours(v)*f.numKids)} : {...f, hours:v});
-    if (autoPrice) setErrors(e => ({...e, amount:undefined}));
-  }, []);
+    setFormState(f => (autoPrice && !activePass) ? {...f, hours:v, amount:String(computeAmountForHours(v)*f.numKids)} : {...f, hours:v});
+    if (autoPrice && !activePass) setErrors(e => ({...e, amount:undefined}));
+  }, [activePass]);
 
   const setSockCount = useCallback((n) => {
     setFormState(f => ({...f, sockCount:n, socks:n*CONFIG.SOCKS_RATE,
@@ -483,6 +483,7 @@ function App() {
       if (passRes.success && passRes.found) {
         setActivePass(passRes.pass);
         setBuyPassType(null);
+        setFormState(f => ({...f, amount:"0"}));
       }
     } catch(e) { console.error("Phone lookup:",e); }
     finally { setPhoneLookupLoading(false); }
@@ -1720,31 +1721,50 @@ function App() {
                       style={{background:"var(--ft-accent-soft)",color:"var(--ft-deep)"}} />
                   </div>
 
-                  {/* Buy Pass toggle */}
+                  {/* Buy Pass toggle OR Pass availability card */}
                   {isPlayArea && !editTarget && (
                     <div style={{marginTop:14}}>
-                      <button type="button" className={`ft-pass-toggle${buyPassType?" is-active":""}${usingPass?" is-disabled":""}`}
-                        disabled={usingPass}
-                        onClick={()=>{
-                          if(usingPass) return;
-                          if(buyPassType){setBuyPassType(null);if(!activePass)set("amount",String(computeAmountForHours(form.hours)*form.numKids));}
-                          else{const pt0=CONFIG.PASS_TYPES[0];setBuyPassType("10_hours");if(pt0)set("amount",String(pt0.amount));}
-                        }}>
-                        <span>🎫</span>
-                        <span>{buyPassType ? "Pass selected" : "Buy a Pass"}</span>
-                        {buyPassType && <span className="ft-pass-toggle-x" onClick={e=>{e.stopPropagation();setBuyPassType(null);if(!activePass)set("amount",String(computeAmountForHours(form.hours)*form.numKids));}}>✕</span>}
-                      </button>
-                      {buyPassType && (
-                        <div className="ft-pass-type-chips">
-                          {CONFIG.PASS_TYPES.map(pt=>(
-                            <button key={pt.key} type="button" className={`ft-pay-chip${buyPassType===pt.key?" is-active":""}`}
-                              style={{flex:1}} onClick={()=>{setBuyPassType(pt.key);set("amount",String(pt.amount));}}>
-                              <div style={{fontWeight:600}}>{pt.label}</div>
-                              <div style={{fontSize:11,opacity:.7}}>₹{pt.amount} · {pt.durationDays}d</div>
-                            </button>
-                          ))}
-                        </div>
-                      )}
+                      {activePass ? (() => {
+                        const pt = CONFIG.PASS_TYPES.find(p=>p.key===activePass.pass_type);
+                        const hoursUsed = (parseFloat(form.hours)||1) * form.numKids;
+                        const remaining = activePass.hours_remaining != null ? Math.max(0, parseFloat((activePass.hours_remaining - hoursUsed).toFixed(1))) : null;
+                        return <div className="ft-pass-avail-card">
+                          <div className="ft-pass-avail-header">
+                            <span className="ft-pass-avail-icon">🎫</span>
+                            <span className="ft-pass-avail-title">Active Pass</span>
+                          </div>
+                          <div className="ft-pass-avail-body">
+                            <div className="ft-pass-avail-type">{pt?pt.label:activePass.pass_type}</div>
+                            <div className="ft-pass-avail-hours">
+                              {activePass.hours_remaining != null
+                                ? <><strong>{activePass.hours_remaining}h</strong> remaining → <strong>{remaining}h</strong> after this visit</>
+                                : <strong>Unlimited</strong>}
+                            </div>
+                          </div>
+                          <button type="button" className="ft-pass-active-switch" onClick={()=>{setActivePass(null);set("amount",String(computeAmountForHours(form.hours)*form.numKids));}}>Pay instead</button>
+                        </div>;
+                      })() : <>
+                        <button type="button" className={`ft-pass-toggle${buyPassType?" is-active":""}`}
+                          onClick={()=>{
+                            if(buyPassType){setBuyPassType(null);set("amount",String(computeAmountForHours(form.hours)*form.numKids));}
+                            else{const pt0=CONFIG.PASS_TYPES[0];setBuyPassType("10_hours");if(pt0)set("amount",String(pt0.amount));}
+                          }}>
+                          <span>🎫</span>
+                          <span>{buyPassType ? "Pass selected" : "Buy a Pass"}</span>
+                          {buyPassType && <span className="ft-pass-toggle-x" onClick={e=>{e.stopPropagation();setBuyPassType(null);set("amount",String(computeAmountForHours(form.hours)*form.numKids));}}>✕</span>}
+                        </button>
+                        {buyPassType && (
+                          <div className="ft-pass-type-chips">
+                            {CONFIG.PASS_TYPES.map(pt=>(
+                              <button key={pt.key} type="button" className={`ft-pay-chip${buyPassType===pt.key?" is-active":""}`}
+                                style={{flex:1}} onClick={()=>{setBuyPassType(pt.key);set("amount",String(pt.amount));}}>
+                                <div style={{fontWeight:600}}>{pt.label}</div>
+                                <div style={{fontSize:11,opacity:.7}}>₹{pt.amount} · {pt.durationDays}d</div>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </>}
                     </div>
                   )}
 

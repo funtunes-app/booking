@@ -788,6 +788,22 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
   cursor: pointer; white-space: nowrap; flex: none; transition: all .15s;
 }
 .ft-pass-active-switch:hover { background: rgba(255,255,255,.15); color: #fff; }
+.ft-pass-avail-card {
+  background: linear-gradient(135deg, var(--ft-deep), var(--ft-accent));
+  border-radius: var(--ft-radius-sm); padding: 14px 16px; color: #fff;
+}
+.ft-pass-avail-header {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+}
+.ft-pass-avail-icon { font-size: 18px; }
+.ft-pass-avail-title { font: 700 13px var(--ft-sans); text-transform: uppercase; letter-spacing: .5px; opacity: .8; }
+.ft-pass-avail-body { margin-bottom: 12px; }
+.ft-pass-avail-type { font: 700 16px var(--ft-sans); margin-bottom: 4px; }
+.ft-pass-avail-hours { font: 400 13px var(--ft-sans); opacity: .9; }
+.ft-pass-avail-hours strong { font-weight: 700; opacity: 1; }
+.ft-pass-avail-card .ft-pass-active-switch {
+  border-color: rgba(255,255,255,.5); font-size: 11px; padding: 5px 14px;
+}
 .ft-pass-strip {
   display: flex; align-items: center; gap: 10px;
   padding: 10px 14px; margin-bottom: 12px;
