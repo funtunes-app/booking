@@ -507,7 +507,7 @@ function App() {
   const buyPassMeta = buyPassType ? CONFIG.PASS_TYPES.find(p=>p.key===buyPassType) : null;
   const totalAmount = (parseInt(form.amount)||0) + socksCharge;
 
-  const usingPass = activePass && isPlayArea && !editTarget;
+  const usingPass = activePass && isPlayArea && !editTarget && !buyPassType;
 
   const validate = () => {
     const errs = {};
@@ -1665,7 +1665,15 @@ function App() {
               {/* ── RIGHT COLUMN: Playtime ── */}
               <div>
                 <div className="ft-form-section">
-                  <div className="ft-form-section-label">{isPlayArea?"Playtime":`${typeMeta.label} Booking`}</div>
+                  <div className="ft-form-section-label">
+                    {isPlayArea?"Playtime":`${typeMeta.label} Booking`}
+                    {usingPass && activePass && (() => {
+                      const pt = CONFIG.PASS_TYPES.find(p=>p.key===activePass.pass_type);
+                      return <span className="ft-pass-inline-badge">
+                        🎫 {pt?pt.label:activePass.pass_type}{activePass.hours_remaining != null ? ` · ${activePass.hours_remaining}h left` : " · Unlimited"}
+                      </span>;
+                    })()}
+                  </div>
 
                   {/* Duration chips */}
                   <div className="ft-dur-chips">
@@ -1708,27 +1716,22 @@ function App() {
                       style={{background:"var(--ft-accent-soft)",color:"var(--ft-deep)"}} />
                   </div>
 
-                  {/* Pass status */}
-                  {usingPass && activePass && (() => {
-                    const pt = CONFIG.PASS_TYPES.find(p=>p.key===activePass.pass_type);
-                    return <div className="ft-pass-active-badge">
-                      <span>🎫 {pt?pt.label:activePass.pass_type} Pass</span>
-                      <span className="ft-pass-active-hours">{activePass.hours_remaining != null ? `${activePass.hours_remaining}h left` : "Unlimited"}</span>
-                      <button className="ft-pass-active-switch" onClick={()=>setActivePass(null)}>Pay instead</button>
-                    </div>;
-                  })()}
+                  {/* Pay instead link — when using pass */}
+                  {usingPass && <div style={{marginTop:6}}>
+                    <button type="button" className="ft-pass-active-switch" onClick={()=>setActivePass(null)}>Pay instead of using pass</button>
+                  </div>}
 
-                  {/* Buy Pass toggle — only when no active pass */}
-                  {isPlayArea && !usingPass && !editTarget && (
+                  {/* Buy Pass toggle */}
+                  {isPlayArea && !editTarget && (
                     <div style={{marginTop:14}}>
                       <button type="button" className={`ft-pass-toggle${buyPassType?" is-active":""}`}
                         onClick={()=>{
-                          if(buyPassType){setBuyPassType(null);set("amount",String(computeAmountForHours(form.hours)*form.numKids));}
+                          if(buyPassType){setBuyPassType(null);if(!activePass)set("amount",String(computeAmountForHours(form.hours)*form.numKids));}
                           else{const pt0=CONFIG.PASS_TYPES[0];setBuyPassType("10_hours");if(pt0)set("amount",String(pt0.amount));}
                         }}>
                         <span>🎫</span>
                         <span>{buyPassType ? "Pass selected" : "Buy a Pass"}</span>
-                        {buyPassType && <span className="ft-pass-toggle-x" onClick={e=>{e.stopPropagation();setBuyPassType(null);set("amount",String(computeAmountForHours(form.hours)*form.numKids));}}>✕</span>}
+                        {buyPassType && <span className="ft-pass-toggle-x" onClick={e=>{e.stopPropagation();setBuyPassType(null);if(!activePass)set("amount",String(computeAmountForHours(form.hours)*form.numKids));}}>✕</span>}
                       </button>
                       {buyPassType && (
                         <div className="ft-pass-type-chips">
