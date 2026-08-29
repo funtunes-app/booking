@@ -782,15 +782,23 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
   border-radius: 6px;
 }
 .ft-pass-active-switch {
-  border: none; background: none;
-  padding: 0; font: 500 11px var(--ft-sans); color: var(--ft-muted2);
-  cursor: pointer; text-decoration: underline; text-underline-offset: 2px;
+  border: 1px solid rgba(255,255,255,.35); background: none;
+  border-radius: 6px; padding: 4px 10px;
+  font: 500 10px var(--ft-sans); color: rgba(255,255,255,.85);
+  cursor: pointer; white-space: nowrap; flex: none; transition: all .15s;
 }
-.ft-pass-active-switch:hover { color: var(--ft-deep); }
-.ft-pass-inline-badge {
-  font: italic 500 11px var(--ft-sans); color: var(--ft-green);
-  margin-left: 8px;
+.ft-pass-active-switch:hover { background: rgba(255,255,255,.15); color: #fff; }
+.ft-pass-strip {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; margin-bottom: 12px;
+  border-radius: var(--ft-radius-sm);
+  background: var(--ft-deep); color: #fff;
 }
+.ft-pass-strip-icon { font-size: 18px; flex: none; }
+.ft-pass-strip-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ft-pass-strip-label { font: 700 12px var(--ft-sans); }
+.ft-pass-strip-hours { font: 400 11px var(--ft-sans); opacity: .85; }
+.ft-pass-strip-hours strong { font-weight: 700; opacity: 1; }
 .ft-pass-toggle {
   display: flex; align-items: center; gap: 8px; width: 100%;
   padding: 10px 14px; border-radius: var(--ft-radius-sm);

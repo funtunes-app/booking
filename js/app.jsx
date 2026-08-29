@@ -1665,15 +1665,26 @@ function App() {
               {/* ── RIGHT COLUMN: Playtime ── */}
               <div>
                 <div className="ft-form-section">
-                  <div className="ft-form-section-label">
-                    {isPlayArea?"Playtime":`${typeMeta.label} Booking`}
-                    {usingPass && activePass && (() => {
-                      const pt = CONFIG.PASS_TYPES.find(p=>p.key===activePass.pass_type);
-                      return <span className="ft-pass-inline-badge">
-                        🎫 {pt?pt.label:activePass.pass_type}{activePass.hours_remaining != null ? ` · ${activePass.hours_remaining}h left` : " · Unlimited"}
-                      </span>;
-                    })()}
-                  </div>
+                  <div className="ft-form-section-label">{isPlayArea?"Playtime":`${typeMeta.label} Booking`}</div>
+
+                  {/* Pass strip — persistent in time selection when customer has pass */}
+                  {activePass && isPlayArea && (() => {
+                    const pt = CONFIG.PASS_TYPES.find(p=>p.key===activePass.pass_type);
+                    const hoursUsed = (parseFloat(form.hours)||1) * form.numKids;
+                    const remaining = activePass.hours_remaining != null ? Math.max(0, parseFloat((activePass.hours_remaining - hoursUsed).toFixed(1))) : null;
+                    return <div className="ft-pass-strip">
+                      <span className="ft-pass-strip-icon">🎫</span>
+                      <div className="ft-pass-strip-info">
+                        <span className="ft-pass-strip-label">{pt?pt.label:activePass.pass_type} Pass</span>
+                        <span className="ft-pass-strip-hours">
+                          {activePass.hours_remaining != null
+                            ? <>{activePass.hours_remaining}h left → <strong>{remaining}h</strong> after this visit</>
+                            : "Unlimited"}
+                        </span>
+                      </div>
+                      {usingPass && <button type="button" className="ft-pass-active-switch" onClick={()=>setActivePass(null)}>Pay instead</button>}
+                    </div>;
+                  })()}
 
                   {/* Duration chips */}
                   <div className="ft-dur-chips">
@@ -1715,11 +1726,6 @@ function App() {
                     <input className="fld" value={computeTimeOut(form.timeIn,form.hours)} type="time" readOnly
                       style={{background:"var(--ft-accent-soft)",color:"var(--ft-deep)"}} />
                   </div>
-
-                  {/* Pay instead link — when using pass */}
-                  {usingPass && <div style={{marginTop:6}}>
-                    <button type="button" className="ft-pass-active-switch" onClick={()=>setActivePass(null)}>Pay instead of using pass</button>
-                  </div>}
 
                   {/* Buy Pass toggle */}
                   {isPlayArea && !editTarget && (
