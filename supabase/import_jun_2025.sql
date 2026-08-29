@@ -1,8 +1,5 @@
 -- FunTunes June 2025 data import
--- 303 entries from Google Sheet 'Funzone - June 2025'
--- Cleansed: dates fixed (DD/MM swap, text dates, year typos),
--- phones normalized to 10 digits, DOBs to YYYY-MM-DD,
--- MOP standardized (Bank/HDFC -> UPI), socks '-' as 0
+-- 303 entries | 209 with phone | 125 with DOB | 120 unique b'day contacts
 
 INSERT INTO entries (date, customer_name, amount, mop, socks, socks_mop, play_upi, play_cash, socks_upi, socks_cash, num_kids, hours, time_in, time_out, timing, phone, dob, entry_type)
 VALUES
