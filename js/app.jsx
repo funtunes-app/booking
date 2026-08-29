@@ -516,8 +516,8 @@ function App() {
     if (!usingPass && !buyPassType) {
       if (!form.amount || parseInt(form.amount) <= 0) errs.amount = "Enter amount";
     }
-    if (!usingPass && !buyPassType && !form.playMop) errs.playMop = "Select payment mode";
-    if (buyPassType && !form.playMop) errs.playMop = "Select payment mode";
+    if (!usingPass && !buyPassType && (parseInt(form.amount)||0) > 0 && !form.playMop) errs.playMop = "Select payment mode";
+    if (buyPassType && (parseInt(form.amount)||0) > 0 && !form.playMop) errs.playMop = "Select payment mode";
     if (socksCharge > 0 && !form.socksMop) errs.socksMop = "Select mode";
     setErrors(errs);
     if (Object.keys(errs).length) { setShakeStep(true); setTimeout(()=>setShakeStep(false),500); }
@@ -1730,8 +1730,10 @@ function App() {
                   {/* Buy Pass toggle */}
                   {isPlayArea && !editTarget && (
                     <div style={{marginTop:14}}>
-                      <button type="button" className={`ft-pass-toggle${buyPassType?" is-active":""}`}
+                      <button type="button" className={`ft-pass-toggle${buyPassType?" is-active":""}${usingPass?" is-disabled":""}`}
+                        disabled={usingPass}
                         onClick={()=>{
+                          if(usingPass) return;
                           if(buyPassType){setBuyPassType(null);if(!activePass)set("amount",String(computeAmountForHours(form.hours)*form.numKids));}
                           else{const pt0=CONFIG.PASS_TYPES[0];setBuyPassType("10_hours");if(pt0)set("amount",String(pt0.amount));}
                         }}>
@@ -1754,31 +1756,24 @@ function App() {
                   )}
 
                   {/* Amount */}
-                  {!usingPass && <div style={{marginTop:14}}>
+                  <div style={{marginTop:14}}>
                     <label className="field-label">{buyPassType?"Pass Amount":isPlayArea?"Playtime Amount":"Amount"} {errors.amount && <span className="err-msg">{errors.amount}</span>}</label>
                     <div style={{position:"relative"}}>
                       <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",fontWeight:700,color:C.textMid}}>₹</span>
-                      <input className={`fld${errors.amount?" is-error":""}`}
-                        value={form.amount}
-                        type="tel" inputMode="numeric" placeholder="300"
-                        style={{paddingLeft:28,fontSize:18,fontWeight:700}}
-                        onChange={e=>set("amount",e.target.value.replace(/\D/g,""))} />
+                      {usingPass
+                        ? <input className="fld" value="0" type="tel" readOnly
+                            style={{paddingLeft:28,fontSize:18,fontWeight:700,opacity:.5,background:"var(--ft-accent-soft)"}} />
+                        : <input className={`fld${errors.amount?" is-error":""}`}
+                            value={form.amount}
+                            type="tel" inputMode="numeric" placeholder="300"
+                            style={{paddingLeft:28,fontSize:18,fontWeight:700}}
+                            onChange={e=>set("amount",e.target.value.replace(/\D/g,""))} />}
                     </div>
-                    {!buyPassType && isPlayArea && form.numKids>1 && <div className="ft-form-helper">{form.numKids} kids x ₹{computeAmountForHours(form.hours)} per kid</div>}
-                  </div>}
+                    {!usingPass && !buyPassType && isPlayArea && form.numKids>1 && <div className="ft-form-helper">{form.numKids} kids x ₹{computeAmountForHours(form.hours)} per kid</div>}
+                  </div>
 
-                  {/* Amount disabled for pass users */}
-                  {usingPass && <div style={{marginTop:14}}>
-                    <label className="field-label">Amount</label>
-                    <div style={{position:"relative"}}>
-                      <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",fontWeight:700,color:C.textMid}}>₹</span>
-                      <input className="fld" value="0" type="tel" readOnly
-                        style={{paddingLeft:28,fontSize:18,fontWeight:700,opacity:.5,background:"var(--ft-accent-soft)"}} />
-                    </div>
-                  </div>}
-
-                  {/* Payment */}
-                  {!usingPass && <div style={{marginTop:18}}>
+                  {/* Payment — hidden when amount is 0 */}
+                  {!usingPass && (parseInt(form.amount)||0) > 0 && <div style={{marginTop:18}}>
                     <div className="ft-form-section-label">Payment</div>
                     <label className="field-label">{buyPassType ? "Pass paid via" : "Playtime paid via"} {errors.playMop && <span className="err-msg">{errors.playMop}</span>}</label>
                     <div className="ft-pay-chips">

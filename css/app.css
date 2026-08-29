@@ -810,6 +810,9 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
   border-color: var(--ft-purple-pill); border-style: solid;
   background: var(--ft-accent-soft); color: var(--ft-deep);
 }
+.ft-pass-toggle.is-disabled {
+  opacity: .4; cursor: not-allowed; pointer-events: none;
+}
 .ft-pass-toggle-x {
   margin-left: auto; font-size: 12px; opacity: .5;
 }
