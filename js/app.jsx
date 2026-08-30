@@ -1661,25 +1661,6 @@ function App() {
                 <div className="ft-form-section">
                   <div className="ft-form-section-label">{isPlayArea?"Playtime":`${typeMeta.label} Booking`}</div>
 
-                  {/* Pass strip — persistent in time selection when customer has pass */}
-                  {activePass && isPlayArea && (() => {
-                    const pt = CONFIG.PASS_TYPES.find(p=>p.key===activePass.pass_type);
-                    const hoursUsed = (parseFloat(form.hours)||1) * form.numKids;
-                    const remaining = activePass.hours_remaining != null ? Math.max(0, parseFloat((activePass.hours_remaining - hoursUsed).toFixed(1))) : null;
-                    return <div className="ft-pass-strip">
-                      <span className="ft-pass-strip-icon">🎫</span>
-                      <div className="ft-pass-strip-info">
-                        <span className="ft-pass-strip-label">{pt?pt.label:activePass.pass_type} Pass</span>
-                        <span className="ft-pass-strip-hours">
-                          {activePass.hours_remaining != null
-                            ? <>{activePass.hours_remaining}h left → <strong>{remaining}h</strong> after this visit</>
-                            : "Unlimited"}
-                        </span>
-                      </div>
-                      {usingPass && <button type="button" className="ft-pass-active-switch" onClick={()=>setActivePass(null)}>Pay instead</button>}
-                    </div>;
-                  })()}
-
                   {/* Duration chips */}
                   <div className="ft-dur-chips">
                     {CONFIG.HOUR_OPTIONS.filter(o=>["0.5","1","2"].includes(o.value)).map(o=>{

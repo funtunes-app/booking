@@ -1,5 +1,5 @@
 // FunTunes Service Worker — enables PWA install
-var CACHE_NAME = "funtunes-v83";
+var CACHE_NAME = "funtunes-v84";
 var urlsToCache = [
   "./",
   "css/app.css",
