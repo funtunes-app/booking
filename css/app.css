@@ -789,7 +789,7 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
 }
 .ft-pass-active-switch:hover { background: rgba(255,255,255,.15); color: #fff; }
 .ft-pass-avail-card {
-  background: linear-gradient(135deg, var(--ft-deep), var(--ft-accent));
+  background: linear-gradient(135deg, var(--ft-primary-dark), var(--ft-primary));
   border-radius: var(--ft-radius-sm); padding: 14px 16px; color: #fff;
 }
 .ft-pass-avail-header {
