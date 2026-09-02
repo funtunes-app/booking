@@ -98,6 +98,8 @@ function App() {
   const [staffSaving, setStaffSaving] = useState(false);
   const [staffPopup, setStaffPopup] = useState(null);
   const [activePass, setActivePass] = useState(null);
+  const [passOverride, setPassOverride] = useState(false);
+  const [passMenuOpen, setPassMenuOpen] = useState(false);
   const [buyPassType, setBuyPassType] = useState(null);
   const [passPopup, setPassPopup] = useState(null);
   const [passSaving, setPassSaving] = useState(false);
@@ -483,6 +485,7 @@ function App() {
       if (passRes.success && passRes.found) {
         setActivePass(passRes.pass);
         setBuyPassType(null);
+        setPassOverride(false);
         setFormState(f => ({...f, amount:"0"}));
       }
     } catch(e) { console.error("Phone lookup:",e); }
@@ -501,7 +504,7 @@ function App() {
   const buyPassMeta = buyPassType ? CONFIG.PASS_TYPES.find(p=>p.key===buyPassType) : null;
   const totalAmount = (parseInt(form.amount)||0) + socksCharge;
 
-  const usingPass = activePass && isPlayArea && !editTarget && !buyPassType;
+  const usingPass = activePass && isPlayArea && !editTarget && !buyPassType && !passOverride;
 
   const validate = () => {
     const errs = {};
@@ -753,7 +756,7 @@ function App() {
   function resetForm() {
     setFormState(getDefaultForm()); setErrors({}); setShowSuccess(false);
     setEditTarget(null); setScreen("home"); setEntryType("funzone");
-    setActivePass(null); setBuyPassType(null); lastLookedUpPhone.current = "";
+    setActivePass(null); setBuyPassType(null); setPassOverride(false); setPassMenuOpen(false); lastLookedUpPhone.current = "";
   }
 
   function openPassSale() {
@@ -1709,20 +1712,29 @@ function App() {
                         const pt = CONFIG.PASS_TYPES.find(p=>p.key===activePass.pass_type);
                         const hoursUsed = (parseFloat(form.hours)||1) * form.numKids;
                         const remaining = activePass.hours_remaining != null ? Math.max(0, parseFloat((activePass.hours_remaining - hoursUsed).toFixed(1))) : null;
-                        return <div className="ft-pass-avail-card">
+                        return <div className={`ft-pass-avail-card${passOverride?" is-overridden":""}`}>
                           <div className="ft-pass-avail-header">
                             <span className="ft-pass-avail-icon">🎫</span>
-                            <span className="ft-pass-avail-title">Active Pass</span>
+                            <span className="ft-pass-avail-title">{passOverride ? "Pass available" : "Active Pass"}</span>
+                            <div className="ft-pass-more-wrap">
+                              <button type="button" className="ft-pass-more-btn" onClick={()=>setPassMenuOpen(!passMenuOpen)}>⋮</button>
+                              {passMenuOpen && <div className="ft-pass-more-menu">
+                                <button type="button" onClick={()=>{
+                                  setPassMenuOpen(false);
+                                  if(passOverride){setPassOverride(false);set("amount","0");}
+                                  else{setPassOverride(true);set("amount",String(computeAmountForHours(form.hours)*form.numKids));}
+                                }}>{passOverride ? "Use pass" : "Pay instead"}</button>
+                              </div>}
+                            </div>
                           </div>
                           <div className="ft-pass-avail-body">
                             <div className="ft-pass-avail-type">{pt?pt.label:activePass.pass_type}</div>
                             <div className="ft-pass-avail-hours">
                               {activePass.hours_remaining != null
-                                ? <><strong>{activePass.hours_remaining}h</strong> remaining → <strong>{remaining}h</strong> after this visit</>
+                                ? <><strong>{activePass.hours_remaining}h</strong> remaining{!passOverride && <> → <strong>{remaining}h</strong> after this visit</>}</>
                                 : <strong>Unlimited</strong>}
                             </div>
                           </div>
-                          <button type="button" className="ft-pass-active-switch" onClick={()=>{setActivePass(null);set("amount",String(computeAmountForHours(form.hours)*form.numKids));}}>Pay instead</button>
                         </div>;
                       })() : <>
                         <button type="button" className={`ft-pass-toggle${buyPassType?" is-active":""}`}

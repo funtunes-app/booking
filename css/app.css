@@ -801,9 +801,31 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
 .ft-pass-avail-type { font: 700 16px var(--ft-sans); margin-bottom: 4px; }
 .ft-pass-avail-hours { font: 400 13px var(--ft-sans); opacity: .9; }
 .ft-pass-avail-hours strong { font-weight: 700; opacity: 1; }
-.ft-pass-avail-card .ft-pass-active-switch {
-  border-color: rgba(255,255,255,.5); font-size: 11px; padding: 5px 14px;
+.ft-pass-avail-card.is-overridden {
+  background: var(--ft-accent-soft); color: var(--ft-text);
+  border: 1.5px dashed var(--ft-border2);
 }
+.ft-pass-avail-card.is-overridden .ft-pass-avail-title { color: var(--ft-muted2); }
+.ft-pass-avail-card.is-overridden .ft-pass-avail-hours { color: var(--ft-muted); opacity: 1; }
+.ft-pass-more-wrap { position: relative; margin-left: auto; }
+.ft-pass-more-btn {
+  background: none; border: none; color: inherit; font-size: 18px;
+  cursor: pointer; padding: 2px 6px; border-radius: 4px; line-height: 1;
+  opacity: .7; transition: opacity .15s;
+}
+.ft-pass-more-btn:hover { opacity: 1; }
+.ft-pass-avail-card.is-overridden .ft-pass-more-btn { color: var(--ft-muted); }
+.ft-pass-more-menu {
+  position: absolute; right: 0; top: 100%; margin-top: 4px; z-index: 10;
+  background: #fff; border: 1px solid var(--ft-border); border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.12); min-width: 120px; overflow: hidden;
+}
+.ft-pass-more-menu button {
+  display: block; width: 100%; text-align: left; padding: 10px 14px;
+  border: none; background: none; font: 500 13px var(--ft-sans);
+  color: var(--ft-text); cursor: pointer;
+}
+.ft-pass-more-menu button:hover { background: var(--ft-accent-soft); }
 .ft-pass-strip {
   display: flex; align-items: center; gap: 10px;
   padding: 10px 14px; margin-bottom: 12px;
