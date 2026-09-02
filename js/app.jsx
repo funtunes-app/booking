@@ -500,7 +500,8 @@ function App() {
     return `${String(Math.floor(t/60)%24).padStart(2,"0")}:${String(Math.round(t%60)).padStart(2,"0")}`;
   };
 
-  const socksCharge = entryType === "funzone" ? (form.socks||0) : 0;
+  const isPlayArea = entryType === "funzone";
+  const socksCharge = isPlayArea ? (form.socks||0) : 0;
   const buyPassMeta = buyPassType ? CONFIG.PASS_TYPES.find(p=>p.key===buyPassType) : null;
   const totalAmount = (parseInt(form.amount)||0) + socksCharge;
 
@@ -828,7 +829,6 @@ function App() {
   const dateDisplay = getCurrentDate();
   const timeDisplay = getCurrentTime12();
   const typeMeta = CONFIG.ENTRY_TYPES.find(t=>t.key===entryType) || CONFIG.ENTRY_TYPES[0];
-  const isPlayArea = entryType === "funzone";
 
   const todayKids = todayEntries.reduce((a,e) => a + (parseInt(e.numKids)||1), 0);
   const todayRevenue = todayEntries.reduce((a,e) => a + (parseInt(e.amount)||0) + (parseInt(e.socks)||0), 0);
@@ -1761,22 +1761,19 @@ function App() {
                     </div>
                   )}
 
-                  {/* Amount */}
-                  <div style={{marginTop:14}}>
+                  {/* Amount — hidden when using pass */}
+                  {!usingPass && <div style={{marginTop:14}}>
                     <label className="field-label">{buyPassType?"Pass Amount":isPlayArea?"Playtime Amount":"Amount"} {errors.amount && <span className="err-msg">{errors.amount}</span>}</label>
                     <div style={{position:"relative"}}>
                       <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",fontWeight:700,color:C.textMid}}>₹</span>
-                      {usingPass
-                        ? <input className="fld" value="0" type="tel" readOnly
-                            style={{paddingLeft:28,fontSize:18,fontWeight:700,opacity:.5,background:"var(--ft-accent-soft)"}} />
-                        : <input className={`fld${errors.amount?" is-error":""}`}
-                            value={form.amount}
-                            type="tel" inputMode="numeric" placeholder="300"
-                            style={{paddingLeft:28,fontSize:18,fontWeight:700}}
-                            onChange={e=>set("amount",e.target.value.replace(/\D/g,""))} />}
+                      <input className={`fld${errors.amount?" is-error":""}`}
+                        value={form.amount}
+                        type="tel" inputMode="numeric" placeholder="300"
+                        style={{paddingLeft:28,fontSize:18,fontWeight:700}}
+                        onChange={e=>set("amount",e.target.value.replace(/\D/g,""))} />
                     </div>
-                    {!usingPass && !buyPassType && isPlayArea && form.numKids>1 && <div className="ft-form-helper">{form.numKids} kids x ₹{computeAmountForHours(form.hours)} per kid</div>}
-                  </div>
+                    {!buyPassType && isPlayArea && form.numKids>1 && <div className="ft-form-helper">{form.numKids} kids x ₹{computeAmountForHours(form.hours)} per kid</div>}
+                  </div>}
 
                   {/* Payment — hidden when amount is 0 */}
                   {!usingPass && (parseInt(form.amount)||0) > 0 && <div style={{marginTop:18}}>
