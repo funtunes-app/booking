@@ -667,6 +667,88 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
   margin-bottom: 10px;
 }
 
+/* Section card — mobile-native grouped fields */
+.ft-section-card {
+  background: #fff;
+  border: 1px solid var(--ft-border3);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.ft-section-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.ft-section-card-icon {
+  font-size: 16px;
+  flex: none;
+}
+.ft-section-card-title {
+  font: 700 13px var(--ft-sans);
+  color: var(--ft-deep);
+  letter-spacing: .02em;
+}
+
+/* Inline row — horizontal field groups */
+.ft-inline-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.ft-inline-label {
+  font: 600 12px var(--ft-sans);
+  color: var(--ft-muted2);
+  flex: none;
+  min-width: 36px;
+}
+.ft-inline-muted {
+  font: 400 11px var(--ft-sans);
+  color: var(--ft-muted2);
+  white-space: nowrap;
+}
+.ft-rupee-prefix {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-weight: 700;
+  color: var(--ft-muted2);
+  font-size: 13px;
+}
+
+/* Inline pay chips (compact) */
+.ft-pay-chips--inline {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+.ft-pay-chips--inline .ft-pay-chip {
+  padding: 5px 10px;
+  font-size: 11px;
+  border-radius: 6px;
+}
+
+/* Cancel button (subtle, left side) */
+.ft-btn-cancel {
+  height: 40px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  font: 500 13px var(--ft-sans);
+  color: var(--ft-muted2);
+  cursor: pointer;
+  transition: all .15s;
+  flex: none;
+}
+.ft-btn-cancel:hover {
+  background: var(--ft-accent-soft);
+  color: var(--ft-deep);
+}
+
 /* Phone input with purple glow */
 .ft-phone-wrap {
   position: relative;
@@ -2028,17 +2110,9 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
     left: 0;
     padding: 14px 36px;
   }
-  .ft-form-desktop-grid {
-    display: grid;
-    grid-template-columns: 1.05fr 1fr;
-    gap: 0;
-  }
-  .ft-form-desktop-grid > :first-child {
-    border-right: 1px solid var(--ft-border4);
-    padding-right: 32px;
-  }
-  .ft-form-desktop-grid > :last-child {
-    padding-left: 32px;
+  .ft-form-body {
+    max-width: 560px;
+    margin: 0 auto;
   }
   .ft-form-section { padding: 0 4px; }
 
@@ -2197,7 +2271,7 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
 .ft-filter-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 
 /* ── Form body (content below sticky header) ── */
-.ft-form-body { padding: 16px 22px 0; }
+.ft-form-body { padding: 12px 16px 0; display: flex; flex-direction: column; gap: 10px; }
 
 /* ── Form sections ── */
 .ft-form-section { margin-bottom: 20px; }
@@ -2398,56 +2472,64 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
 /* Mobile overrides */
 @media (max-width: 899px) {
 
-  /* ── Form: tighter spacing ── */
-  .ft-form-body { padding: 12px 16px 0; }
-  .ft-form-section { margin-bottom: 10px; }
-  .ft-form-section-label { margin-bottom: 8px; font-size: 9px; }
-  .ft-form-scroll { gap: 10px; padding-bottom: 80px; }
+  /* ── Form: mobile-native spacing ── */
+  .ft-form-body { padding: 10px 12px 0; gap: 8px; }
+  .ft-form-section { margin-bottom: 8px; }
+  .ft-form-section-label { margin-bottom: 6px; font-size: 9px; }
+  .ft-form-scroll { gap: 8px; padding-bottom: 80px; }
   .field-label { margin-bottom: 4px; }
-  .fld { height: 38px; font-size: 12.5px; border-radius: 8px; }
+  .fld { height: 38px; font-size: 13px; border-radius: 8px; }
   .ft-phone-wrap .fld { font-size: 14px; }
-  .ft-form-footer { padding: 10px 16px; padding-bottom: max(10px, env(safe-area-inset-bottom)); }
-  .ft-form-footer-total .value { font-size: 17px; }
+  .ft-form-footer { padding: 10px 12px; padding-bottom: max(10px, env(safe-area-inset-bottom)); }
+  .ft-form-footer-total .value { font-size: 16px; }
   .ft-form-section { padding: 0; }
+
+  /* Section cards compact */
+  .ft-section-card { padding: 10px 12px; border-radius: 8px; }
+  .ft-section-card-head { margin-bottom: 8px; gap: 6px; }
+  .ft-section-card-icon { font-size: 14px; }
+  .ft-section-card-title { font-size: 12px; }
 
   /* Kid rows compact */
   .ft-kid-row { gap: 6px; margin-top: 6px; }
-  .ft-kid-num { width: 24px; height: 24px; font-size: 11px; border-radius: 6px; }
-  .ft-kid-row .fld { height: 38px; font-size: 12.5px; }
-  .ft-kid-row .fld-date { width: 120px; height: 38px; font-size: 12px; }
-  .ft-kid-remove { width: 24px; height: 24px; border-radius: 6px; }
+  .ft-kid-num { width: 22px; height: 22px; font-size: 10px; border-radius: 6px; }
+  .ft-kid-row .fld { height: 36px; font-size: 12.5px; }
+  .ft-kid-row .fld-date { width: 110px; height: 36px; font-size: 11.5px; }
+  .ft-kid-remove { width: 22px; height: 22px; border-radius: 5px; }
   .ft-kid-remove svg { width: 12px; height: 12px; }
-  .ft-kid-remove-spacer { width: 24px; }
+  .ft-kid-remove-spacer { width: 22px; }
   .ft-add-kid-btn { margin-top: 6px; padding: 5px 12px; font-size: 11px; }
 
   /* Duration chips compact */
-  .ft-dur-chips { gap: 6px; }
+  .ft-dur-chips { gap: 5px; }
   .ft-dur-chip { padding: 6px 12px; font-size: 11.5px; border-radius: 6px; }
 
-  /* Time row compact */
-  .ft-time-row { margin-top: 8px; gap: 6px; }
-  .ft-time-row .fld { height: 38px; font-size: 12.5px; }
-
-  /* Socks compact */
-  .ft-sock-chip { padding: 6px 12px; font-size: 11.5px; }
+  /* Inline rows compact */
+  .ft-inline-row { gap: 6px; }
+  .ft-inline-label { font-size: 11px; min-width: 30px; }
+  .ft-inline-muted { font-size: 10px; }
 
   /* Pay chips compact */
-  .ft-pay-chip { padding: 6px 12px; font-size: 11.5px; border-radius: 6px; }
-  .ft-pay-chips { gap: 6px; }
+  .ft-pay-chip { padding: 5px 10px; font-size: 11px; border-radius: 6px; }
+  .ft-pay-chips { gap: 5px; }
+  .ft-pay-chips--inline .ft-pay-chip { padding: 4px 8px; font-size: 10px; }
 
   /* Pass card compact */
   .ft-pass-avail-card { padding: 10px 12px; }
   .ft-pass-avail-header { margin-bottom: 6px; }
-  .ft-pass-avail-body { margin-bottom: 8px; }
-  .ft-pass-avail-type { font-size: 14px; }
-  .ft-pass-avail-hours { font-size: 12px; }
+  .ft-pass-avail-body { margin-bottom: 6px; }
+  .ft-pass-avail-type { font-size: 13px; }
+  .ft-pass-avail-hours { font-size: 11.5px; }
   .ft-pass-toggle { padding: 8px 12px; }
 
   /* Bill card compact */
-  .ft-bill-card { padding: 10px 12px 8px; margin-top: 10px; }
+  .ft-bill-card { padding: 10px 12px 8px; margin-top: 2px; }
 
   /* Custom duration compact */
   .ft-custom-dur { padding: 8px 10px; margin-top: 6px; }
+
+  /* Cancel button smaller on mobile */
+  .ft-btn-cancel { padding: 0 10px; font-size: 12px; height: 38px; }
 
   /* ── Entry listing: clean card layout ── */
   .ft-erow-cols { display: none; }

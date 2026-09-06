@@ -604,7 +604,7 @@ function App() {
           amount:entryAmt, numKids:1, socks:socksCharge,
           playUpi:pay.playUpi, playCash:pay.playCash, socksUpi:pay.socksUpi, socksCash:pay.socksCash};
         const res = await api.addEntry(entry);
-        if(res.success) { showToastMsg(isBuyingPass ? `Pass created + entry saved!` : "Entry saved!","success"); setShowSuccess(true); fetchEntries(); }
+        if(res.success) { showToastMsg(isBuyingPass ? `Pass created + entry saved!` : "Entry saved!","success"); fetchEntries(); resetForm(); switchTab("entries"); }
         else { showToastMsg("Error: "+(res.error||"unknown"),"error"); setSaving(false); return; }
       } else {
         let ok = 0;
@@ -621,7 +621,7 @@ function App() {
           const res = await api.addEntry(entry);
           if(res.success) ok++;
         }
-        showToastMsg(isBuyingPass ? `Pass created + ${ok} entries saved!` : `${ok} entries saved!`,"success"); setShowSuccess(true); fetchEntries();
+        showToastMsg(isBuyingPass ? `Pass created + ${ok} entries saved!` : `${ok} entries saved!`,"success"); fetchEntries(); resetForm(); switchTab("entries");
       }
       if (usePass && activePass) {
         const updates = {};
@@ -904,8 +904,8 @@ function App() {
           <div style={{fontSize:13,color:C.textMid,marginBottom:4}}><strong>{form.customerName}</strong>{form.numKids>1?` x ${form.numKids} kids`:""}</div>
           <div style={{fontSize:26,fontWeight:800,color:C.green,marginBottom:20}}>₹{totalAmount.toLocaleString("en-IN")}</div>
           <button className="ft-btn-primary" style={{width:"100%",marginBottom:8}}
-            onClick={()=>{setFormState(getDefaultForm());setShowSuccess(false);setEntryType("funzone");}}>+ Add another</button>
-          <button className="ft-btn-secondary" style={{width:"100%"}} onClick={resetForm}>Go to dashboard</button>
+            onClick={()=>{setFormState(getDefaultForm());setShowSuccess(false);setEntryType("funzone");setScreen("form");}}>+ Add another</button>
+          <button className="ft-btn-secondary" style={{width:"100%"}} onClick={()=>{resetForm();switchTab("entries");}}>View entries</button>
         </div>
       </div>}
 
@@ -1541,245 +1541,181 @@ function App() {
             </div>
 
             <div className="ft-form-body" style={{animation:shakeStep?"shakeX .4s ease":"fadeIn .3s ease"}}>
-              <div className="ft-form-desktop-grid">
 
-              {/* ── LEFT COLUMN: Customer ── */}
-              <div>
-                <div className="ft-form-section">
-                  <div className="ft-form-section-label">Customer</div>
-
-                  {/* Phone */}
-                  <div style={{marginBottom:10}}>
-                    <label className="field-label">Phone {errors.phone && <span className="err-msg">{errors.phone}</span>}</label>
-                    <div className="ft-phone-wrap">
-                      <input className={`fld${errors.phone?" is-error":""}`} value={form.phone} placeholder="10-digit mobile" type="tel" inputMode="numeric"
-                        style={{borderWidth:"1.5px",borderColor:errors.phone?"var(--ft-danger)":"var(--ft-accent-hover)",boxShadow:errors.phone?"0 0 0 3px rgba(194,96,122,.1)":"0 0 0 3px var(--ft-purple-glow)"}}
-                        onChange={e=>{const v=e.target.value.replace(/\D/g,"").slice(0,10);set("phone",v);if(v.length===10)lookupByPhone(v);}} />
-                      {phoneLookupLoading && <div style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)"}}><Spinner size={16} /></div>}
-                      {form.phone.length===10 && !phoneLookupLoading && (
-                        lastLookedUpPhone.current===form.phone
-                          ? <span className="ft-phone-badge">RETURNING</span>
-                          : <span className="ft-phone-badge ft-phone-badge--new">FIRST VISIT</span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Kid rows */}
-                  <div style={{marginBottom:8}}>
-                    <label className="field-label">Kids {errors.customerName && <span className="err-msg">{errors.customerName}</span>}</label>
-                    {Array.from({length:form.numKids},(_,i)=>(
-                      <div key={i} className="ft-kid-row">
-                        <div className="ft-kid-num">{i+1}</div>
-                        <input className={`fld${i===0&&errors.customerName?" is-error":""}`}
-                          value={i===0?form.customerName:((form.kidNames&&form.kidNames[i])||"")}
-                          placeholder={i===0?"Kid's name":`Kid ${i+1} name`}
-                          onChange={e=>{
-                            if(i===0) set("customerName",e.target.value);
-                            else { const names=[...(form.kidNames||[])]; names[i]=e.target.value; set("kidNames",names); }
-                          }} />
-                        <input className="fld fld-date"
-                          value={i===0?form.dob:((form.dobs&&form.dobs[i])||"")}
-                          type="date"
-                          onChange={e=>{
-                            if(i===0) set("dob",e.target.value);
-                            else { const d2=[...(form.dobs||[])]; d2[i]=e.target.value; set("dobs",d2); }
-                          }} />
-                        {i > 0 ? <button type="button" className="ft-kid-remove" onClick={()=>{
-                          const names=[...(form.kidNames||[])]; names.splice(i,1);
-                          const d2=[...(form.dobs||[])]; d2.splice(i,1);
-                          setFormState(f=>({...f, numKids:f.numKids-1, kidNames:names, dobs:d2,
-                            amount:String(computeAmountForHours(f.hours)*(f.numKids-1))}));
-                        }}>
-                          <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 6h12M8 6V4h4v2M6 6v10a1 1 0 001 1h6a1 1 0 001-1V6M9 9v5M11 9v5"/></svg>
-                        </button> : <div className="ft-kid-remove-spacer"/>}
-                      </div>
-                    ))}
-                    {form.numKids < 10 && <button type="button" className="ft-add-kid-btn" onClick={()=>set("numKids",form.numKids+1)}>
-                      <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M10 4v12M4 10h12"/></svg>
-                      Add kid
-                    </button>}
-                  </div>
-
-                  {/* Socks */}
-                  {isPlayArea && <div style={{marginTop:10}}>
-                    <div className="ft-form-section-label">Socks</div>
-                    <div style={{display:"flex",alignItems:"center",gap:10}}>
-                      <NumberStepper value={form.sockCount||0} onChange={v=>{set("sockMode","preset");setSockCount(Math.max(0,v));}} min={0} max={20} />
-                      {(form.sockCount||0) > 0 && <div style={{position:"relative",flex:"0 0 100px"}}>
-                        <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",fontWeight:600,color:C.textMid,fontSize:12}}>₹</span>
-                        <input className="fld" type="tel" inputMode="numeric" value={form.socks||""} placeholder="0"
-                          style={{paddingLeft:24,height:36,fontSize:13,fontWeight:600,textAlign:"right",paddingRight:10}}
-                          onChange={e=>{
-                            const v=e.target.value.replace(/\D/g,"");
-                            setFormState(f=>({...f, socks:parseInt(v)||0, sockMode:"custom"}));
-                          }} />
-                      </div>}
-                    </div>
-                    {socksCharge > 0 && <div style={{marginTop:8}}>
-                      <label className="field-label">Socks paid via {errors.socksMop && <span className="err-msg">{errors.socksMop}</span>}</label>
-                      <div className="ft-pay-chips">
-                        {[{value:"UPI",label:"UPI"},{value:"Cash",label:"Cash"},{value:"UPI + Cash",label:"Split"}].map(o=>(
-                          <button key={o.value} type="button" className={`ft-pay-chip${form.socksMop===o.value?" is-active":""}`}
-                            onClick={()=>{
-                              set("socksMop",o.value);
-                              if(o.value!=="UPI + Cash"){set("socksUpiAmount","");set("socksCashAmount","");}
-                            }}>{o.label}</button>
-                        ))}
-                      </div>
-                      {form.socksMop==="UPI + Cash" && <div className="ft-split-row">
-                        <div>
-                          <div className="ft-split-label">UPI</div>
-                          <div style={{position:"relative"}}>
-                            <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",fontWeight:600,color:C.textMid,fontSize:12}}>₹</span>
-                            <input className="fld" value={form.socksUpiAmount} type="tel" inputMode="numeric" placeholder="0"
-                              style={{paddingLeft:26,height:40,fontSize:13.5,fontWeight:600}}
-                              onChange={e=>{
-                                const v=e.target.value.replace(/\D/g,"");
-                                set("socksUpiAmount",v);
-                                set("socksCashAmount",String(Math.max(0,socksCharge-(parseInt(v)||0))));
-                              }} />
-                          </div>
-                        </div>
-                        <div>
-                          <div className="ft-split-label">Cash</div>
-                          <div style={{position:"relative"}}>
-                            <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",fontWeight:600,color:C.textMid,fontSize:12}}>₹</span>
-                            <input className="fld" value={form.socksCashAmount} type="tel" inputMode="numeric" placeholder="0"
-                              style={{paddingLeft:26,height:40,fontSize:13.5,fontWeight:600}}
-                              onChange={e=>{
-                                const v=e.target.value.replace(/\D/g,"");
-                                set("socksCashAmount",v);
-                                set("socksUpiAmount",String(Math.max(0,socksCharge-(parseInt(v)||0))));
-                              }} />
-                          </div>
-                        </div>
-                      </div>}
-                    </div>}
-                  </div>}
+              {/* ── 1. Phone ── */}
+              <div className="ft-section-card">
+                <div className="ft-section-card-head">
+                  <span className="ft-section-card-icon">📱</span>
+                  <span className="ft-section-card-title">Phone</span>
+                  {errors.phone && <span className="err-msg" style={{marginLeft:"auto"}}>{errors.phone}</span>}
+                </div>
+                <div className="ft-phone-wrap">
+                  <input className={`fld${errors.phone?" is-error":""}`} value={form.phone} placeholder="10-digit mobile" type="tel" inputMode="numeric"
+                    style={{borderWidth:"1.5px",borderColor:errors.phone?"var(--ft-danger)":"var(--ft-accent-hover)",boxShadow:errors.phone?"0 0 0 3px rgba(194,96,122,.1)":"0 0 0 3px var(--ft-purple-glow)"}}
+                    onChange={e=>{const v=e.target.value.replace(/\D/g,"").slice(0,10);set("phone",v);if(v.length===10)lookupByPhone(v);}} />
+                  {phoneLookupLoading && <div style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)"}}><Spinner size={16} /></div>}
+                  {form.phone.length===10 && !phoneLookupLoading && (
+                    lastLookedUpPhone.current===form.phone
+                      ? <span className="ft-phone-badge">RETURNING</span>
+                      : <span className="ft-phone-badge ft-phone-badge--new">FIRST VISIT</span>
+                  )}
                 </div>
               </div>
 
-              {/* ── RIGHT COLUMN: Playtime ── */}
-              <div>
-                <div className="ft-form-section">
-                  <div className="ft-form-section-label">{isPlayArea?"Playtime":`${typeMeta.label} Booking`}</div>
-
-                  {/* Duration chips */}
-                  <div className="ft-dur-chips">
-                    {CONFIG.HOUR_OPTIONS.filter(o=>["0.5","1","2"].includes(o.value)).map(o=>{
-                      const isActive = form.hoursMode!=="custom" && String(form.hours)===o.value;
-                      return <button key={o.value} type="button" className={`ft-dur-chip${isActive?" is-active":""}`}
-                        onClick={()=>{set("hoursMode","preset");setHours(o.value,isPlayArea);}}>{o.label}</button>;
-                    })}
-                    <button type="button" className={`ft-dur-chip${form.hoursMode==="custom"?" is-active":""}`}
-                      onClick={()=>set("hoursMode","custom")}>Custom</button>
+              {/* ── 2. Kids ── */}
+              <div className="ft-section-card">
+                <div className="ft-section-card-head">
+                  <span className="ft-section-card-icon">👶</span>
+                  <span className="ft-section-card-title">Kids</span>
+                  {errors.customerName && <span className="err-msg" style={{marginLeft:"auto"}}>{errors.customerName}</span>}
+                </div>
+                {Array.from({length:form.numKids},(_,i)=>(
+                  <div key={i} className="ft-kid-row">
+                    <div className="ft-kid-num">{i+1}</div>
+                    <input className={`fld${i===0&&errors.customerName?" is-error":""}`}
+                      value={i===0?form.customerName:((form.kidNames&&form.kidNames[i])||"")}
+                      placeholder={i===0?"Kid's name":`Kid ${i+1} name`}
+                      onChange={e=>{
+                        if(i===0) set("customerName",e.target.value);
+                        else { const names=[...(form.kidNames||[])]; names[i]=e.target.value; set("kidNames",names); }
+                      }} />
+                    <input className="fld fld-date"
+                      value={i===0?form.dob:((form.dobs&&form.dobs[i])||"")}
+                      type="date" placeholder="DOB"
+                      onChange={e=>{
+                        if(i===0) set("dob",e.target.value);
+                        else { const d2=[...(form.dobs||[])]; d2[i]=e.target.value; set("dobs",d2); }
+                      }} />
+                    {i > 0 ? <button type="button" className="ft-kid-remove" onClick={()=>{
+                      const names=[...(form.kidNames||[])]; names.splice(i,1);
+                      const d2=[...(form.dobs||[])]; d2.splice(i,1);
+                      setFormState(f=>({...f, numKids:f.numKids-1, kidNames:names, dobs:d2,
+                        amount:String(computeAmountForHours(f.hours)*(f.numKids-1))}));
+                    }}>
+                      <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 6h12M8 6V4h4v2M6 6v10a1 1 0 001 1h6a1 1 0 001-1V6M9 9v5M11 9v5"/></svg>
+                    </button> : <div className="ft-kid-remove-spacer"/>}
                   </div>
+                ))}
+                {form.numKids < 10 && <button type="button" className="ft-add-kid-btn" onClick={()=>set("numKids",form.numKids+1)}>
+                  <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M10 4v12M4 10h12"/></svg>
+                  Add kid
+                </button>}
+              </div>
 
-                  {/* Custom duration inputs */}
-                  {form.hoursMode==="custom" && (
-                    <div className="ft-custom-dur">
-                      <input className="fld" value={Math.floor(parseFloat(form.hours)||0)} type="tel" inputMode="numeric" placeholder="0"
-                        onChange={e=>{
-                          const hrs=parseInt(e.target.value.replace(/\D/g,""))||0;
-                          const mins=Math.round(((parseFloat(form.hours)||0)%1)*60);
-                          setHours(String(hrs+mins/60),isPlayArea);
-                        }} />
-                      <span className="ft-custom-dur-label">hr</span>
-                      <input className="fld" value={Math.round(((parseFloat(form.hours)||0)%1)*60)} type="tel" inputMode="numeric" placeholder="0"
-                        onChange={e=>{
-                          const mins=parseInt(e.target.value.replace(/\D/g,""))||0;
-                          const hrs=Math.floor(parseFloat(form.hours)||0);
-                          setHours(String(hrs+Math.min(mins,59)/60),isPlayArea);
-                        }} />
-                      <span className="ft-custom-dur-label">min</span>
+              {/* ── 3. Pass (returning customers) ── */}
+              {isPlayArea && !editTarget && activePass && (() => {
+                const pt = CONFIG.PASS_TYPES.find(p=>p.key===activePass.pass_type);
+                const hoursUsed = (parseFloat(form.hours)||1) * form.numKids;
+                const remaining = activePass.hours_remaining != null ? Math.max(0, parseFloat((activePass.hours_remaining - hoursUsed).toFixed(1))) : null;
+                return <div className={`ft-pass-avail-card${passOverride?" is-overridden":""}`}>
+                  <div className="ft-pass-avail-header">
+                    <span className="ft-pass-avail-icon">🎫</span>
+                    <span className="ft-pass-avail-title">{passOverride ? "Pass available" : "Active Pass"}</span>
+                    <div className="ft-pass-more-wrap">
+                      <button type="button" className="ft-pass-more-btn" onClick={()=>setPassMenuOpen(!passMenuOpen)}>⋮</button>
+                      {passMenuOpen && <div className="ft-pass-more-menu">
+                        <button type="button" onClick={()=>{
+                          setPassMenuOpen(false);
+                          if(passOverride){setPassOverride(false);set("amount","0");}
+                          else{setPassOverride(true);set("amount",String(computeAmountForHours(form.hours)*form.numKids));}
+                        }}>{passOverride ? "Use pass" : "Pay instead"}</button>
+                      </div>}
                     </div>
-                  )}
-
-                  {/* Time FROM → TO */}
-                  <div className="ft-time-row">
-                    <span className="ft-time-label">From</span>
-                    <input className="fld" value={form.timeIn} onChange={e=>set("timeIn",e.target.value)} type="time" />
-                    <span className="ft-time-arrow">→</span>
-                    <span className="ft-time-label">To</span>
-                    <input className="fld" value={computeTimeOut(form.timeIn,form.hours)} type="time" readOnly
-                      style={{background:"var(--ft-accent-soft)",color:"var(--ft-deep)"}} />
                   </div>
-
-                  {/* Buy Pass toggle OR Pass availability card */}
-                  {isPlayArea && !editTarget && (
-                    <div style={{marginTop:10}}>
-                      {activePass ? (() => {
-                        const pt = CONFIG.PASS_TYPES.find(p=>p.key===activePass.pass_type);
-                        const hoursUsed = (parseFloat(form.hours)||1) * form.numKids;
-                        const remaining = activePass.hours_remaining != null ? Math.max(0, parseFloat((activePass.hours_remaining - hoursUsed).toFixed(1))) : null;
-                        return <div className={`ft-pass-avail-card${passOverride?" is-overridden":""}`}>
-                          <div className="ft-pass-avail-header">
-                            <span className="ft-pass-avail-icon">🎫</span>
-                            <span className="ft-pass-avail-title">{passOverride ? "Pass available" : "Active Pass"}</span>
-                            <div className="ft-pass-more-wrap">
-                              <button type="button" className="ft-pass-more-btn" onClick={()=>setPassMenuOpen(!passMenuOpen)}>⋮</button>
-                              {passMenuOpen && <div className="ft-pass-more-menu">
-                                <button type="button" onClick={()=>{
-                                  setPassMenuOpen(false);
-                                  if(passOverride){setPassOverride(false);set("amount","0");}
-                                  else{setPassOverride(true);set("amount",String(computeAmountForHours(form.hours)*form.numKids));}
-                                }}>{passOverride ? "Use pass" : "Pay instead"}</button>
-                              </div>}
-                            </div>
-                          </div>
-                          <div className="ft-pass-avail-body">
-                            <div className="ft-pass-avail-type">{pt?pt.label:activePass.pass_type}</div>
-                            <div className="ft-pass-avail-hours">
-                              {activePass.hours_remaining != null
-                                ? <><strong>{activePass.hours_remaining}h</strong> remaining{!passOverride && <> → <strong>{remaining}h</strong> after this visit</>}</>
-                                : <strong>Unlimited</strong>}
-                            </div>
-                          </div>
-                        </div>;
-                      })() : <>
-                        <button type="button" className={`ft-pass-toggle${buyPassType?" is-active":""}`}
-                          onClick={()=>{
-                            if(buyPassType){setBuyPassType(null);set("amount",String(computeAmountForHours(form.hours)*form.numKids));}
-                            else{const pt0=CONFIG.PASS_TYPES[0];setBuyPassType("10_hours");if(pt0)set("amount",String(pt0.amount));}
-                          }}>
-                          <span>🎫</span>
-                          <span>{buyPassType ? "Pass selected" : "Buy a Pass"}</span>
-                          {buyPassType && <span className="ft-pass-toggle-x" onClick={e=>{e.stopPropagation();setBuyPassType(null);set("amount",String(computeAmountForHours(form.hours)*form.numKids));}}>✕</span>}
-                        </button>
-                        {buyPassType && (
-                          <div className="ft-pass-type-chips">
-                            {CONFIG.PASS_TYPES.map(pt=>(
-                              <button key={pt.key} type="button" className={`ft-pay-chip${buyPassType===pt.key?" is-active":""}`}
-                                style={{flex:1}} onClick={()=>{setBuyPassType(pt.key);set("amount",String(pt.amount));}}>
-                                <div style={{fontWeight:600}}>{pt.label}</div>
-                                <div style={{fontSize:11,opacity:.7}}>₹{pt.amount} · {pt.durationDays}d</div>
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </>}
+                  <div className="ft-pass-avail-body">
+                    <div className="ft-pass-avail-type">{pt?pt.label:activePass.pass_type}</div>
+                    <div className="ft-pass-avail-hours">
+                      {activePass.hours_remaining != null
+                        ? <><strong>{activePass.hours_remaining}h</strong> remaining{!passOverride && <> → <strong>{remaining}h</strong> after this visit</>}</>
+                        : <strong>Unlimited</strong>}
                     </div>
-                  )}
+                  </div>
+                </div>;
+              })()}
 
-                  {/* Amount — hidden when using pass */}
-                  {!usingPass && <div style={{marginTop:10}}>
-                    <label className="field-label">{buyPassType?"Pass Amount":isPlayArea?"Playtime Amount":"Amount"} {errors.amount && <span className="err-msg">{errors.amount}</span>}</label>
-                    <div style={{position:"relative"}}>
-                      <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",fontWeight:700,color:C.textMid}}>₹</span>
+              {/* ── 4. Playtime ── */}
+              <div className="ft-section-card">
+                <div className="ft-section-card-head">
+                  <span className="ft-section-card-icon">{isPlayArea ? "🎢" : typeMeta.icon}</span>
+                  <span className="ft-section-card-title">{isPlayArea?"Playtime":`${typeMeta.label} Booking`}</span>
+                </div>
+
+                {/* Duration chips */}
+                <div className="ft-dur-chips">
+                  {CONFIG.HOUR_OPTIONS.filter(o=>["0.5","1","2"].includes(o.value)).map(o=>{
+                    const isActive = form.hoursMode!=="custom" && String(form.hours)===o.value;
+                    return <button key={o.value} type="button" className={`ft-dur-chip${isActive?" is-active":""}`}
+                      onClick={()=>{set("hoursMode","preset");setHours(o.value,isPlayArea);}}>{o.label}</button>;
+                  })}
+                  <button type="button" className={`ft-dur-chip${form.hoursMode==="custom"?" is-active":""}`}
+                    onClick={()=>set("hoursMode","custom")}>Custom</button>
+                </div>
+
+                {/* Custom duration inputs */}
+                {form.hoursMode==="custom" && (
+                  <div className="ft-custom-dur">
+                    <input className="fld" value={Math.floor(parseFloat(form.hours)||0)} type="tel" inputMode="numeric" placeholder="0"
+                      onChange={e=>{
+                        const hrs=parseInt(e.target.value.replace(/\D/g,""))||0;
+                        const mins=Math.round(((parseFloat(form.hours)||0)%1)*60);
+                        setHours(String(hrs+mins/60),isPlayArea);
+                      }} />
+                    <span className="ft-custom-dur-label">hr</span>
+                    <input className="fld" value={Math.round(((parseFloat(form.hours)||0)%1)*60)} type="tel" inputMode="numeric" placeholder="0"
+                      onChange={e=>{
+                        const mins=parseInt(e.target.value.replace(/\D/g,""))||0;
+                        const hrs=Math.floor(parseFloat(form.hours)||0);
+                        setHours(String(hrs+Math.min(mins,59)/60),isPlayArea);
+                      }} />
+                    <span className="ft-custom-dur-label">min</span>
+                  </div>
+                )}
+
+                {/* Start time only */}
+                <div className="ft-inline-row" style={{marginTop:8}}>
+                  <span className="ft-inline-label">Start</span>
+                  <input className="fld" value={form.timeIn} onChange={e=>set("timeIn",e.target.value)} type="time" style={{flex:1,maxWidth:130}} />
+                  <span className="ft-inline-muted">ends {computeTimeOut(form.timeIn,form.hours)||"--:--"}</span>
+                </div>
+
+                {/* Buy Pass toggle (no active pass) */}
+                {isPlayArea && !editTarget && !activePass && (
+                  <div style={{marginTop:8}}>
+                    <button type="button" className={`ft-pass-toggle${buyPassType?" is-active":""}`}
+                      onClick={()=>{
+                        if(buyPassType){setBuyPassType(null);set("amount",String(computeAmountForHours(form.hours)*form.numKids));}
+                        else{const pt0=CONFIG.PASS_TYPES[0];setBuyPassType("10_hours");if(pt0)set("amount",String(pt0.amount));}
+                      }}>
+                      <span>🎫</span>
+                      <span>{buyPassType ? "Pass selected" : "Buy a Pass"}</span>
+                      {buyPassType && <span className="ft-pass-toggle-x" onClick={e=>{e.stopPropagation();setBuyPassType(null);set("amount",String(computeAmountForHours(form.hours)*form.numKids));}}>✕</span>}
+                    </button>
+                    {buyPassType && (
+                      <div className="ft-pass-type-chips">
+                        {CONFIG.PASS_TYPES.map(pt=>(
+                          <button key={pt.key} type="button" className={`ft-pay-chip${buyPassType===pt.key?" is-active":""}`}
+                            style={{flex:1}} onClick={()=>{setBuyPassType(pt.key);set("amount",String(pt.amount));}}>
+                            <div style={{fontWeight:600}}>{pt.label}</div>
+                            <div style={{fontSize:11,opacity:.7}}>₹{pt.amount} · {pt.durationDays}d</div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Amount + Payment inline */}
+                {!usingPass && (
+                  <div className="ft-inline-row" style={{marginTop:8}}>
+                    <div style={{position:"relative",flex:"0 0 110px"}}>
+                      <span className="ft-rupee-prefix">₹</span>
                       <input className={`fld${errors.amount?" is-error":""}`}
                         value={form.amount}
                         type="tel" inputMode="numeric" placeholder="300"
-                        style={{paddingLeft:28,fontSize:18,fontWeight:700}}
+                        style={{paddingLeft:24,fontSize:15,fontWeight:700,height:38}}
                         onChange={e=>set("amount",e.target.value.replace(/\D/g,""))} />
                     </div>
-                    {!buyPassType && isPlayArea && form.numKids>1 && <div className="ft-form-helper">{form.numKids} kids x ₹{computeAmountForHours(form.hours)} per kid</div>}
-                  </div>}
-
-                  {/* Payment — hidden when amount is 0 */}
-                  {!usingPass && (parseInt(form.amount)||0) > 0 && <div style={{marginTop:10}}>
-                    <div className="ft-form-section-label">Payment</div>
-                    <label className="field-label">{buyPassType ? "Pass paid via" : "Playtime paid via"} {errors.playMop && <span className="err-msg">{errors.playMop}</span>}</label>
-                    <div className="ft-pay-chips">
+                    {(parseInt(form.amount)||0) > 0 && <div className="ft-pay-chips ft-pay-chips--inline">
                       {[{value:"UPI",label:"UPI"},{value:"Cash",label:"Cash"},{value:"UPI + Cash",label:"Split"}].map(o=>(
                         <button key={o.value} type="button" className={`ft-pay-chip${form.playMop===o.value?" is-active":""}`}
                           onClick={()=>{
@@ -1787,106 +1723,162 @@ function App() {
                             if(o.value!=="UPI + Cash"){set("playUpiAmount","");set("playCashAmount","");}
                           }}>{o.label}</button>
                       ))}
+                    </div>}
+                    {errors.amount && <span className="err-msg">{errors.amount}</span>}
+                    {errors.playMop && <span className="err-msg">{errors.playMop}</span>}
+                  </div>
+                )}
+                {!usingPass && !buyPassType && isPlayArea && form.numKids>1 && <div className="ft-form-helper">{form.numKids} kids x ₹{computeAmountForHours(form.hours)} per kid</div>}
+
+                {/* Split amounts for play */}
+                {!usingPass && form.playMop==="UPI + Cash" && (
+                  <div className="ft-split-row" style={{marginTop:6}}>
+                    <div>
+                      <div className="ft-split-label">UPI</div>
+                      <div style={{position:"relative"}}>
+                        <span className="ft-rupee-prefix">₹</span>
+                        <input className="fld" value={form.playUpiAmount} type="tel" inputMode="numeric" placeholder="0"
+                          style={{paddingLeft:24,height:36,fontSize:13,fontWeight:600}}
+                          onChange={e=>{
+                            const v=e.target.value.replace(/\D/g,"");
+                            const playAmt=parseInt(form.amount)||0;
+                            set("playUpiAmount",v);
+                            set("playCashAmount",String(Math.max(0,playAmt-(parseInt(v)||0))));
+                          }} />
+                      </div>
                     </div>
-
-                    {/* Split amounts */}
-                    {form.playMop==="UPI + Cash" && (
-                      <div className="ft-split-row">
-                        <div>
-                          <div className="ft-split-label">UPI</div>
-                          <div style={{position:"relative"}}>
-                            <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",fontWeight:600,color:C.textMid,fontSize:12}}>₹</span>
-                            <input className="fld" value={form.playUpiAmount} type="tel" inputMode="numeric" placeholder="0"
-                              style={{paddingLeft:26,height:40,fontSize:13.5,fontWeight:600}}
-                              onChange={e=>{
-                                const v=e.target.value.replace(/\D/g,"");
-                                const playAmt=parseInt(form.amount)||0;
-                                set("playUpiAmount",v);
-                                set("playCashAmount",String(Math.max(0,playAmt-(parseInt(v)||0))));
-                              }} />
-                          </div>
-                        </div>
-                        <div>
-                          <div className="ft-split-label">Cash</div>
-                          <div style={{position:"relative"}}>
-                            <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",fontWeight:600,color:C.textMid,fontSize:12}}>₹</span>
-                            <input className="fld" value={form.playCashAmount} type="tel" inputMode="numeric" placeholder="0"
-                              style={{paddingLeft:26,height:40,fontSize:13.5,fontWeight:600}}
-                              onChange={e=>{
-                                const v=e.target.value.replace(/\D/g,"");
-                                const playAmt=parseInt(form.amount)||0;
-                                set("playCashAmount",v);
-                                set("playUpiAmount",String(Math.max(0,playAmt-(parseInt(v)||0))));
-                              }} />
-                          </div>
-                        </div>
+                    <div>
+                      <div className="ft-split-label">Cash</div>
+                      <div style={{position:"relative"}}>
+                        <span className="ft-rupee-prefix">₹</span>
+                        <input className="fld" value={form.playCashAmount} type="tel" inputMode="numeric" placeholder="0"
+                          style={{paddingLeft:24,height:36,fontSize:13,fontWeight:600}}
+                          onChange={e=>{
+                            const v=e.target.value.replace(/\D/g,"");
+                            const playAmt=parseInt(form.amount)||0;
+                            set("playCashAmount",v);
+                            set("playUpiAmount",String(Math.max(0,playAmt-(parseInt(v)||0))));
+                          }} />
                       </div>
-                    )}
-                  </div>}
-
-                  {/* Bill summary card */}
-                  <div className="ft-bill-card">
-                    {usingPass ? <>
-                      <div className="ft-bill-line">
-                        <span>Playtime · {formatHoursLabel(form.hours)}{form.numKids>1?` × ${form.numKids} kids`:""}</span>
-                        <span style={{textDecoration:"line-through",opacity:.5}}>₹{(parseInt(form.amount)||0).toLocaleString("en-IN")}</span>
-                      </div>
-                      <div className="ft-bill-line" style={{color:"#a3f7bf"}}>
-                        <span>🎫 Pass applied</span>
-                        <span>₹0</span>
-                      </div>
-                      {activePass && activePass.hours_remaining != null && <div className="ft-bill-line" style={{opacity:.7}}>
-                        <span>Hours after this visit</span>
-                        <span>{Math.max(0,parseFloat((activePass.hours_remaining - (parseFloat(form.hours)||1)*form.numKids).toFixed(1)))}h</span>
-                      </div>}
-                    </> : buyPassType && buyPassMeta ? <>
-                      <div className="ft-bill-line">
-                        <span>🎫 {buyPassMeta.label} Pass</span>
-                        <span>₹{(parseInt(form.amount)||0).toLocaleString("en-IN")}</span>
-                      </div>
-                      <div className="ft-bill-line" style={{opacity:.7}}>
-                        <span>First visit · {formatHoursLabel(form.hours)}{form.numKids>1?` × ${form.numKids} kids`:""}</span>
-                        <span>included</span>
-                      </div>
-                      {buyPassMeta.hours != null && <div className="ft-bill-line" style={{opacity:.7}}>
-                        <span>Hours after this visit</span>
-                        <span>{Math.max(0,parseFloat((buyPassMeta.hours - (parseFloat(form.hours)||1)*form.numKids).toFixed(1)))}h</span>
-                      </div>}
-                    </> : <div className="ft-bill-line">
-                      <span>Playtime · {formatHoursLabel(form.hours)}{form.numKids>1?` × ${form.numKids} kids`:""}</span>
-                      <span>₹{(parseInt(form.amount)||0).toLocaleString("en-IN")}</span>
-                    </div>}
-                    {socksCharge > 0 && <div className="ft-bill-line">
-                      <span>Socks · {form.sockCount||0} pair{(form.sockCount||0)!==1?"s":""}</span>
-                      <span>₹{socksCharge.toLocaleString("en-IN")}</span>
-                    </div>}
-                    <div className="ft-bill-total">
-                      <span>Total</span>
-                      <span>₹{(usingPass ? socksCharge : totalAmount).toLocaleString("en-IN")}</span>
                     </div>
                   </div>
+                )}
+              </div>
+
+              {/* ── 5. Socks ── */}
+              {isPlayArea && <div className="ft-section-card">
+                <div className="ft-section-card-head">
+                  <span className="ft-section-card-icon">🧦</span>
+                  <span className="ft-section-card-title">Socks</span>
+                </div>
+                <div className="ft-inline-row">
+                  <NumberStepper value={form.sockCount||0} onChange={v=>{set("sockMode","preset");setSockCount(Math.max(0,v));}} min={0} max={20} />
+                  {(form.sockCount||0) > 0 && <>
+                    <div style={{position:"relative",flex:"0 0 90px"}}>
+                      <span className="ft-rupee-prefix">₹</span>
+                      <input className="fld" type="tel" inputMode="numeric" value={form.socks||""} placeholder="0"
+                        style={{paddingLeft:24,height:36,fontSize:13,fontWeight:600,textAlign:"right",paddingRight:10}}
+                        onChange={e=>{
+                          const v=e.target.value.replace(/\D/g,"");
+                          setFormState(f=>({...f, socks:parseInt(v)||0, sockMode:"custom"}));
+                        }} />
+                    </div>
+                    <div className="ft-pay-chips ft-pay-chips--inline">
+                      {[{value:"UPI",label:"UPI"},{value:"Cash",label:"Cash"},{value:"UPI + Cash",label:"Split"}].map(o=>(
+                        <button key={o.value} type="button" className={`ft-pay-chip${form.socksMop===o.value?" is-active":""}`}
+                          onClick={()=>{
+                            set("socksMop",o.value);
+                            if(o.value!=="UPI + Cash"){set("socksUpiAmount","");set("socksCashAmount","");}
+                          }}>{o.label}</button>
+                      ))}
+                    </div>
+                  </>}
+                  {errors.socksMop && <span className="err-msg">{errors.socksMop}</span>}
+                </div>
+                {form.socksMop==="UPI + Cash" && socksCharge > 0 && <div className="ft-split-row" style={{marginTop:6}}>
+                  <div>
+                    <div className="ft-split-label">UPI</div>
+                    <div style={{position:"relative"}}>
+                      <span className="ft-rupee-prefix">₹</span>
+                      <input className="fld" value={form.socksUpiAmount} type="tel" inputMode="numeric" placeholder="0"
+                        style={{paddingLeft:24,height:36,fontSize:13,fontWeight:600}}
+                        onChange={e=>{
+                          const v=e.target.value.replace(/\D/g,"");
+                          set("socksUpiAmount",v);
+                          set("socksCashAmount",String(Math.max(0,socksCharge-(parseInt(v)||0))));
+                        }} />
+                    </div>
+                  </div>
+                  <div>
+                    <div className="ft-split-label">Cash</div>
+                    <div style={{position:"relative"}}>
+                      <span className="ft-rupee-prefix">₹</span>
+                      <input className="fld" value={form.socksCashAmount} type="tel" inputMode="numeric" placeholder="0"
+                        style={{paddingLeft:24,height:36,fontSize:13,fontWeight:600}}
+                        onChange={e=>{
+                          const v=e.target.value.replace(/\D/g,"");
+                          set("socksCashAmount",v);
+                          set("socksUpiAmount",String(Math.max(0,socksCharge-(parseInt(v)||0))));
+                        }} />
+                    </div>
+                  </div>
+                </div>}
+              </div>}
+
+              {/* ── 6. Summary ── */}
+              <div className="ft-bill-card">
+                {usingPass ? <>
+                  <div className="ft-bill-line">
+                    <span>Playtime · {formatHoursLabel(form.hours)}{form.numKids>1?` × ${form.numKids} kids`:""}</span>
+                    <span style={{textDecoration:"line-through",opacity:.5}}>₹{(parseInt(form.amount)||0).toLocaleString("en-IN")}</span>
+                  </div>
+                  <div className="ft-bill-line" style={{color:"#a3f7bf"}}>
+                    <span>🎫 Pass applied</span>
+                    <span>₹0</span>
+                  </div>
+                  {activePass && activePass.hours_remaining != null && <div className="ft-bill-line" style={{opacity:.7}}>
+                    <span>Hours after this visit</span>
+                    <span>{Math.max(0,parseFloat((activePass.hours_remaining - (parseFloat(form.hours)||1)*form.numKids).toFixed(1)))}h</span>
+                  </div>}
+                </> : buyPassType && buyPassMeta ? <>
+                  <div className="ft-bill-line">
+                    <span>🎫 {buyPassMeta.label} Pass</span>
+                    <span>₹{(parseInt(form.amount)||0).toLocaleString("en-IN")}</span>
+                  </div>
+                  <div className="ft-bill-line" style={{opacity:.7}}>
+                    <span>First visit · {formatHoursLabel(form.hours)}{form.numKids>1?` × ${form.numKids} kids`:""}</span>
+                    <span>included</span>
+                  </div>
+                  {buyPassMeta.hours != null && <div className="ft-bill-line" style={{opacity:.7}}>
+                    <span>Hours after this visit</span>
+                    <span>{Math.max(0,parseFloat((buyPassMeta.hours - (parseFloat(form.hours)||1)*form.numKids).toFixed(1)))}h</span>
+                  </div>}
+                </> : <div className="ft-bill-line">
+                  <span>Playtime · {formatHoursLabel(form.hours)}{form.numKids>1?` × ${form.numKids} kids`:""}</span>
+                  <span>₹{(parseInt(form.amount)||0).toLocaleString("en-IN")}</span>
+                </div>}
+                {socksCharge > 0 && <div className="ft-bill-line">
+                  <span>Socks · {form.sockCount||0} pair{(form.sockCount||0)!==1?"s":""}</span>
+                  <span>₹{socksCharge.toLocaleString("en-IN")}</span>
+                </div>}
+                <div className="ft-bill-total">
+                  <span>Total</span>
+                  <span>₹{(usingPass ? socksCharge : totalAmount).toLocaleString("en-IN")}</span>
                 </div>
               </div>
 
-              </div>{/* end desktop-grid */}
             </div>
 
-            {/* Pinned submit footer */}
+            {/* ── 7. Footer: Cancel + Start ── */}
             <div className="ft-form-footer">
+              <button className="ft-btn-cancel" onClick={resetForm}>Cancel</button>
               <div className="ft-form-footer-total">
                 <span className="label">{usingPass ? "Pass" : buyPassType ? "Pass" : "Total"}</span>
                 <span className="value">₹{(usingPass ? socksCharge : totalAmount).toLocaleString("en-IN")}</span>
               </div>
-              {!editTarget && <button className="ft-btn-outline" disabled={saving}
-                onClick={async()=>{
-                  await submitEntry();
-                  setTimeout(()=>{setFormState(prev=>({...getDefaultForm(),phone:prev.phone,date:prev.date}));setShowSuccess(false);setErrors({});},100);
-                }}>
-                Save & add another
-              </button>}
               <button className={editTarget?"ft-btn-primary ft-btn-primary--lg":"ft-btn-start"} disabled={saving}
                 onClick={editTarget ? handleUpdateSubmit : submitEntry}>
-                {editTarget ? "Update entry" : "Start playtime"}
+                {editTarget ? "Update" : "Start"}
               </button>
             </div>
           </div>
