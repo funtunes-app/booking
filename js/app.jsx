@@ -1639,36 +1639,34 @@ function App() {
               })()}
 
               {/* ── 3b. Buy Pass (separate, above Playtime) ── */}
-              {isPlayArea && !editTarget && !activePass && (
-                <div>
-                  <div className="ft-section-title">
-                    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="var(--ft-primary)" strokeWidth="1.8"><rect x="2" y="5" width="16" height="10" rx="2"/><path d="M7 5v10"/><circle cx="12" cy="10" r="2"/></svg>
-                    Pass
-                  </div>
-                  <div className="ft-section-card">
-                    <button type="button" className={`ft-pass-toggle${buyPassType?" is-active":""}`}
-                      onClick={()=>{
-                        if(buyPassType){setBuyPassType(null);set("amount",String(computeAmountForHours(form.hours)*form.numKids));}
-                        else{const pt0=CONFIG.PASS_TYPES[0];setBuyPassType("10_hours");if(pt0)set("amount",String(pt0.amount));}
-                      }}>
-                      <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="2" y="5" width="16" height="10" rx="2"/><path d="M7 5v10"/><circle cx="12" cy="10" r="2"/></svg>
-                      <span>{buyPassType ? "Pass selected" : "Buy a Pass"}</span>
-                      {buyPassType && <span className="ft-pass-toggle-x" onClick={e=>{e.stopPropagation();setBuyPassType(null);set("amount",String(computeAmountForHours(form.hours)*form.numKids));}}>✕</span>}
-                    </button>
-                    {buyPassType && (
-                      <div className="ft-pass-type-chips">
-                        {CONFIG.PASS_TYPES.map(pt=>(
-                          <button key={pt.key} type="button" className={`ft-pay-chip${buyPassType===pt.key?" is-active":""}`}
-                            style={{flex:1}} onClick={()=>{setBuyPassType(pt.key);set("amount",String(pt.amount));}}>
-                            <div style={{fontWeight:600}}>{pt.label}</div>
-                            <div style={{fontSize:11,opacity:.7}}>₹{pt.amount} · {pt.durationDays}d</div>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+              {isPlayArea && !editTarget && !activePass && <>
+                <div className="ft-section-title">
+                  <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="var(--ft-primary)" strokeWidth="1.8"><rect x="2" y="5" width="16" height="10" rx="2"/><path d="M7 5v10"/><circle cx="12" cy="10" r="2"/></svg>
+                  Pass
                 </div>
-              )}
+                <div className="ft-section-card">
+                  <button type="button" className={`ft-pass-toggle${buyPassType?" is-active":""}`}
+                    onClick={()=>{
+                      if(buyPassType){setBuyPassType(null);set("amount",String(computeAmountForHours(form.hours)*form.numKids));}
+                      else{const pt0=CONFIG.PASS_TYPES[0];setBuyPassType("10_hours");if(pt0)set("amount",String(pt0.amount));}
+                    }}>
+                    <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="2" y="5" width="16" height="10" rx="2"/><path d="M7 5v10"/><circle cx="12" cy="10" r="2"/></svg>
+                    <span>{buyPassType ? "Pass selected" : "Buy a Pass"}</span>
+                    {buyPassType && <span className="ft-pass-toggle-x" onClick={e=>{e.stopPropagation();setBuyPassType(null);set("amount",String(computeAmountForHours(form.hours)*form.numKids));}}>✕</span>}
+                  </button>
+                  {buyPassType && (
+                    <div className="ft-pass-type-chips">
+                      {CONFIG.PASS_TYPES.map(pt=>(
+                        <button key={pt.key} type="button" className={`ft-pay-chip${buyPassType===pt.key?" is-active":""}`}
+                          style={{flex:1}} onClick={()=>{setBuyPassType(pt.key);set("amount",String(pt.amount));}}>
+                          <div style={{fontWeight:600}}>{pt.label}</div>
+                          <div style={{fontSize:11,opacity:.7}}>₹{pt.amount} · {pt.durationDays}d</div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </>}
 
               {/* ── 4. Playtime ── */}
               <div className="ft-section-title">
@@ -1711,7 +1709,7 @@ function App() {
                 {/* Start time */}
                 <div className="ft-inline-row" style={{marginTop:10}}>
                   <span className="ft-inline-label">Start</span>
-                  <input className="fld" value={form.timeIn} onChange={e=>set("timeIn",e.target.value)} type="time" style={{flex:1,maxWidth:130}} />
+                  <input className="fld" value={form.timeIn} onChange={e=>set("timeIn",e.target.value)} type="time" style={{flex:"0 0 130px",fontSize:14,fontWeight:600,height:38}} />
                   <span className="ft-inline-muted">ends {computeTimeOut(form.timeIn,form.hours)||"--:--"}</span>
                 </div>
 
@@ -1719,12 +1717,12 @@ function App() {
                 {!usingPass && <>
                   <div className="ft-inline-row" style={{marginTop:10}}>
                     <span className="ft-inline-label">Amount</span>
-                    <div style={{position:"relative",flex:"0 0 110px"}}>
+                    <div style={{position:"relative",flex:"0 0 130px"}}>
                       <span className="ft-rupee-prefix">₹</span>
                       <input className={`fld${errors.amount?" is-error":""}`}
                         value={form.amount}
                         type="tel" inputMode="numeric" placeholder="300"
-                        style={{paddingLeft:24,fontSize:15,fontWeight:700,height:38}}
+                        style={{paddingLeft:24,fontSize:14,fontWeight:600,height:38}}
                         onChange={e=>set("amount",e.target.value.replace(/\D/g,""))} />
                     </div>
                     {errors.amount && <span className="err-msg">{errors.amount}</span>}
@@ -1754,7 +1752,7 @@ function App() {
                         <div style={{position:"relative"}}>
                           <span className="ft-rupee-prefix">₹</span>
                           <input className="fld" value={form.playUpiAmount} type="tel" inputMode="numeric" placeholder="0"
-                            style={{paddingLeft:24,height:36,fontSize:13,fontWeight:600}}
+                            style={{paddingLeft:24,fontSize:14,fontWeight:600,height:38}}
                             onChange={e=>{
                               const v=e.target.value.replace(/\D/g,"");
                               const playAmt=parseInt(form.amount)||0;
@@ -1768,7 +1766,7 @@ function App() {
                         <div style={{position:"relative"}}>
                           <span className="ft-rupee-prefix">₹</span>
                           <input className="fld" value={form.playCashAmount} type="tel" inputMode="numeric" placeholder="0"
-                            style={{paddingLeft:24,height:36,fontSize:13,fontWeight:600}}
+                            style={{paddingLeft:24,fontSize:14,fontWeight:600,height:38}}
                             onChange={e=>{
                               const v=e.target.value.replace(/\D/g,"");
                               const playAmt=parseInt(form.amount)||0;
@@ -1796,10 +1794,10 @@ function App() {
                   {(form.sockCount||0) > 0 && <>
                     <div className="ft-inline-row" style={{marginTop:8}}>
                       <span className="ft-inline-label">Amount</span>
-                      <div style={{position:"relative",flex:"0 0 100px"}}>
+                      <div style={{position:"relative",flex:"0 0 130px"}}>
                         <span className="ft-rupee-prefix">₹</span>
                         <input className="fld" type="tel" inputMode="numeric" value={form.socks||""} placeholder="0"
-                          style={{paddingLeft:24,height:36,fontSize:13,fontWeight:600,textAlign:"right",paddingRight:10}}
+                          style={{paddingLeft:24,fontSize:14,fontWeight:600,height:38}}
                           onChange={e=>{
                             const v=e.target.value.replace(/\D/g,"");
                             setFormState(f=>({...f, socks:parseInt(v)||0, sockMode:"custom"}));
@@ -1825,7 +1823,7 @@ function App() {
                         <div style={{position:"relative"}}>
                           <span className="ft-rupee-prefix">₹</span>
                           <input className="fld" value={form.socksUpiAmount} type="tel" inputMode="numeric" placeholder="0"
-                            style={{paddingLeft:24,height:36,fontSize:13,fontWeight:600}}
+                            style={{paddingLeft:24,fontSize:14,fontWeight:600,height:38}}
                             onChange={e=>{
                               const v=e.target.value.replace(/\D/g,"");
                               set("socksUpiAmount",v);
@@ -1838,7 +1836,7 @@ function App() {
                         <div style={{position:"relative"}}>
                           <span className="ft-rupee-prefix">₹</span>
                           <input className="fld" value={form.socksCashAmount} type="tel" inputMode="numeric" placeholder="0"
-                            style={{paddingLeft:24,height:36,fontSize:13,fontWeight:600}}
+                            style={{paddingLeft:24,fontSize:14,fontWeight:600,height:38}}
                             onChange={e=>{
                               const v=e.target.value.replace(/\D/g,"");
                               set("socksCashAmount",v);
