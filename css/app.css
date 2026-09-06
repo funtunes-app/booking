@@ -824,12 +824,42 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
   flex-shrink: 0;
 }
 .ft-kid-row .fld { flex: 1; height: 42px; font-size: 13.5px; }
-.ft-kid-row .fld-date {
+.ft-kid-row .ft-dob-wrap {
   width: 140px;
   flex-shrink: 0;
+  position: relative;
+}
+.ft-kid-row .ft-dob-wrap .fld-date {
+  width: 100%;
   height: 42px;
   font-size: 13px;
   color: var(--ft-muted);
+}
+.ft-kid-row .ft-dob-wrap .fld-date::-webkit-calendar-picker-indicator {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+.ft-dob-placeholder {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font: 400 12px var(--ft-sans);
+  color: var(--ft-muted2);
+  pointer-events: none;
+}
+.ft-dob-icon {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  z-index: 1;
 }
 .ft-kid-remove {
   width: 28px; height: 28px; border-radius: 7px;
@@ -2545,7 +2575,9 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
   .ft-kid-row { gap: 6px; margin-top: 6px; }
   .ft-kid-num { width: 22px; height: 22px; font-size: 10px; border-radius: 6px; }
   .ft-kid-row .fld { height: 36px; font-size: 12.5px; }
-  .ft-kid-row .fld-date { width: 110px; height: 36px; font-size: 11.5px; }
+  .ft-kid-row .ft-dob-wrap { width: 110px; }
+  .ft-kid-row .ft-dob-wrap .fld-date { height: 36px; font-size: 11.5px; }
+  .ft-dob-placeholder { font-size: 11px; left: 10px; }
   .ft-kid-remove { width: 22px; height: 22px; border-radius: 5px; }
   .ft-kid-remove svg { width: 12px; height: 12px; }
   .ft-kid-remove-spacer { width: 22px; }

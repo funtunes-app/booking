@@ -1582,13 +1582,17 @@ function App() {
                         if(i===0) set("customerName",e.target.value);
                         else { const names=[...(form.kidNames||[])]; names[i]=e.target.value; set("kidNames",names); }
                       }} />
-                    <input className="fld fld-date"
-                      value={i===0?form.dob:((form.dobs&&form.dobs[i])||"")}
-                      type="date" placeholder="DOB"
-                      onChange={e=>{
-                        if(i===0) set("dob",e.target.value);
-                        else { const d2=[...(form.dobs||[])]; d2[i]=e.target.value; set("dobs",d2); }
-                      }} />
+                    <div className="ft-dob-wrap">
+                      {!(i===0?form.dob:((form.dobs&&form.dobs[i])||"")) && <span className="ft-dob-placeholder">DOB</span>}
+                      <svg className="ft-dob-icon" width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="var(--ft-muted2)" strokeWidth="1.5"><rect x="3" y="4" width="14" height="13" rx="2"/><path d="M3 8h14M7 2v4M13 2v4"/></svg>
+                      <input className="fld fld-date"
+                        value={i===0?form.dob:((form.dobs&&form.dobs[i])||"")}
+                        type="date"
+                        onChange={e=>{
+                          if(i===0) set("dob",e.target.value);
+                          else { const d2=[...(form.dobs||[])]; d2[i]=e.target.value; set("dobs",d2); }
+                        }} />
+                    </div>
                     {i > 0 ? <button type="button" className="ft-kid-remove" onClick={()=>{
                       const names=[...(form.kidNames||[])]; names.splice(i,1);
                       const d2=[...(form.dobs||[])]; d2.splice(i,1);
