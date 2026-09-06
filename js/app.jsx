@@ -1549,7 +1549,7 @@ function App() {
                   <div className="ft-form-section-label">Customer</div>
 
                   {/* Phone */}
-                  <div style={{marginBottom:14}}>
+                  <div style={{marginBottom:10}}>
                     <label className="field-label">Phone {errors.phone && <span className="err-msg">{errors.phone}</span>}</label>
                     <div className="ft-phone-wrap">
                       <input className={`fld${errors.phone?" is-error":""}`} value={form.phone} placeholder="10-digit mobile" type="tel" inputMode="numeric"
@@ -1565,7 +1565,7 @@ function App() {
                   </div>
 
                   {/* Kid rows */}
-                  <div style={{marginBottom:14}}>
+                  <div style={{marginBottom:8}}>
                     <label className="field-label">Kids {errors.customerName && <span className="err-msg">{errors.customerName}</span>}</label>
                     {Array.from({length:form.numKids},(_,i)=>(
                       <div key={i} className="ft-kid-row">
@@ -1601,7 +1601,7 @@ function App() {
                   </div>
 
                   {/* Socks */}
-                  {isPlayArea && <div style={{marginTop:18}}>
+                  {isPlayArea && <div style={{marginTop:10}}>
                     <div className="ft-form-section-label">Socks</div>
                     <div style={{display:"flex",alignItems:"center",gap:10}}>
                       <NumberStepper value={form.sockCount||0} onChange={v=>{set("sockMode","preset");setSockCount(Math.max(0,v));}} min={0} max={20} />
@@ -1615,7 +1615,7 @@ function App() {
                           }} />
                       </div>}
                     </div>
-                    {socksCharge > 0 && <div style={{marginTop:10}}>
+                    {socksCharge > 0 && <div style={{marginTop:8}}>
                       <label className="field-label">Socks paid via {errors.socksMop && <span className="err-msg">{errors.socksMop}</span>}</label>
                       <div className="ft-pay-chips">
                         {[{value:"UPI",label:"UPI"},{value:"Cash",label:"Cash"},{value:"UPI + Cash",label:"Split"}].map(o=>(
@@ -1707,7 +1707,7 @@ function App() {
 
                   {/* Buy Pass toggle OR Pass availability card */}
                   {isPlayArea && !editTarget && (
-                    <div style={{marginTop:14}}>
+                    <div style={{marginTop:10}}>
                       {activePass ? (() => {
                         const pt = CONFIG.PASS_TYPES.find(p=>p.key===activePass.pass_type);
                         const hoursUsed = (parseFloat(form.hours)||1) * form.numKids;
@@ -1762,7 +1762,7 @@ function App() {
                   )}
 
                   {/* Amount — hidden when using pass */}
-                  {!usingPass && <div style={{marginTop:14}}>
+                  {!usingPass && <div style={{marginTop:10}}>
                     <label className="field-label">{buyPassType?"Pass Amount":isPlayArea?"Playtime Amount":"Amount"} {errors.amount && <span className="err-msg">{errors.amount}</span>}</label>
                     <div style={{position:"relative"}}>
                       <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",fontWeight:700,color:C.textMid}}>₹</span>
@@ -1776,7 +1776,7 @@ function App() {
                   </div>}
 
                   {/* Payment — hidden when amount is 0 */}
-                  {!usingPass && (parseInt(form.amount)||0) > 0 && <div style={{marginTop:18}}>
+                  {!usingPass && (parseInt(form.amount)||0) > 0 && <div style={{marginTop:10}}>
                     <div className="ft-form-section-label">Payment</div>
                     <label className="field-label">{buyPassType ? "Pass paid via" : "Playtime paid via"} {errors.playMop && <span className="err-msg">{errors.playMop}</span>}</label>
                     <div className="ft-pay-chips">

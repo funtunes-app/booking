@@ -657,14 +657,14 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
   padding-bottom: 100px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 14px;
 }
 .ft-form-section-label {
   font: 600 10px var(--ft-mono);
   color: var(--ft-muted2);
   letter-spacing: .1em;
   text-transform: uppercase;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 /* Phone input with purple glow */
@@ -2395,37 +2395,105 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
 }
 .ft-egroup-more:hover { color: var(--ft-purple-pill); }
 
-/* Mobile: stack entry rows as cards */
+/* Mobile overrides */
 @media (max-width: 899px) {
+
+  /* ── Form: tighter spacing ── */
+  .ft-form-body { padding: 12px 16px 0; }
+  .ft-form-section { margin-bottom: 10px; }
+  .ft-form-section-label { margin-bottom: 8px; font-size: 9px; }
+  .ft-form-scroll { gap: 10px; padding-bottom: 80px; }
+  .field-label { margin-bottom: 4px; }
+  .fld { height: 38px; font-size: 12.5px; border-radius: 8px; }
+  .ft-phone-wrap .fld { font-size: 14px; }
+  .ft-form-footer { padding: 10px 16px; padding-bottom: max(10px, env(safe-area-inset-bottom)); }
+  .ft-form-footer-total .value { font-size: 17px; }
+  .ft-form-section { padding: 0; }
+
+  /* Kid rows compact */
+  .ft-kid-row { gap: 6px; margin-top: 6px; }
+  .ft-kid-num { width: 24px; height: 24px; font-size: 11px; border-radius: 6px; }
+  .ft-kid-row .fld { height: 38px; font-size: 12.5px; }
+  .ft-kid-row .fld-date { width: 120px; height: 38px; font-size: 12px; }
+  .ft-kid-remove { width: 24px; height: 24px; border-radius: 6px; }
+  .ft-kid-remove svg { width: 12px; height: 12px; }
+  .ft-kid-remove-spacer { width: 24px; }
+  .ft-add-kid-btn { margin-top: 6px; padding: 5px 12px; font-size: 11px; }
+
+  /* Duration chips compact */
+  .ft-dur-chips { gap: 6px; }
+  .ft-dur-chip { padding: 6px 12px; font-size: 11.5px; border-radius: 6px; }
+
+  /* Time row compact */
+  .ft-time-row { margin-top: 8px; gap: 6px; }
+  .ft-time-row .fld { height: 38px; font-size: 12.5px; }
+
+  /* Socks compact */
+  .ft-sock-chip { padding: 6px 12px; font-size: 11.5px; }
+
+  /* Pay chips compact */
+  .ft-pay-chip { padding: 6px 12px; font-size: 11.5px; border-radius: 6px; }
+  .ft-pay-chips { gap: 6px; }
+
+  /* Pass card compact */
+  .ft-pass-avail-card { padding: 10px 12px; }
+  .ft-pass-avail-header { margin-bottom: 6px; }
+  .ft-pass-avail-body { margin-bottom: 8px; }
+  .ft-pass-avail-type { font-size: 14px; }
+  .ft-pass-avail-hours { font-size: 12px; }
+  .ft-pass-toggle { padding: 8px 12px; }
+
+  /* Bill card compact */
+  .ft-bill-card { padding: 10px 12px 8px; margin-top: 10px; }
+
+  /* Custom duration compact */
+  .ft-custom-dur { padding: 8px 10px; margin-top: 6px; }
+
+  /* ── Entry listing: clean card layout ── */
   .ft-erow-cols { display: none; }
   .ft-erow {
-    display: flex; flex-wrap: wrap; gap: 6px 12px;
-    padding: 12px 0;
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    grid-template-rows: auto auto;
+    gap: 4px 10px;
+    padding: 10px 0;
+    align-items: center;
   }
-  .ft-erow-name { flex: 1; min-width: 0; }
-  .ft-erow-amt { margin-left: auto; }
-  .ft-erow-time { font-size: 11px; flex-basis: 100%; order: 5; }
-  .ft-erow-dur { font-size: 11px; color: var(--ft-muted2); }
-  .ft-erow-mop { order: 6; }
-  .ft-erow-actions { order: 7; margin-left: auto; }
+  .ft-erow-name { grid-column: 1; grid-row: 1; min-width: 0; }
+  .ft-erow-name-main { font-size: 12.5px; }
+  .ft-erow-name-sub { font-size: 10px; margin-top: 1px; }
+  .ft-erow-dur { grid-column: 2; grid-row: 1; font-size: 11px; color: var(--ft-muted2); text-align: right; }
+  .ft-erow-amt { grid-column: 3; grid-row: 1; font-size: 13px; text-align: right; }
+  .ft-erow-time { grid-column: 1; grid-row: 2; font-size: 10.5px; color: var(--ft-muted2); }
+  .ft-erow-mop { grid-column: 2; grid-row: 2; }
+  .ft-entry-mop { font-size: 10px; padding: 2px 7px; }
+  .ft-erow-actions { grid-column: 3; grid-row: 2; display: flex; gap: 4px; justify-content: flex-end; }
+  .ft-entry-act-btn { width: 26px; height: 26px; border-radius: 5px; }
+  .ft-entry-act-btn svg { width: 12px; height: 12px; }
+
+  /* Filters */
   .ft-filters { padding: 0 16px; }
-  .ft-filters-top { gap: 8px; }
-  .ft-filters-bottom { gap: 8px; }
+  .ft-filters-top { gap: 6px; }
+  .ft-filters-bottom { gap: 6px; }
   .ft-search-box { max-width: 100%; margin-left: 0; flex-basis: 100%; }
   .ft-mop-chips { margin-left: 0; }
-  .ft-bday-action-row { padding: 0 16px; margin: 12px 0 12px; gap: 8px; flex-wrap: wrap; }
+
+  /* Birthday */
+  .ft-bday-action-row { padding: 0 16px; margin: 8px 0; gap: 6px; flex-wrap: wrap; }
   .ft-bday-mobile-filters { display: flex; align-items: center; gap: 6px; }
   .ft-bday-search-row { flex-basis: 100%; order: 10; margin-left: 0; }
   .ft-bday-search-box { min-width: 0; width: 100%; }
   .ft-bday-layout { flex-direction: column; padding: 0 16px; }
   .ft-bday-cal-sidebar { display: none; }
-  .ft-kb-board { grid-template-columns: 1fr; min-height: auto; gap: 16px; }
+  .ft-kb-board { grid-template-columns: 1fr; min-height: auto; gap: 12px; }
   .ft-kb-col-body { max-height: none; }
   .ft-kb-col--mobile-hide { display: none; }
   .ft-booked-grid { grid-template-columns: 1fr 1fr; }
+
+  /* Playing now */
   .ft-playing-row {
-    display: flex; flex-wrap: wrap; gap: 6px 10px;
-    padding: 12px 0;
+    display: flex; flex-wrap: wrap; gap: 4px 8px;
+    padding: 10px 0;
   }
   .ft-playing-row .name { flex: 1; min-width: 0; }
   .ft-playing-row .time { font-size: 11px; }
