@@ -674,7 +674,8 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
   gap: 7px;
   font: 800 13px var(--ft-sans);
   color: var(--ft-deep);
-  letter-spacing: .01em;
+  letter-spacing: .04em;
+  text-transform: uppercase;
   padding: 0 2px;
   margin-bottom: -12px;
 }
@@ -2521,8 +2522,8 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
 @media (max-width: 899px) {
 
   /* ── Form: mobile-native spacing ── */
-  .ft-form-body { padding: 10px 12px 0; gap: 16px; }
-  .ft-section-title { font-size: 12px; gap: 6px; }
+  .ft-form-body { padding: 10px 12px 0; gap: 30px; }
+  .ft-section-title { font-size: 12px; gap: 6px; margin-bottom: -22px; }
   .ft-section-title svg { width: 14px; height: 14px; }
   .ft-form-section { margin-bottom: 8px; }
   .ft-form-section-label { margin-bottom: 6px; font-size: 9px; }

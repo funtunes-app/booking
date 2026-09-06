@@ -1709,7 +1709,7 @@ function App() {
                 {/* Start time */}
                 <div className="ft-inline-row" style={{marginTop:10}}>
                   <span className="ft-inline-label">Start</span>
-                  <input className="fld" value={form.timeIn} onChange={e=>set("timeIn",e.target.value)} type="time" style={{flex:"0 0 130px",fontSize:14,fontWeight:600,height:38}} />
+                  <input className="fld" value={form.timeIn} onChange={e=>set("timeIn",e.target.value)} type="time" style={{flex:1,fontSize:14,fontWeight:600,height:38}} />
                   <span className="ft-inline-muted">ends {computeTimeOut(form.timeIn,form.hours)||"--:--"}</span>
                 </div>
 
@@ -1717,7 +1717,7 @@ function App() {
                 {!usingPass && <>
                   <div className="ft-inline-row" style={{marginTop:10}}>
                     <span className="ft-inline-label">Amount</span>
-                    <div style={{position:"relative",flex:"0 0 130px"}}>
+                    <div style={{position:"relative",flex:1}}>
                       <span className="ft-rupee-prefix">₹</span>
                       <input className={`fld${errors.amount?" is-error":""}`}
                         value={form.amount}
@@ -1794,7 +1794,7 @@ function App() {
                   {(form.sockCount||0) > 0 && <>
                     <div className="ft-inline-row" style={{marginTop:8}}>
                       <span className="ft-inline-label">Amount</span>
-                      <div style={{position:"relative",flex:"0 0 130px"}}>
+                      <div style={{position:"relative",flex:1}}>
                         <span className="ft-rupee-prefix">₹</span>
                         <input className="fld" type="tel" inputMode="numeric" value={form.socks||""} placeholder="0"
                           style={{paddingLeft:24,fontSize:14,fontWeight:600,height:38}}
