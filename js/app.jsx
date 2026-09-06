@@ -74,6 +74,7 @@ function App() {
   const bdaySearchTimer = React.useRef(null);
   const [statsUnlocked, setStatsUnlocked] = useState(false);
   const [phoneLookupLoading, setPhoneLookupLoading] = useState(false);
+  const [returningCustomer, setReturningCustomer] = useState(false);
   const [enquiry, setEnquiry] = useState(null);
   const [enquirySaving, setEnquirySaving] = useState(false);
   const [expenses, setExpenses] = useState([]);
@@ -469,16 +470,18 @@ function App() {
     lastLookedUpPhone.current = phone;
     setPhoneLookupLoading(true);
     setActivePass(null);
+    setReturningCustomer(false);
     try {
       const [res, passRes] = await Promise.all([
         api.lookupPhone(phone),
         api.getActivePass(phone),
       ]);
       if (res.success && res.found) {
+        setReturningCustomer(true);
         setFormState(f => ({
           ...f,
-          customerName: f.customerName || res.customerName || f.customerName,
-          dob: f.dob || res.dob || f.dob,
+          customerName: f.customerName || res.customerName || "",
+          dob: res.dob || f.dob || "",
         }));
         if (res.customerName || res.dob) showToastMsg("Found previous entry — autofilled","success");
       }
@@ -757,7 +760,7 @@ function App() {
   function resetForm() {
     setFormState(getDefaultForm()); setErrors({}); setShowSuccess(false);
     setEditTarget(null); setScreen("home"); setEntryType("funzone");
-    setActivePass(null); setBuyPassType(null); setPassOverride(false); setPassMenuOpen(false); lastLookedUpPhone.current = "";
+    setActivePass(null); setBuyPassType(null); setPassOverride(false); setPassMenuOpen(false); setReturningCustomer(false); lastLookedUpPhone.current = "";
   }
 
   function openPassSale() {
@@ -1554,8 +1557,8 @@ function App() {
                     style={{borderWidth:"1.5px",borderColor:errors.phone?"var(--ft-danger)":"var(--ft-accent-hover)",boxShadow:errors.phone?"0 0 0 3px rgba(194,96,122,.1)":"0 0 0 3px var(--ft-purple-glow)"}}
                     onChange={e=>{const v=e.target.value.replace(/\D/g,"").slice(0,10);set("phone",v);if(v.length===10)lookupByPhone(v);}} />
                   {phoneLookupLoading && <div style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)"}}><Spinner size={16} /></div>}
-                  {form.phone.length===10 && !phoneLookupLoading && (
-                    lastLookedUpPhone.current===form.phone
+                  {form.phone.length===10 && !phoneLookupLoading && lastLookedUpPhone.current===form.phone && (
+                    returningCustomer
                       ? <span className="ft-phone-badge">RETURNING</span>
                       : <span className="ft-phone-badge ft-phone-badge--new">FIRST VISIT</span>
                   )}
