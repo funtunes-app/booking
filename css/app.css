@@ -717,7 +717,7 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
   font: 600 12px var(--ft-sans);
   color: var(--ft-muted2);
   flex: none;
-  width: 56px;
+  min-width: 60px;
   flex-shrink: 0;
 }
 .ft-inline-muted {
@@ -2590,7 +2590,7 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
 
   /* Inline rows compact */
   .ft-inline-row { gap: 6px; }
-  .ft-inline-label { font-size: 11px; width: 50px; }
+  .ft-inline-label { font-size: 11px; min-width: 60px; }
   .ft-inline-muted { font-size: 10px; }
 
   /* Pay chips compact */
