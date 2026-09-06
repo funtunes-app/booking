@@ -260,10 +260,12 @@ const CalendarFilter = ({mode,date,rangeStart,rangeEnd,onModeChange,onDateChange
   const today = new Date().toISOString().slice(0,10);
   const isToday = date === today;
   const step = (dir) => {
-    const d = new Date(date);
+    const [y,m,dd] = date.split("-").map(Number);
+    const d = new Date(y, m-1, dd);
     if (mode === "day") d.setDate(d.getDate() + dir);
     else if (mode === "month") d.setMonth(d.getMonth() + dir);
-    onDateChange(d.toISOString().slice(0,10));
+    const ny = d.getFullYear(), nm = String(d.getMonth()+1).padStart(2,"0"), nd = String(d.getDate()).padStart(2,"0");
+    onDateChange(ny+"-"+nm+"-"+nd);
   };
   return (
     <div className="cal-filter">
