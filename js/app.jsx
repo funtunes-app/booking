@@ -59,6 +59,9 @@ function App() {
   const [calMode, setCalMode] = useState("day");
   const [rangeStart, setRangeStart] = useState("");
   const [rangeEnd, setRangeEnd] = useState("");
+  const [calPickerOpen, setCalPickerOpen] = useState(false);
+  const [calPickerMonth, setCalPickerMonth] = useState(null);
+  const [calPickerRangeField, setCalPickerRangeField] = useState(null);
   const [entrySearch, setEntrySearch] = useState("");
   const [entryMopFilter, setEntryMopFilter] = useState("all");
   const [exportPinPrompt, setExportPinPrompt] = useState(false);
@@ -1211,6 +1214,32 @@ function App() {
           const monShort = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
           const dayLabel = `${dayShort[fd.getDay()]}, ${fd.getDate()} ${monShort[fd.getMonth()]} ${fd.getFullYear()}`;
 
+          function openCalPicker(rangeField) {
+            const base = rangeField==="start"&&rangeStart ? new Date(rangeStart+"T00:00:00")
+              : rangeField==="end"&&rangeEnd ? new Date(rangeEnd+"T00:00:00") : fd;
+            setCalPickerMonth({y:base.getFullYear(),m:base.getMonth()});
+            setCalPickerRangeField(rangeField||null);
+            setCalPickerOpen(true);
+          }
+          function onCalPickDate(dateStr) {
+            if (calPickerRangeField==="start") {
+              setRangeStart(dateStr);
+              if(rangeEnd&&dateStr) fetchEntries(filterDate,"range",dateStr,rangeEnd);
+              setCalPickerRangeField("end");
+              return;
+            }
+            if (calPickerRangeField==="end") {
+              setRangeEnd(dateStr);
+              if(rangeStart&&dateStr) fetchEntries(filterDate,"range",rangeStart,dateStr);
+              setCalPickerOpen(false); setCalPickerRangeField(null);
+              return;
+            }
+            setFilterDate(dateStr);
+            setCalPickerOpen(false);
+            if(calMode==="month") fetchEntries(dateStr,"month");
+            else { setCalMode("day"); fetchEntries(dateStr,"day"); }
+          }
+
           return (
           <div className="ft-page">
             <div className="ft-header">
@@ -1229,6 +1258,57 @@ function App() {
               </div>
             </div>
 
+            {/* Calendar picker popup */}
+            {calPickerOpen && calPickerMonth && (() => {
+              const cpm = calPickerMonth;
+              const todayStr = (() => { const n=new Date(); return n.getFullYear()+"-"+String(n.getMonth()+1).padStart(2,"0")+"-"+String(n.getDate()).padStart(2,"0"); })();
+              const daysInMonth = new Date(cpm.y, cpm.m+1, 0).getDate();
+              const firstDow = new Date(cpm.y, cpm.m, 1).getDay();
+              const cells = [];
+              for (let i=0; i<firstDow; i++) cells.push(null);
+              for (let d=1; d<=daysInMonth; d++) cells.push(d);
+              const cpMonthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+              const selStr = filterDate;
+              return (
+                <div className="ft-calpick-overlay" onClick={()=>{setCalPickerOpen(false);setCalPickerRangeField(null);}}>
+                  <div className="ft-calpick" onClick={e=>e.stopPropagation()}>
+                    <div className="ft-calpick-header">
+                      <button type="button" className="ft-calpick-arrow" onClick={()=>setCalPickerMonth(p=>{let m=p.m-1,y=p.y;if(m<0){m=11;y--;}return{y,m};})}>
+                        <svg width="7" height="12" viewBox="0 0 7 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 1L1 6l5 5"/></svg>
+                      </button>
+                      <span className="ft-calpick-title">{cpMonthNames[cpm.m]} {cpm.y}</span>
+                      <button type="button" className="ft-calpick-arrow" onClick={()=>setCalPickerMonth(p=>{let m=p.m+1,y=p.y;if(m>11){m=0;y++;}return{y,m};})}>
+                        <svg width="7" height="12" viewBox="0 0 7 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 1l5 5-5 5"/></svg>
+                      </button>
+                    </div>
+                    <div className="ft-calpick-dow">
+                      {["S","M","T","W","T","F","S"].map((d,i)=><span key={i}>{d}</span>)}
+                    </div>
+                    <div className="ft-calpick-grid">
+                      {cells.map((day,i) => {
+                        if (!day) return <span key={i} className="ft-calpick-empty"/>;
+                        const ds = cpm.y+"-"+String(cpm.m+1).padStart(2,"0")+"-"+String(day).padStart(2,"0");
+                        const isToday = ds===todayStr;
+                        const isSel = ds===selStr;
+                        const isRangeStart = ds===rangeStart;
+                        const isRangeEnd = ds===rangeEnd;
+                        const inRange = rangeStart && rangeEnd && calMode==="range" && ds>=rangeStart && ds<=rangeEnd;
+                        let cls = "ft-calpick-day";
+                        if (isSel && calMode!=="range") cls += " is-selected";
+                        if (isToday) cls += " is-today";
+                        if (isRangeStart || isRangeEnd) cls += " is-selected";
+                        if (inRange && !isRangeStart && !isRangeEnd) cls += " is-in-range";
+                        return <button key={i} type="button" className={cls} onClick={()=>onCalPickDate(ds)}>{day}</button>;
+                      })}
+                    </div>
+                    {calPickerRangeField && <div className="ft-calpick-hint">
+                      {calPickerRangeField==="start" ? "Select start date" : "Select end date"}
+                    </div>}
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* Filter toolbar */}
             <div className="ft-filters">
               <div className="ft-filters-top">
@@ -1244,7 +1324,7 @@ function App() {
                     <button className="ft-date-nav-btn" onClick={prevMonth}>
                       <svg width="7" height="12" viewBox="0 0 7 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 1L1 6l5 5"/></svg>
                     </button>
-                    <span className="ft-date-nav-label">{monthLabel}</span>
+                    <span className="ft-date-nav-label ft-date-nav-label--click" onClick={()=>openCalPicker()}>{monthLabel}</span>
                     <button className="ft-date-nav-btn" onClick={nextMonth}>
                       <svg width="7" height="12" viewBox="0 0 7 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M1 1l5 5-5 5"/></svg>
                     </button>
@@ -1255,7 +1335,7 @@ function App() {
                     <button className="ft-date-nav-btn" onClick={prevDay}>
                       <svg width="7" height="12" viewBox="0 0 7 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 1L1 6l5 5"/></svg>
                     </button>
-                    <span className="ft-date-nav-label">{dayLabel}</span>
+                    <span className="ft-date-nav-label ft-date-nav-label--click" onClick={()=>openCalPicker()}>{dayLabel}</span>
                     <button className="ft-date-nav-btn" onClick={nextDay}>
                       <svg width="7" height="12" viewBox="0 0 7 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M1 1l5 5-5 5"/></svg>
                     </button>
@@ -1263,9 +1343,13 @@ function App() {
                 )}
                 {calMode === "range" && (
                   <div className="ft-range-inputs">
-                    <input className="fld ft-date-input" type="date" value={rangeStart||""} onChange={e => onCalRangeChange(e.target.value, rangeEnd)} />
+                    <button type="button" className="fld ft-date-input ft-date-input--click" onClick={()=>openCalPicker("start")}>
+                      {rangeStart ? rangeStart : <span style={{color:"var(--ft-muted2)"}}>Start</span>}
+                    </button>
                     <span className="ft-range-to">to</span>
-                    <input className="fld ft-date-input" type="date" value={rangeEnd||""} onChange={e => onCalRangeChange(rangeStart, e.target.value)} />
+                    <button type="button" className="fld ft-date-input ft-date-input--click" onClick={()=>openCalPicker("end")}>
+                      {rangeEnd ? rangeEnd : <span style={{color:"var(--ft-muted2)"}}>End</span>}
+                    </button>
                   </div>
                 )}
 

@@ -2450,9 +2450,72 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
   font: 500 12px var(--ft-sans); padding: 0 7px;
   white-space: nowrap; color: var(--ft-text); user-select: none;
 }
+.ft-date-nav-label--click { cursor: pointer; border-radius: 6px; transition: background .12s; }
+.ft-date-nav-label--click:hover { background: var(--ft-accent-soft); }
 .ft-range-inputs { display: flex; align-items: center; gap: 8px; }
 .ft-range-to { font: 400 12px var(--ft-sans); color: var(--ft-muted2); }
 .ft-date-input { max-width: 140px; height: 34px; font-size: 12px; border-radius: 8px; }
+.ft-date-input--click { cursor: pointer; text-align: left; }
+
+/* Calendar picker popup */
+.ft-calpick-overlay {
+  position: fixed; inset: 0; z-index: 900;
+  background: rgba(0,0,0,.3);
+  display: grid; place-items: center;
+  animation: ftFadeIn .15s;
+}
+.ft-calpick {
+  background: #fff; border-radius: 14px; padding: 20px;
+  box-shadow: 0 12px 40px rgba(0,0,0,.18);
+  width: 310px; max-width: 92vw;
+}
+.ft-calpick-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px;
+}
+.ft-calpick-title {
+  font: 700 15px var(--ft-sans); color: var(--ft-deep);
+}
+.ft-calpick-arrow {
+  width: 32px; height: 32px; border: none; border-radius: 8px;
+  background: var(--ft-accent-soft); color: var(--ft-primary);
+  cursor: pointer; display: grid; place-items: center;
+  transition: background .12s;
+}
+.ft-calpick-arrow:hover { background: #ede7f6; }
+.ft-calpick-dow {
+  display: grid; grid-template-columns: repeat(7, 1fr);
+  text-align: center; margin-bottom: 6px;
+}
+.ft-calpick-dow span {
+  font: 600 10px var(--ft-sans); color: var(--ft-muted2);
+  text-transform: uppercase; padding: 4px 0;
+}
+.ft-calpick-grid {
+  display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;
+}
+.ft-calpick-empty { aspect-ratio: 1; }
+.ft-calpick-day {
+  aspect-ratio: 1; border: none; border-radius: 50%;
+  background: none; font: 500 13px var(--ft-sans); color: var(--ft-text);
+  cursor: pointer; display: grid; place-items: center;
+  transition: background .1s, color .1s;
+}
+.ft-calpick-day:hover { background: var(--ft-accent-soft); }
+.ft-calpick-day.is-today {
+  border: 1.5px solid var(--ft-primary); font-weight: 700;
+}
+.ft-calpick-day.is-selected {
+  background: var(--ft-primary); color: #fff; font-weight: 700;
+}
+.ft-calpick-day.is-selected:hover { background: var(--ft-primary-dark); }
+.ft-calpick-day.is-in-range {
+  background: var(--ft-accent-soft); border-radius: 4px;
+}
+.ft-calpick-hint {
+  text-align: center; margin-top: 12px;
+  font: 500 11px var(--ft-sans); color: var(--ft-primary);
+}
 .ft-today-btn {
   width: 34px; height: 34px; border: 1px solid var(--ft-border2);
   border-radius: 8px; background: #fff; cursor: pointer;
