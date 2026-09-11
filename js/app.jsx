@@ -928,13 +928,13 @@ function App() {
         <nav className="ft-rail">
           <div className="ft-rail-logo" onClick={() => switchSection("home")}><img src="icons/logo-header.png" alt="FunTunes" /></div>
           {[
-            {key:"home", icon:<svg width="18" height="18" viewBox="0 0 20 20" fill="none" strokeWidth="1.8"><rect x="3" y="8" width="14" height="9" rx="1.5"/><path d="M3 8l7-5 7 5"/></svg>, label:"Today"},
-            {key:"entries", icon:<svg width="18" height="18" viewBox="0 0 20 20" fill="none" strokeWidth="1.7"><rect x="2.5" y="6" width="15" height="8" rx="2"/><path d="M7 6v8"/></svg>, label:"Entries"},
-            {key:"birthdays", icon:<svg width="18" height="18" viewBox="0 0 20 20" fill="none" strokeWidth="1.7"><rect x="3.5" y="8" width="13" height="8" rx="2"/><circle cx="10" cy="4.5" r="1.5"/></svg>, label:"Birthdays"},
-            {key:"cash-register", icon:<svg width="18" height="18" viewBox="0 0 20 20" fill="none" strokeWidth="1.7"><rect x="3" y="3" width="14" height="14" rx="2"/><path d="M3 8h14"/><path d="M8 8v9"/></svg>, label:"Cash"},
-            {key:"expenses", icon:<svg width="18" height="18" viewBox="0 0 20 20" fill="none" strokeWidth="1.7"><path d="M3 17V5a2 2 0 012-2h10a2 2 0 012 2v12"/><path d="M7 8h6M7 11h4"/></svg>, label:"P&L"},
-            {key:"staff", icon:<svg width="18" height="18" viewBox="0 0 20 20" fill="none" strokeWidth="1.7"><circle cx="10" cy="7" r="3"/><path d="M4 17c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>, label:"Staff"},
-            {key:"attendance", icon:<svg width="18" height="18" viewBox="0 0 20 20" fill="none" strokeWidth="1.7"><rect x="3" y="4" width="14" height="13" rx="2"/><path d="M3 8h14"/><path d="M7 2v4M13 2v4"/></svg>, label:"Attend."},
+            {key:"home", icon:<svg width="19" height="19" viewBox="0 0 24 24" fill="none" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1m-2 0h2"/></svg>, label:"Today"},
+            {key:"entries", icon:<svg width="19" height="19" viewBox="0 0 24 24" fill="none" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg>, label:"Entries"},
+            {key:"birthdays", icon:<svg width="19" height="19" viewBox="0 0 24 24" fill="none" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15.5v-2a3 3 0 00-3-3H6a3 3 0 00-3 3v2"/><path d="M12 7V4m-3 3V5.5M15 7V5.5"/><path d="M12 4a1 1 0 100-2 1 1 0 000 2zM9 5.5a1 1 0 100-2 1 1 0 000 2zM15 5.5a1 1 0 100-2 1 1 0 000 2z"/><rect x="3" y="15.5" width="18" height="5" rx="1.5"/></svg>, label:"Birthdays"},
+            {key:"cash-register", icon:<svg width="19" height="19" viewBox="0 0 24 24" fill="none" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 8c-2.2 0-4 1-4 2.5S9.8 13 12 13s4 1 4 2.5S14.2 18 12 18"/><path d="M12 6v2m0 10v2"/><circle cx="12" cy="12" r="10"/></svg>, label:"Cash"},
+            {key:"expenses", icon:<svg width="19" height="19" viewBox="0 0 24 24" fill="none" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="M7 16l4-4 4 4 5-6"/></svg>, label:"P&L"},
+            {key:"staff", icon:<svg width="19" height="19" viewBox="0 0 24 24" fill="none" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>, label:"Staff"},
+            {key:"attendance", icon:<svg width="19" height="19" viewBox="0 0 24 24" fill="none" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/><path d="M16 2v4M8 2v4"/></svg>, label:"Attend."},
           ].map(item => (
             <button key={item.key} className={`ft-rail-item${section===item.key?" ft-rail-item--active":""}`}
               onClick={() => switchSection(item.key)}>
@@ -1385,12 +1385,7 @@ function App() {
             </div>
 
             {exportPinPrompt && (
-              <div className="ft-pin-overlay" onClick={()=>setExportPinPrompt(false)}>
-                <div className="ft-pin-modal" onClick={e=>e.stopPropagation()}>
-                  <div style={{fontWeight:700,fontSize:15,marginBottom:16,textAlign:"center"}}>Enter PIN to export</div>
-                  <PasswordGate onUnlock={()=>{setExportPinPrompt(false);doExportCsv();}} onCancel={()=>setExportPinPrompt(false)} />
-                </div>
-              </div>
+              <PinPad title="Export data" note="Admin PIN required to export entries as CSV file" onUnlock={()=>{setExportPinPrompt(false);doExportCsv();}} onCancel={()=>setExportPinPrompt(false)} />
             )}
 
             <LiveEntryList entries={sortedEntries} onEdit={handleEdit} onDelete={handleDelete} onCheckout={handleCheckout} onNew={()=>startNewEntry("funzone",filterDate)} loading={loading} />
@@ -1512,7 +1507,7 @@ function App() {
               </button>
             </div>
             {!cashUnlocked
-              ? <PasswordGate onUnlock={()=>setCashUnlocked(true)} onCancel={()=>switchSection("home")} />
+              ? <PasswordGate onUnlock={()=>setCashUnlocked(true)} onCancel={()=>switchSection("home")} note="Enter admin PIN to access Cash Register" />
               : <>
                 <div style={{marginBottom:16}}>
                   <CalendarFilter mode={calMode} date={filterDate}
@@ -1544,7 +1539,7 @@ function App() {
               </button>
             </div>
             {!plUnlocked
-              ? <PasswordGate onUnlock={()=>{setPlUnlocked(true);fetchMonthlyExpenses();fetchPnl();}} onCancel={()=>switchSection("home")} />
+              ? <PasswordGate onUnlock={()=>{setPlUnlocked(true);fetchMonthlyExpenses();fetchPnl();}} onCancel={()=>switchSection("home")} note="Enter admin PIN to access Profit & Loss" />
               : <div className="ft-section-pad">
                 <PnLReport entries={pnlEntries} expenses={pnlExpenses} monthlyExpenses={monthlyExp}
                   month={monthlyExpMonth} year={monthlyExpYear}
@@ -1577,7 +1572,7 @@ function App() {
               </button>
             </div>
             {!staffUnlocked
-              ? <PasswordGate onUnlock={()=>{setStaffUnlocked(true);fetchStaffData();}} onCancel={()=>switchSection("home")} />
+              ? <PasswordGate onUnlock={()=>{setStaffUnlocked(true);fetchStaffData();}} onCancel={()=>switchSection("home")} note="Enter admin PIN to access Staff & Salary" />
               : <div className="ft-section-pad"><StaffSection
                   staffList={staffList} attendance={staffAtt}
                   month={staffMonth} year={staffYear}

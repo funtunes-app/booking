@@ -300,10 +300,13 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
 }
 .ft-rail-item {
   width: 100%;
-  height: 54px;
+  height: 52px;
   border-radius: 0;
-  display: grid;
-  place-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
   background: none;
   border: none;
   border-left: 3px solid transparent;
@@ -1655,81 +1658,61 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
   color: var(--ft-deep);
 }
 
-/* ── PIN Pad ── */
-.ft-pin-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 500;
-  background: rgba(0,0,0,.35);
-  animation: fadeIn .2s ease;
-}
-.ft-pin-sheet {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
+/* ── Unified PIN Dialog ── */
+.ft-pin-dialog {
   background: #fff;
-  border-top: 1px solid var(--ft-border3);
-  border-radius: 26px 26px 0 0;
-  box-shadow: 0 -18px 40px rgba(70,35,120,.14);
-  padding: 20px 22px max(26px, env(safe-area-inset-bottom));
-  animation: slideUp .3s ease;
+  border-radius: var(--ft-radius-lg);
+  padding: 24px 28px;
+  max-width: 360px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0,0,0,.2);
+  animation: springIn .3s ease;
+  text-align: center;
 }
-.ft-pin-handle {
-  width: 44px;
-  height: 4px;
-  border-radius: 99px;
-  background: var(--ft-border2);
-  margin: 0 auto 18px;
+.ft-pin-note-bar {
+  background: var(--ft-accent-soft);
+  border: 1px solid rgba(124,63,196,.12);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font: 500 12.5px/1.5 var(--ft-sans);
+  color: var(--ft-primary-dark);
+  margin-bottom: 18px;
+  text-align: center;
 }
-.ft-pin-header {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-}
-.ft-pin-icon {
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
-  background: linear-gradient(160deg, #9a63dd, #5d2a99);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.4);
-  display: grid;
-  place-items: center;
-}
-.ft-pin-title { font: 700 16px var(--ft-sans); }
-.ft-pin-sub { font: 11px var(--ft-mono); color: var(--ft-muted2); margin-top: 3px; }
+.ft-pin-title { font: 700 16px var(--ft-sans); text-align: center; }
+.ft-pin-sub { font: 11px var(--ft-mono); color: var(--ft-muted2); margin-top: 3px; text-align: center; }
 .ft-pin-dots {
   display: flex;
-  gap: 11px;
-  margin-top: 20px;
+  gap: 10px;
+  margin-top: 18px;
   justify-content: center;
 }
 .ft-pin-dot {
-  width: 54px;
-  height: 62px;
+  width: 44px;
+  height: 50px;
   border: 1px solid var(--ft-border2);
-  border-radius: 13px;
+  border-radius: 10px;
   display: grid;
   place-items: center;
-  font: 700 21px var(--ft-sans);
+  font: 700 18px var(--ft-sans);
 }
-.ft-pin-dot.is-filled {
+.ft-pin-dot--filled {
   border: 1.5px solid var(--ft-accent-hover);
   background: var(--ft-accent-soft);
 }
 .ft-pin-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 9px;
-  margin-top: 20px;
+  gap: 8px;
+  margin-top: 16px;
 }
 .ft-pin-key {
-  height: 54px;
+  height: 46px;
   border: 1px solid var(--ft-border2);
-  border-radius: 13px;
+  border-radius: 10px;
   display: grid;
   place-items: center;
-  font: 600 18px var(--ft-sans);
+  font: 600 16px var(--ft-sans);
   background: #fdfcfe;
   cursor: pointer;
   user-select: none;
@@ -1739,16 +1722,8 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
   background: var(--ft-accent-soft);
   border-color: var(--ft-accent-hover);
 }
-.ft-pin-key.is-empty { border: none; background: none; cursor: default; }
-.ft-pin-key.is-del { font: 500 13px var(--ft-sans); color: var(--ft-muted2); }
-.ft-pin-note {
-  text-align: center;
-  margin-top: 16px;
-  font: 11px/1.6 var(--ft-mono);
-  color: var(--ft-muted2);
-}
 .ft-pin-cancel {
-  display: block; margin: 16px auto 0; border: none; background: none;
+  display: block; margin: 14px auto 0; border: none; background: none;
   font: 600 13px var(--ft-sans); color: var(--ft-muted2); cursor: pointer;
   padding: 8px 24px; border-radius: 8px; transition: all .15s;
 }
@@ -2191,15 +2166,6 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
   /* Birthday layout — desktop */
   .ft-bday-layout { padding: 0 36px; }
 
-  /* PIN pad sheet constrained */
-  .ft-pin-sheet {
-    max-width: 400px;
-    left: 50%;
-    right: auto;
-    transform: translateX(-50%);
-    border-radius: 26px;
-    bottom: 20px;
-  }
 
   /* Form sections */
   .ft-form-scroll {
@@ -2597,14 +2563,6 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
 .ft-export-pill:hover { color: var(--ft-primary); border-color: var(--ft-primary); background: var(--ft-accent-soft); }
 
 .ft-mop-chips { display: flex; gap: 5px; margin-left: auto; }
-.ft-pin-overlay {
-  position: fixed; inset: 0; z-index: 500;
-  background: rgba(0,0,0,.45); display: grid; place-items: center; outline: none;
-}
-.ft-pin-modal {
-  background: #fff; border-radius: 14px; padding: 32px 28px;
-  box-shadow: 0 20px 60px rgba(0,0,0,.25); max-width: 340px; width: 90%;
-}
 
 /* ── Entry table rows ── */
 .ft-egroup { margin-bottom: 4px; }
@@ -2833,7 +2791,7 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
 /* ── Confirm overlay (modals) ── */
 .ft-confirm-overlay {
   position: fixed; inset: 0; z-index: 500;
-  background: rgba(0,0,0,.35); display: grid; place-items: center;
+  background: rgba(0,0,0,.45); display: grid; place-items: center;
   animation: fadeIn .15s; outline: none;
 }
 .ft-confirm-dialog {
@@ -2848,7 +2806,7 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
   width: 42px; height: 42px; border-radius: 12px;
   background: linear-gradient(160deg, #9a63dd, #5d2a99);
   box-shadow: inset 0 1px 0 rgba(255,255,255,.4);
-  display: grid; place-items: center; margin: 0 auto 14px;
+  display: grid; place-items: center; margin: 0 auto 12px;
 }
 .ft-pin-grid--sm { gap: 6px; }
 .ft-pin-key--sm { height: 42px; font-size: 15px; }
@@ -2861,8 +2819,8 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
 
 /* ── Rail label ── */
 .ft-rail-label {
-  font: 500 10px var(--ft-sans); color: rgba(200,185,230,.6); margin-top: 2px;
-  transition: color .18s;
+  font: 500 10px var(--ft-sans); color: rgba(200,185,230,.6);
+  transition: color .18s; line-height: 1;
 }
 .ft-rail-item:hover .ft-rail-label { color: rgba(230,215,255,.85); }
 .ft-rail-item.ft-rail-item--active .ft-rail-label,

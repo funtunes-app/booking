@@ -89,23 +89,26 @@ const IconMenu = ({trigger,title,activeValue,items}) => {
 // ── SVG Tab Icons ──
 
 const TabIconToday = () => (
-  <svg width="21" height="21" viewBox="0 0 20 20" fill="none" strokeWidth="1.8">
-    <rect x="3" y="8" width="14" height="9" rx="1.5"/><path d="M3 8l7-5 7 5"/>
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1m-2 0h2"/>
   </svg>
 );
 const TabIconEntries = () => (
-  <svg width="21" height="21" viewBox="0 0 20 20" fill="none" strokeWidth="1.7">
-    <rect x="2.5" y="6" width="15" height="8" rx="2"/><path d="M7 6v8"/>
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
+    <rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/>
   </svg>
 );
 const TabIconBirthdays = () => (
-  <svg width="21" height="21" viewBox="0 0 20 20" fill="none" strokeWidth="1.7">
-    <rect x="3.5" y="8" width="13" height="8" rx="2"/><circle cx="10" cy="4.5" r="1.5"/>
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15.5v-2a3 3 0 00-3-3H6a3 3 0 00-3 3v2"/><path d="M12 7V4m-3 3V5.5M15 7V5.5"/>
+    <path d="M12 4a1 1 0 100-2 1 1 0 000 2zM9 5.5a1 1 0 100-2 1 1 0 000 2zM15 5.5a1 1 0 100-2 1 1 0 000 2z"/>
+    <rect x="3" y="15.5" width="18" height="5" rx="1.5"/>
   </svg>
 );
 const TabIconMore = () => (
-  <svg width="21" height="21" viewBox="0 0 20 20" fill="none" strokeWidth="1.7">
-    <path d="M4 6h12M4 10h12M4 14h12"/>
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" strokeWidth="1.8" strokeLinecap="round">
+    <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
   </svg>
 );
 const ShieldIcon = () => (
@@ -115,9 +118,9 @@ const ShieldIcon = () => (
   </svg>
 );
 
-// ── PIN Pad (replaces PasswordGate) ──
+// ── PIN Pad (unified centered modal) ──
 
-const PinPad = ({onUnlock, onCancel}) => {
+const PinPad = ({onUnlock, onCancel, title, note}) => {
   const [digits, setDigits] = React.useState([]);
   const [error, setError] = React.useState(false);
   const pinRef = React.useRef(null);
@@ -150,15 +153,16 @@ const PinPad = ({onUnlock, onCancel}) => {
   };
 
   return (
-    <div className="ft-pin-overlay" onKeyDown={handleKeyDown} tabIndex={-1} ref={pinRef}>
-      <div className="ft-pin-sheet">
+    <div className="ft-confirm-overlay" onKeyDown={handleKeyDown} tabIndex={-1} ref={pinRef} onClick={onCancel}>
+      <div className="ft-pin-dialog" onClick={e => e.stopPropagation()}>
+        {note && <div className="ft-pin-note-bar">{note}</div>}
         <div className="ft-pin-shield">
-          <svg width="32" height="32" viewBox="0 0 20 20" fill="none" stroke="#6d3f9c" strokeWidth="1.4">
+          <svg width="26" height="26" viewBox="0 0 20 20" fill="none" stroke="#fff" strokeWidth="1.4">
             <path d="M10 2.6l6 2.4v4.4c0 3.4-2.4 6.2-6 7.4-3.6-1.2-6-4-6-7.4V5l6-2.4z"/>
             <path d="M7.6 10.2l1.7 1.7 3.3-3.4"/>
           </svg>
         </div>
-        <div className="ft-pin-title">Admin access</div>
+        <div className="ft-pin-title">{title || "Admin access"}</div>
         <div className="ft-pin-sub">Enter 4-digit PIN</div>
         <div className={`ft-pin-dots${error?" ft-pin-error":""}`}>
           {[0,1,2,3].map(i => (
@@ -167,24 +171,23 @@ const PinPad = ({onUnlock, onCancel}) => {
             </div>
           ))}
         </div>
-        <div className="ft-pin-grid">
+        <div className="ft-pin-grid ft-pin-grid--sm">
           {[1,2,3,4,5,6,7,8,9].map(n => (
-            <button key={n} className="ft-pin-key" onClick={() => addDigit(n)}>{n}</button>
+            <button key={n} className="ft-pin-key ft-pin-key--sm" onClick={() => addDigit(n)}>{n}</button>
           ))}
-          <div className="ft-pin-key ft-pin-key--empty"></div>
-          <button className="ft-pin-key" onClick={() => addDigit(0)}>0</button>
-          <button className="ft-pin-key ft-pin-key--del" onClick={removeLast}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 002-2V6a2 2 0 00-2-2z"/><line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/></svg>
+          <div></div>
+          <button className="ft-pin-key ft-pin-key--sm" onClick={() => addDigit(0)}>0</button>
+          <button className="ft-pin-key ft-pin-key--sm" onClick={removeLast}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 002-2V6a2 2 0 00-2-2z"/><line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/></svg>
           </button>
         </div>
         {onCancel && <button className="ft-pin-cancel" onClick={onCancel}>Cancel</button>}
-        {!onCancel && <div className="ft-pin-note">Enter PIN to continue</div>}
       </div>
     </div>
   );
 };
 
-const PasswordGate = ({onUnlock, onCancel}) => <PinPad onUnlock={onUnlock} onCancel={onCancel} />;
+const PasswordGate = ({onUnlock, onCancel, note}) => <PinPad onUnlock={onUnlock} onCancel={onCancel} title="Admin access" note={note} />;
 
 // ── Confirm Dialog ──
 
@@ -217,31 +220,36 @@ const ConfirmDialog = ({message, needsPassword, confirmLabel, onConfirm, onCance
 
   return (
     <div className="ft-confirm-overlay" onClick={onCancel} onKeyDown={handleKeyDown} tabIndex={-1} ref={dlgRef}>
-      <div className="ft-confirm-dialog" onClick={e => e.stopPropagation()}>
-        <div className="ft-confirm-msg">{message}</div>
-        {needsPassword && (
-          <div style={{marginBottom:16}}>
-            <div style={{fontSize:12,color:C.textMid,fontWeight:600,marginBottom:8,textAlign:"center"}}>Enter admin PIN</div>
-            <div className={`ft-pin-dots${pinError?" ft-pin-error":""}`} style={{marginBottom:12}}>
-              {[0,1,2,3].map(i => (
-                <div key={i} className={`ft-pin-dot${i < pin.length ? " ft-pin-dot--filled" : ""}`}>
-                  {i < pin.length && <span className="ft-pin-star">*</span>}
-                </div>
-              ))}
-            </div>
-            <div className="ft-pin-grid ft-pin-grid--sm">
-              {[1,2,3,4,5,6,7,8,9].map(n => (
-                <button key={n} className="ft-pin-key ft-pin-key--sm" onClick={() => addDigit(n)}>{n}</button>
-              ))}
-              <div></div>
-              <button className="ft-pin-key ft-pin-key--sm" onClick={() => addDigit(0)}>0</button>
-              <button className="ft-pin-key ft-pin-key--sm" onClick={() => setPin(p=>p.slice(0,-1))}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 002-2V6a2 2 0 00-2-2z"/><line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/></svg>
-              </button>
-            </div>
+      <div className="ft-pin-dialog" onClick={e => e.stopPropagation()}>
+        <div className="ft-pin-note-bar">{message}</div>
+        <div className="ft-pin-shield">
+          <svg width="26" height="26" viewBox="0 0 20 20" fill="none" stroke="#fff" strokeWidth="1.4">
+            <path d="M10 2.6l6 2.4v4.4c0 3.4-2.4 6.2-6 7.4-3.6-1.2-6-4-6-7.4V5l6-2.4z"/>
+            <path d="M7.6 10.2l1.7 1.7 3.3-3.4"/>
+          </svg>
+        </div>
+        <div className="ft-pin-title">Confirm action</div>
+        {needsPassword && <>
+          <div className="ft-pin-sub">Enter 4-digit PIN</div>
+          <div className={`ft-pin-dots${pinError?" ft-pin-error":""}`}>
+            {[0,1,2,3].map(i => (
+              <div key={i} className={`ft-pin-dot${i < pin.length ? " ft-pin-dot--filled" : ""}`}>
+                {i < pin.length && <span className="ft-pin-star">*</span>}
+              </div>
+            ))}
           </div>
-        )}
-        <div style={{display:"flex",gap:8}}>
+          <div className="ft-pin-grid ft-pin-grid--sm">
+            {[1,2,3,4,5,6,7,8,9].map(n => (
+              <button key={n} className="ft-pin-key ft-pin-key--sm" onClick={() => addDigit(n)}>{n}</button>
+            ))}
+            <div></div>
+            <button className="ft-pin-key ft-pin-key--sm" onClick={() => addDigit(0)}>0</button>
+            <button className="ft-pin-key ft-pin-key--sm" onClick={() => setPin(p=>p.slice(0,-1))}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 002-2V6a2 2 0 00-2-2z"/><line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/></svg>
+            </button>
+          </div>
+        </>}
+        <div style={{display:"flex",gap:8,marginTop:needsPassword?16:20}}>
           <button className="ft-btn-secondary" style={{flex:1}} onClick={onCancel}>Cancel</button>
           <button className="ft-btn-primary" style={{flex:1}} onClick={handleConfirm}>{confirmLabel||"Confirm"}</button>
         </div>
