@@ -45,7 +45,7 @@
   --ft-shadow-btn: 0 8px 20px rgba(93, 42, 153, 0.28);
   --ft-gloss: inset 0 1px 0 rgba(255, 255, 255, 0.42);
   --ft-tab-h: 60px;
-  --ft-rail-w: 76px;
+  --ft-rail-w: 96px;
 }
 
 /* ── Reset ── */
@@ -292,28 +292,30 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
   object-fit: contain;
 }
 .ft-rail-item {
-  width: 56px;
-  height: 50px;
-  border-radius: 12px;
+  width: 100%;
+  height: 54px;
+  border-radius: 0;
   display: grid;
   place-items: center;
   background: none;
   border: none;
+  border-left: 3px solid transparent;
   cursor: pointer;
   transition: all .18s;
 }
-.ft-rail-item:hover { background: rgba(180,140,255,.1); }
-.ft-rail-item svg { stroke: rgba(180,150,230,.55); stroke-width: 1.6; transition: all .18s; }
-.ft-rail-item:hover svg { stroke: rgba(200,170,255,.85); }
+.ft-rail-item:hover { background: rgba(200,170,255,.08); }
+.ft-rail-item svg { stroke: rgba(200,180,240,.65); stroke-width: 1.6; transition: all .18s; }
+.ft-rail-item:hover svg { stroke: rgba(230,210,255,.9); }
 .ft-rail-item.is-active,
 .ft-rail-item.ft-rail-item--active {
-  background: rgba(160,110,224,.18);
-  box-shadow: 0 0 18px rgba(160,110,224,.3), inset 0 0 0 1px rgba(160,110,224,.25);
+  background: rgba(160,110,224,.15);
+  border-left: 3px solid #b580f0;
+  box-shadow: inset 0 0 20px rgba(160,110,224,.12);
 }
 .ft-rail-item.is-active svg,
 .ft-rail-item.ft-rail-item--active svg {
-  stroke: #c8a0ff;
-  filter: drop-shadow(0 0 6px rgba(200,160,255,.6));
+  stroke: #dfc0ff;
+  filter: drop-shadow(0 0 5px rgba(200,160,255,.5));
 }
 .ft-rail-item.is-dim { opacity: .35; }
 .ft-rail-sep {
@@ -2315,11 +2317,12 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
 }
 .ft-chip--green { border-color: var(--ft-green); color: var(--ft-green); }
 .ft-rail-item--active {
-  background: rgba(160,110,224,.18);
-  box-shadow: 0 0 18px rgba(160,110,224,.3), inset 0 0 0 1px rgba(160,110,224,.25);
+  background: rgba(160,110,224,.15);
+  border-left: 3px solid #b580f0;
+  box-shadow: inset 0 0 20px rgba(160,110,224,.12);
 }
-.ft-rail-item--active svg { stroke: #c8a0ff; filter: drop-shadow(0 0 6px rgba(200,160,255,.6)); }
-.ft-rail-item--active .ft-rail-label { color: #dcc8ff; }
+.ft-rail-item--active svg { stroke: #dfc0ff; filter: drop-shadow(0 0 5px rgba(200,160,255,.5)); }
+.ft-rail-item--active .ft-rail-label { color: #e8d8ff; }
 .ft-att-btn--active {
   background: var(--ft-primary-grad);
   box-shadow: inset 0 1px 0 rgba(255,255,255,.42);
@@ -2846,12 +2849,12 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
 
 /* ── Rail label ── */
 .ft-rail-label {
-  font: 500 9px var(--ft-sans); color: rgba(180,160,210,.5); margin-top: 2px;
+  font: 500 10px var(--ft-sans); color: rgba(200,185,230,.6); margin-top: 2px;
   transition: color .18s;
 }
-.ft-rail-item:hover .ft-rail-label { color: rgba(220,200,255,.7); }
+.ft-rail-item:hover .ft-rail-label { color: rgba(230,215,255,.85); }
 .ft-rail-item.ft-rail-item--active .ft-rail-label,
-.ft-rail-item.is-active .ft-rail-label { color: #dcc8ff; }
+.ft-rail-item.is-active .ft-rail-label { color: #e8d8ff; }
 
 /* ── Attendance button wrapper ── */
 .ft-att-btns { display: flex; flex-wrap: wrap; gap: 6px; }
