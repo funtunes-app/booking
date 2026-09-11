@@ -62,6 +62,8 @@ function App() {
   const [calPickerOpen, setCalPickerOpen] = useState(false);
   const [calPickerMonth, setCalPickerMonth] = useState(null);
   const [calPickerRangeField, setCalPickerRangeField] = useState(null);
+  const [formDatePicker, setFormDatePicker] = useState(false);
+  const [formDatePickerMonth, setFormDatePickerMonth] = useState(null);
   const [entrySearch, setEntrySearch] = useState("");
   const [entryMopFilter, setEntryMopFilter] = useState("all");
   const [exportPinPrompt, setExportPinPrompt] = useState(false);
@@ -115,15 +117,16 @@ function App() {
     return () => clearTimeout(timer);
   }, []);
 
-  function getDefaultForm() {
+  function getDefaultForm(date) {
     const n = new Date();
     const hours = CONFIG.DEFAULT_HOURS, socksCount = CONFIG.DEFAULT_SOCK_COUNT;
+    const localToday = n.getFullYear()+"-"+String(n.getMonth()+1).padStart(2,"0")+"-"+String(n.getDate()).padStart(2,"0");
     return {
       customerName:"", amount:String(computeAmountForHours(hours)), numKids:1,
       hours:hours, hoursMode:"preset",
       timeIn:`${String(n.getHours()).padStart(2,"0")}:${String(n.getMinutes()).padStart(2,"0")}`,
       socks:socksCount*CONFIG.SOCKS_RATE, sockCount:socksCount, sockMode:"preset",
-      phone:"", dob:"", date:n.toISOString().slice(0,10),
+      phone:"", dob:"", date:date||localToday,
       kidNames:[], dobs:[],
       playMop:CONFIG.DEFAULT_MOP, playUpiAmount:"", playCashAmount:"",
       socksMop:CONFIG.DEFAULT_MOP, socksUpiAmount:"", socksCashAmount:""
@@ -826,9 +829,10 @@ function App() {
     });
   }
 
-  function startNewEntry(type) {
-    setFormState(getDefaultForm()); setEditTarget(null); setScreen("form");
+  function startNewEntry(type, date) {
+    setFormState(getDefaultForm(date)); setEditTarget(null); setScreen("form");
     setFormType(type || "funzone");
+    setFormDatePicker(false);
     lastLookedUpPhone.current = "";
   }
 
@@ -1248,7 +1252,7 @@ function App() {
                 <div className="ft-header-sub">every logged walk-in</div>
               </div>
               <div style={{display:"flex",alignItems:"center",gap:8,marginLeft:"auto"}}>
-                <button className="ft-btn-primary" onClick={()=>startNewEntry("funzone")}>
+                <button className="ft-btn-primary" onClick={()=>startNewEntry("funzone",filterDate)}>
                   <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="#fff" strokeWidth="2.5"><path d="M10 4v12M4 10h12"/></svg>
                   New entry
                 </button>
@@ -1393,7 +1397,7 @@ function App() {
               </div>
             )}
 
-            <LiveEntryList entries={sortedEntries} onEdit={handleEdit} onDelete={handleDelete} onCheckout={handleCheckout} loading={loading} />
+            <LiveEntryList entries={sortedEntries} onEdit={handleEdit} onDelete={handleDelete} onCheckout={handleCheckout} onNew={()=>startNewEntry("funzone",filterDate)} loading={loading} />
           </div>
           );
         })()}
@@ -1622,6 +1626,14 @@ function App() {
                 <div className="ft-header-sub">{dateDisplay} · {timeDisplay}</div>
               </div>
               <div style={{display:"flex",alignItems:"center",gap:8,marginLeft:"auto"}}>
+                {!editTarget && <button className="ft-form-date-btn" title="Change date" onClick={()=>{
+                  const d=form.date?new Date(form.date+"T00:00:00"):new Date();
+                  setFormDatePickerMonth({y:d.getFullYear(),m:d.getMonth()});
+                  setFormDatePicker(true);
+                }}>
+                  <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6"><rect x="3" y="4" width="14" height="14" rx="2"/><path d="M3 8h14M7 2v4M13 2v4"/></svg>
+                  <span>{(()=>{const p=form.date?form.date.split("-"):[];return p.length===3?p[2]+"/"+p[1]:"";})()}</span>
+                </button>}
                 {!editTarget && <IconMenu trigger={typeMeta.icon} title="Change entry type" activeValue={entryType}
                   items={CONFIG.ENTRY_TYPES.map(t=>({
                     value:t.key, icon:t.icon, label:t.label,
@@ -1629,6 +1641,48 @@ function App() {
                   }))} />}
               </div>
             </div>
+
+            {/* Form date picker popup */}
+            {formDatePicker && formDatePickerMonth && (() => {
+              const cpm = formDatePickerMonth;
+              const todayStr = (()=>{const n=new Date();return n.getFullYear()+"-"+String(n.getMonth()+1).padStart(2,"0")+"-"+String(n.getDate()).padStart(2,"0");})();
+              const daysInMonth = new Date(cpm.y, cpm.m+1, 0).getDate();
+              const firstDow = new Date(cpm.y, cpm.m, 1).getDay();
+              const cells = [];
+              for (let i=0;i<firstDow;i++) cells.push(null);
+              for (let d=1;d<=daysInMonth;d++) cells.push(d);
+              const monNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+              return (
+                <div className="ft-calpick-overlay" onClick={()=>setFormDatePicker(false)}>
+                  <div className="ft-calpick-card" onClick={e=>e.stopPropagation()}>
+                    <div className="ft-calpick-header">
+                      <button className="ft-calpick-arrow" onClick={()=>setFormDatePickerMonth(p=>p.m===0?{y:p.y-1,m:11}:{y:p.y,m:p.m-1})}>
+                        <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M12 15L7 10L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      </button>
+                      <span className="ft-calpick-month">{monNames[cpm.m]} {cpm.y}</span>
+                      <button className="ft-calpick-arrow" onClick={()=>setFormDatePickerMonth(p=>p.m===11?{y:p.y+1,m:0}:{y:p.y,m:p.m+1})}>
+                        <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M8 5L13 10L8 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      </button>
+                    </div>
+                    <div className="ft-calpick-dow">
+                      {["Su","Mo","Tu","We","Th","Fr","Sa"].map(d=><div key={d} className="ft-calpick-dowcell">{d}</div>)}
+                    </div>
+                    <div className="ft-calpick-grid">
+                      {cells.map((d,i)=>{
+                        if(!d) return <div key={"e"+i} className="ft-calpick-cell ft-calpick-cell--empty"></div>;
+                        const ds = cpm.y+"-"+String(cpm.m+1).padStart(2,"0")+"-"+String(d).padStart(2,"0");
+                        const isSel = ds===form.date;
+                        const isToday = ds===todayStr;
+                        let cls = "ft-calpick-cell";
+                        if(isSel) cls+=" ft-calpick-cell--sel";
+                        if(isToday) cls+=" ft-calpick-cell--today";
+                        return <div key={ds} className={cls} onClick={()=>{setFormState(f=>({...f,date:ds}));setFormDatePicker(false);}}>{d}</div>;
+                      })}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             <div className="ft-form-body" style={{animation:shakeStep?"shakeX .4s ease":"fadeIn .3s ease"}}>
 

@@ -569,12 +569,12 @@ const EntryRow = ({entry, onEdit, onDelete, onCheckout}) => {
   );
 };
 
-const LiveEntryList = ({entries, onEdit, onDelete, onCheckout, loading}) => {
+const LiveEntryList = ({entries, onEdit, onDelete, onCheckout, onNew, loading}) => {
   const MAX_PER_GROUP = 10;
   const [expanded, setExpanded] = React.useState({});
 
   if (loading) return <div className="ft-empty"><Spinner size={24} /><div style={{marginTop:10}}>Loading entries...</div></div>;
-  if (!entries.length) return <div className="ft-empty">No entries yet — tap <strong style={{color:C.accent}}>New booking</strong> to start.</div>;
+  if (!entries.length) return <div className="ft-empty">No entries yet — tap <strong style={{color:C.accent,cursor:"pointer"}} onClick={()=>onNew&&onNew()}>New booking</strong> to start.</div>;
 
   const grouped = {};
   entries.forEach(e => {

@@ -2463,6 +2463,15 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
 .ft-date-input--click { cursor: pointer; text-align: left; }
 
 /* Calendar picker popup */
+.ft-form-date-btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: var(--ft-accent-soft); border: 1px solid var(--ft-primary);
+  border-radius: 6px; padding: 4px 8px; cursor: pointer;
+  font: 600 11px var(--ft-sans); color: var(--ft-primary);
+  transition: background .15s;
+}
+.ft-form-date-btn:hover { background: var(--ft-accent-hover); }
+
 .ft-calpick-overlay {
   position: fixed; inset: 0; z-index: 900;
   background: rgba(0,0,0,.3);
