@@ -77,7 +77,9 @@ function App() {
   const [bdaySearch, setBdaySearch] = useState("");
   const [bdaySearchResults, setBdaySearchResults] = useState(null);
   const bdaySearchTimer = React.useRef(null);
-  const [statsUnlocked, setStatsUnlocked] = useState(false);
+  const [cashUnlocked, setCashUnlocked] = useState(false);
+  const [plUnlocked, setPlUnlocked] = useState(false);
+  const [staffUnlocked, setStaffUnlocked] = useState(false);
   const [phoneLookupLoading, setPhoneLookupLoading] = useState(false);
   const [returningCustomer, setReturningCustomer] = useState(false);
   const [enquiry, setEnquiry] = useState(null);
@@ -171,7 +173,9 @@ function App() {
 
   function switchSection(s) {
     setMoreOpen(false);
-    if (s !== "cash-register" && s !== "expenses" && s !== "staff") setStatsUnlocked(false);
+    setCashUnlocked(false);
+    setPlUnlocked(false);
+    setStaffUnlocked(false);
     setSection(s);
     setScreen("home");
     if (s === "home") setTab("today");
@@ -924,13 +928,13 @@ function App() {
         <nav className="ft-rail">
           <div className="ft-rail-logo" onClick={() => switchSection("home")}><img src="icons/logo-header.png" alt="FunTunes" /></div>
           {[
-            {key:"home", icon:<TabIconToday active={section==="home"} />, label:"Today"},
-            {key:"entries", icon:<TabIconEntries active={section==="entries"} />, label:"Entries"},
-            {key:"birthdays", icon:<TabIconBirthdays active={section==="birthdays"} />, label:"Birthdays"},
-            {key:"cash-register", icon:<svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke={section==="cash-register"?"#5d2a99":"#a099b5"} strokeWidth="1.7"><rect x="3" y="3" width="14" height="14" rx="2"/><path d="M3 8h14"/><path d="M8 8v9"/></svg>, label:"Cash"},
-            {key:"expenses", icon:<svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke={section==="expenses"?"#5d2a99":"#a099b5"} strokeWidth="1.7"><path d="M3 17V5a2 2 0 012-2h10a2 2 0 012 2v12"/><path d="M7 8h6M7 11h4"/></svg>, label:"P&L"},
-            {key:"staff", icon:<svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke={section==="staff"?"#5d2a99":"#a099b5"} strokeWidth="1.7"><circle cx="10" cy="7" r="3"/><path d="M4 17c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>, label:"Staff"},
-            {key:"attendance", icon:<svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke={section==="attendance"?"#5d2a99":"#a099b5"} strokeWidth="1.7"><rect x="3" y="4" width="14" height="13" rx="2"/><path d="M3 8h14"/><path d="M7 2v4M13 2v4"/></svg>, label:"Attend."},
+            {key:"home", icon:<svg width="18" height="18" viewBox="0 0 20 20" fill="none" strokeWidth="1.8"><rect x="3" y="8" width="14" height="9" rx="1.5"/><path d="M3 8l7-5 7 5"/></svg>, label:"Today"},
+            {key:"entries", icon:<svg width="18" height="18" viewBox="0 0 20 20" fill="none" strokeWidth="1.7"><rect x="2.5" y="6" width="15" height="8" rx="2"/><path d="M7 6v8"/></svg>, label:"Entries"},
+            {key:"birthdays", icon:<svg width="18" height="18" viewBox="0 0 20 20" fill="none" strokeWidth="1.7"><rect x="3.5" y="8" width="13" height="8" rx="2"/><circle cx="10" cy="4.5" r="1.5"/></svg>, label:"Birthdays"},
+            {key:"cash-register", icon:<svg width="18" height="18" viewBox="0 0 20 20" fill="none" strokeWidth="1.7"><rect x="3" y="3" width="14" height="14" rx="2"/><path d="M3 8h14"/><path d="M8 8v9"/></svg>, label:"Cash"},
+            {key:"expenses", icon:<svg width="18" height="18" viewBox="0 0 20 20" fill="none" strokeWidth="1.7"><path d="M3 17V5a2 2 0 012-2h10a2 2 0 012 2v12"/><path d="M7 8h6M7 11h4"/></svg>, label:"P&L"},
+            {key:"staff", icon:<svg width="18" height="18" viewBox="0 0 20 20" fill="none" strokeWidth="1.7"><circle cx="10" cy="7" r="3"/><path d="M4 17c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>, label:"Staff"},
+            {key:"attendance", icon:<svg width="18" height="18" viewBox="0 0 20 20" fill="none" strokeWidth="1.7"><rect x="3" y="4" width="14" height="13" rx="2"/><path d="M3 8h14"/><path d="M7 2v4M13 2v4"/></svg>, label:"Attend."},
           ].map(item => (
             <button key={item.key} className={`ft-rail-item${section===item.key?" ft-rail-item--active":""}`}
               onClick={() => switchSection(item.key)}>
@@ -1187,7 +1191,6 @@ function App() {
             URL.revokeObjectURL(url);
           }
           function handleExport() {
-            if (statsUnlocked) { doExportCsv(); return; }
             setExportPinPrompt(true);
           }
 
@@ -1350,22 +1353,26 @@ function App() {
                   <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="14" height="14" rx="2"/><path d="M3 8h14"/><path d="M7 2v4M13 2v4"/><circle cx="10" cy="13" r="1.5" fill="currentColor" stroke="none"/></svg>
                 </button>
 
-                <div className="ft-search-box">
-                  <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="#a099b5" strokeWidth="2"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M13 13l4 4"/></svg>
-                  <input type="text" placeholder="Name or mobile" value={entrySearch} onChange={e=>setEntrySearch(e.target.value)} />
+                <div className="ft-stat-boxes">
+                  <div className="ft-stat-box">
+                    <span className="ft-stat-val">{filteredEntries.length}</span>
+                    <span className="ft-stat-lbl">entries</span>
+                  </div>
+                  <div className="ft-stat-box ft-stat-box--accent">
+                    <span className="ft-stat-val">₹{totalAmt.toLocaleString("en-IN")}</span>
+                    <span className="ft-stat-lbl">total</span>
+                  </div>
+                  <button className="ft-export-pill" onClick={handleExport} title="Export CSV">
+                    <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 14v2a2 2 0 002 2h10a2 2 0 002-2v-2M7 10l3 3 3-3M10 3v10"/></svg>
+                    Export
+                  </button>
                 </div>
               </div>
 
               <div className="ft-filters-bottom">
-                <div className="ft-summary-strip">
-                  <span className="ft-summary-count">{filteredEntries.length}</span>
-                  <span className="ft-summary-label">entries</span>
-                  <span className="ft-summary-dot">·</span>
-                  <span className="ft-summary-amt">₹{totalAmt.toLocaleString("en-IN")}</span>
-                  <span className="ft-summary-label">total</span>
-                  <button className="ft-export-btn" onClick={handleExport} title="Export CSV">
-                    <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M3 14v2a2 2 0 002 2h10a2 2 0 002-2v-2M7 10l3 3 3-3M10 3v10"/></svg>
-                  </button>
+                <div className="ft-search-box">
+                  <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="#a099b5" strokeWidth="2"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M13 13l4 4"/></svg>
+                  <input type="text" placeholder="Name or mobile" value={entrySearch} onChange={e=>setEntrySearch(e.target.value)} />
                 </div>
 
                 <div className="ft-mop-chips">
@@ -1381,7 +1388,7 @@ function App() {
               <div className="ft-pin-overlay" onClick={()=>setExportPinPrompt(false)}>
                 <div className="ft-pin-modal" onClick={e=>e.stopPropagation()}>
                   <div style={{fontWeight:700,fontSize:15,marginBottom:16,textAlign:"center"}}>Enter PIN to export</div>
-                  <PasswordGate onUnlock={()=>{setExportPinPrompt(false);setStatsUnlocked(true);doExportCsv();}} />
+                  <PasswordGate onUnlock={()=>{setExportPinPrompt(false);doExportCsv();}} onCancel={()=>setExportPinPrompt(false)} />
                 </div>
               </div>
             )}
@@ -1504,8 +1511,8 @@ function App() {
                 <ShieldIcon />
               </button>
             </div>
-            {!statsUnlocked
-              ? <PasswordGate onUnlock={()=>setStatsUnlocked(true)} />
+            {!cashUnlocked
+              ? <PasswordGate onUnlock={()=>setCashUnlocked(true)} onCancel={()=>switchSection("home")} />
               : <>
                 <div style={{marginBottom:16}}>
                   <CalendarFilter mode={calMode} date={filterDate}
@@ -1536,8 +1543,8 @@ function App() {
                 <ShieldIcon />
               </button>
             </div>
-            {!statsUnlocked
-              ? <PasswordGate onUnlock={()=>{setStatsUnlocked(true);fetchMonthlyExpenses();fetchPnl();}} />
+            {!plUnlocked
+              ? <PasswordGate onUnlock={()=>{setPlUnlocked(true);fetchMonthlyExpenses();fetchPnl();}} onCancel={()=>switchSection("home")} />
               : <div className="ft-section-pad">
                 <PnLReport entries={pnlEntries} expenses={pnlExpenses} monthlyExpenses={monthlyExp}
                   month={monthlyExpMonth} year={monthlyExpYear}
@@ -1569,8 +1576,8 @@ function App() {
                 <ShieldIcon />
               </button>
             </div>
-            {!statsUnlocked
-              ? <PasswordGate onUnlock={()=>{setStatsUnlocked(true);fetchStaffData();}} />
+            {!staffUnlocked
+              ? <PasswordGate onUnlock={()=>{setStaffUnlocked(true);fetchStaffData();}} onCancel={()=>switchSection("home")} />
               : <div className="ft-section-pad"><StaffSection
                   staffList={staffList} attendance={staffAtt}
                   month={staffMonth} year={staffYear}
