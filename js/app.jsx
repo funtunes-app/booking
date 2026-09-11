@@ -55,7 +55,7 @@ function App() {
   const [editTarget, setEditTarget] = useState(null);
   const [toast, setToast] = useState(null);
   const [todayEntries, setTodayEntries] = useState([]);
-  const [filterDate, setFilterDate] = useState(()=>new Date().toISOString().slice(0,10));
+  const [filterDate, setFilterDate] = useState(()=>{const n=new Date();return n.getFullYear()+"-"+String(n.getMonth()+1).padStart(2,"0")+"-"+String(n.getDate()).padStart(2,"0");});
   const [calMode, setCalMode] = useState("day");
   const [rangeStart, setRangeStart] = useState("");
   const [rangeEnd, setRangeEnd] = useState("");
@@ -463,7 +463,7 @@ function App() {
   function onCalModeChange(m) { setCalMode(m); if (m!=="range") fetchEntries(filterDate,m); }
   function onCalDateChange(v) { setFilterDate(v); fetchEntries(v,calMode); }
   function onCalRangeChange(s,e) { setRangeStart(s); setRangeEnd(e); if(s&&e) fetchEntries(filterDate,"range",s,e); }
-  function onCalToday() { const t=new Date().toISOString().slice(0,10); setFilterDate(t); fetchEntries(t,calMode); }
+  function onCalToday() { const n=new Date(),t=n.getFullYear()+"-"+String(n.getMonth()+1).padStart(2,"0")+"-"+String(n.getDate()).padStart(2,"0"); setFilterDate(t); fetchEntries(t,calMode); }
 
   async function lookupByPhone(phone) {
     if (phone.length !== 10 || phone === lastLookedUpPhone.current) return;
@@ -1184,24 +1184,27 @@ function App() {
             setExportPinPrompt(true);
           }
 
+          function localDateStr(d) {
+            return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+          }
           function prevMonth() {
             const d = new Date(fd); d.setMonth(d.getMonth()-1);
-            const v = d.toISOString().slice(0,10);
+            const v = localDateStr(d);
             setFilterDate(v); setCalMode("month"); fetchEntries(v,"month");
           }
           function nextMonth() {
             const d = new Date(fd); d.setMonth(d.getMonth()+1);
-            const v = d.toISOString().slice(0,10);
+            const v = localDateStr(d);
             setFilterDate(v); setCalMode("month"); fetchEntries(v,"month");
           }
           function prevDay() {
             const d = new Date(fd); d.setDate(d.getDate()-1);
-            const v = d.toISOString().slice(0,10);
+            const v = localDateStr(d);
             setFilterDate(v); fetchEntries(v,"day");
           }
           function nextDay() {
             const d = new Date(fd); d.setDate(d.getDate()+1);
-            const v = d.toISOString().slice(0,10);
+            const v = localDateStr(d);
             setFilterDate(v); fetchEntries(v,"day");
           }
           const dayShort = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
