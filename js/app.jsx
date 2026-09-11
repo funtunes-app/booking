@@ -1317,7 +1317,7 @@ function App() {
             <div className="ft-filters">
               <div className="ft-filters-top">
                 <div className="ft-seg">
-                  {[{v:"day",l:"Day"},{v:"month",l:"Month"},{v:"range",l:"Period"}].map(t => (
+                  {[{v:"day",l:"Day"},{v:"month",l:"Month"}].map(t => (
                     <button key={t.v} className={`ft-seg-item${calMode===t.v?" ft-seg-item--active":""}`}
                       onClick={() => onCalModeChange(t.v)}>{t.l}</button>
                   ))}
@@ -1342,17 +1342,6 @@ function App() {
                     <span className="ft-date-nav-label ft-date-nav-label--click" onClick={()=>openCalPicker()}>{dayLabel}</span>
                     <button className="ft-date-nav-btn" onClick={nextDay}>
                       <svg width="7" height="12" viewBox="0 0 7 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M1 1l5 5-5 5"/></svg>
-                    </button>
-                  </div>
-                )}
-                {calMode === "range" && (
-                  <div className="ft-range-inputs">
-                    <button type="button" className="fld ft-date-input ft-date-input--click" onClick={()=>openCalPicker("start")}>
-                      {rangeStart ? rangeStart : <span style={{color:"var(--ft-muted2)"}}>Start</span>}
-                    </button>
-                    <span className="ft-range-to">to</span>
-                    <button type="button" className="fld ft-date-input ft-date-input--click" onClick={()=>openCalPicker("end")}>
-                      {rangeEnd ? rangeEnd : <span style={{color:"var(--ft-muted2)"}}>End</span>}
                     </button>
                   </div>
                 )}
@@ -1654,29 +1643,29 @@ function App() {
               const monNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
               return (
                 <div className="ft-calpick-overlay" onClick={()=>setFormDatePicker(false)}>
-                  <div className="ft-calpick-card" onClick={e=>e.stopPropagation()}>
+                  <div className="ft-calpick" onClick={e=>e.stopPropagation()}>
                     <div className="ft-calpick-header">
-                      <button className="ft-calpick-arrow" onClick={()=>setFormDatePickerMonth(p=>p.m===0?{y:p.y-1,m:11}:{y:p.y,m:p.m-1})}>
-                        <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M12 15L7 10L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      <button type="button" className="ft-calpick-arrow" onClick={()=>setFormDatePickerMonth(p=>{let m=p.m-1,y=p.y;if(m<0){m=11;y--;}return{y,m};})}>
+                        <svg width="7" height="12" viewBox="0 0 7 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 1L1 6l5 5"/></svg>
                       </button>
-                      <span className="ft-calpick-month">{monNames[cpm.m]} {cpm.y}</span>
-                      <button className="ft-calpick-arrow" onClick={()=>setFormDatePickerMonth(p=>p.m===11?{y:p.y+1,m:0}:{y:p.y,m:p.m+1})}>
-                        <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M8 5L13 10L8 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      <span className="ft-calpick-title">{monNames[cpm.m]} {cpm.y}</span>
+                      <button type="button" className="ft-calpick-arrow" onClick={()=>setFormDatePickerMonth(p=>{let m=p.m+1,y=p.y;if(m>11){m=0;y++;}return{y,m};})}>
+                        <svg width="7" height="12" viewBox="0 0 7 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 1l5 5-5 5"/></svg>
                       </button>
                     </div>
                     <div className="ft-calpick-dow">
-                      {["Su","Mo","Tu","We","Th","Fr","Sa"].map(d=><div key={d} className="ft-calpick-dowcell">{d}</div>)}
+                      {["S","M","T","W","T","F","S"].map((d,i)=><span key={i}>{d}</span>)}
                     </div>
                     <div className="ft-calpick-grid">
                       {cells.map((d,i)=>{
-                        if(!d) return <div key={"e"+i} className="ft-calpick-cell ft-calpick-cell--empty"></div>;
+                        if(!d) return <span key={"e"+i} className="ft-calpick-empty"/>;
                         const ds = cpm.y+"-"+String(cpm.m+1).padStart(2,"0")+"-"+String(d).padStart(2,"0");
                         const isSel = ds===form.date;
                         const isToday = ds===todayStr;
-                        let cls = "ft-calpick-cell";
-                        if(isSel) cls+=" ft-calpick-cell--sel";
-                        if(isToday) cls+=" ft-calpick-cell--today";
-                        return <div key={ds} className={cls} onClick={()=>{setFormState(f=>({...f,date:ds}));setFormDatePicker(false);}}>{d}</div>;
+                        let cls = "ft-calpick-day";
+                        if(isSel) cls+=" is-selected";
+                        if(isToday) cls+=" is-today";
+                        return <button key={i} type="button" className={cls} onClick={()=>{setFormState(f=>({...f,date:ds}));setFormDatePicker(false);}}>{d}</button>;
                       })}
                     </div>
                   </div>
@@ -2045,7 +2034,7 @@ function App() {
                 <span className="label">{usingPass ? "Pass" : buyPassType ? "Pass" : "Total"}</span>
                 <span className="value">₹{(usingPass ? socksCharge : totalAmount).toLocaleString("en-IN")}</span>
               </div>
-              <button className={editTarget?"ft-btn-primary ft-btn-primary--lg":"ft-btn-start"} disabled={saving}
+              <button className="ft-btn-start" disabled={saving}
                 onClick={editTarget ? handleUpdateSubmit : submitEntry}>
                 {editTarget ? "Update" : "Start"}
               </button>
