@@ -88,23 +88,23 @@ const IconMenu = ({trigger,title,activeValue,items}) => {
 
 // ── SVG Tab Icons ──
 
-const TabIconToday = ({active}) => (
-  <svg width="21" height="21" viewBox="0 0 20 20" fill="none" stroke={active?"#5d2a99":"#a099b5"} strokeWidth="1.8">
+const TabIconToday = () => (
+  <svg width="21" height="21" viewBox="0 0 20 20" fill="none" strokeWidth="1.8">
     <rect x="3" y="8" width="14" height="9" rx="1.5"/><path d="M3 8l7-5 7 5"/>
   </svg>
 );
-const TabIconEntries = ({active}) => (
-  <svg width="21" height="21" viewBox="0 0 20 20" fill="none" stroke={active?"#5d2a99":"#a099b5"} strokeWidth="1.7">
+const TabIconEntries = () => (
+  <svg width="21" height="21" viewBox="0 0 20 20" fill="none" strokeWidth="1.7">
     <rect x="2.5" y="6" width="15" height="8" rx="2"/><path d="M7 6v8"/>
   </svg>
 );
-const TabIconBirthdays = ({active}) => (
-  <svg width="21" height="21" viewBox="0 0 20 20" fill="none" stroke={active?"#5d2a99":"#a099b5"} strokeWidth="1.7">
+const TabIconBirthdays = () => (
+  <svg width="21" height="21" viewBox="0 0 20 20" fill="none" strokeWidth="1.7">
     <rect x="3.5" y="8" width="13" height="8" rx="2"/><circle cx="10" cy="4.5" r="1.5"/>
   </svg>
 );
-const TabIconMore = ({active}) => (
-  <svg width="21" height="21" viewBox="0 0 20 20" fill="none" stroke={active?"#5d2a99":"#a099b5"} strokeWidth="1.7">
+const TabIconMore = () => (
+  <svg width="21" height="21" viewBox="0 0 20 20" fill="none" strokeWidth="1.7">
     <path d="M4 6h12M4 10h12M4 14h12"/>
   </svg>
 );

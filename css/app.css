@@ -239,28 +239,35 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
   left: 0;
   right: 0;
   z-index: 200;
-  border-top: 1px solid var(--ft-border4);
-  background: rgba(255,255,255,.96);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  padding: 11px 18px max(22px, env(safe-area-inset-bottom));
+  border-top: none;
+  background: linear-gradient(180deg, #1e1536, #160f28);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  padding: 10px 18px max(22px, env(safe-area-inset-bottom));
   display: flex;
   justify-content: space-between;
+  box-shadow: 0 -4px 20px rgba(0,0,0,.3);
 }
 .ft-tab {
   display: grid;
   place-items: center;
-  gap: 5px;
+  gap: 4px;
   width: 66px;
-  color: var(--ft-muted2);
+  color: rgba(200,185,230,.6);
   background: none;
   border: none;
-  padding: 0;
+  padding: 4px 0;
+  border-top: 2px solid transparent;
+  transition: all .18s;
 }
-.ft-tab svg { stroke: var(--ft-muted3); stroke-width: 1.7; }
-.ft-tab-label { font: 500 10px var(--ft-sans); color: var(--ft-muted2); }
-.ft-tab.is-active svg { stroke: var(--ft-primary-dark); stroke-width: 1.8; }
-.ft-tab.is-active .ft-tab-label { font-weight: 600; color: var(--ft-deep); }
+.ft-tab svg { stroke: rgba(200,180,240,.55); stroke-width: 1.7; transition: all .18s; }
+.ft-tab span { font: 500 10px var(--ft-sans); color: rgba(200,185,230,.6); transition: color .18s; }
+.ft-tab.is-active svg,
+.ft-tab.ft-tab--active svg { stroke: #dfc0ff; filter: drop-shadow(0 0 5px rgba(200,160,255,.45)); stroke-width: 1.8; }
+.ft-tab.is-active span,
+.ft-tab.ft-tab--active span { font-weight: 600; color: #e8d8ff; }
+.ft-tab.is-active,
+.ft-tab.ft-tab--active { border-top: 2px solid #b580f0; }
 
 /* ── Icon Rail Sidebar (desktop) ── */
 .ft-rail {
@@ -2304,8 +2311,9 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
    ========================================================================== */
 
 /* ── BEM modifier aliases (JSX uses --modifier, CSS had .is-modifier) ── */
-.ft-tab--active svg { stroke: var(--ft-primary-dark); stroke-width: 1.8; }
-.ft-tab--active span { font-weight: 600; color: var(--ft-deep); }
+.ft-tab--active svg { stroke: #dfc0ff; filter: drop-shadow(0 0 5px rgba(200,160,255,.45)); stroke-width: 1.8; }
+.ft-tab--active span { font-weight: 600; color: #e8d8ff; }
+.ft-tab--active { border-top: 2px solid #b580f0; }
 .ft-seg-item--active {
   background: #fff; font-weight: 600; color: var(--ft-deepest);
   box-shadow: 0 1px 2px rgba(60,30,110,.12);
@@ -2352,8 +2360,8 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
 .ft-quick-card--primary .ft-quick-label { color: #fff; }
 .ft-quick-card--primary .ft-quick-sub { color: rgba(255,255,255,.7); }
 .ft-more-item--active {
-  background: var(--ft-accent-soft);
-  color: var(--ft-primary-dark); font-weight: 600;
+  background: rgba(160,110,224,.15);
+  color: #e8d8ff; font-weight: 600;
 }
 
 /* ── Page wrapper ── */
@@ -2486,9 +2494,10 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
   background: var(--ft-accent-soft); border: 1px solid var(--ft-primary);
   border-radius: 6px; padding: 4px 8px; cursor: pointer;
   font: 600 11px var(--ft-sans); color: var(--ft-primary);
-  transition: background .15s;
+  transition: all .15s;
 }
-.ft-form-date-btn:hover { background: var(--ft-accent-hover); }
+.ft-form-date-btn:hover { background: var(--ft-primary); color: #fff; border-color: var(--ft-primary); }
+.ft-form-date-btn:hover svg { stroke: #fff; }
 
 .ft-calpick-overlay {
   position: fixed; inset: 0; z-index: 900;
@@ -2800,8 +2809,10 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
 
 /* ── More menu ── */
 .ft-more-menu {
-  background: #fff; border-radius: var(--ft-radius-lg);
-  box-shadow: var(--ft-shadow); overflow: hidden; min-width: 200px;
+  background: linear-gradient(180deg, #241a3a, #1a1230);
+  border-radius: 14px;
+  box-shadow: 0 12px 40px rgba(0,0,0,.4), 0 0 0 1px rgba(160,130,220,.12);
+  overflow: hidden; min-width: 200px;
 }
 .ft-more-menu--bottom {
   position: fixed; bottom: calc(var(--ft-tab-h) + 8px);
@@ -2809,14 +2820,15 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
   animation: slideUp .25s ease;
 }
 .ft-more-item {
-  display: flex; align-items: center; gap: 9px; width: 100%;
-  padding: 12px 16px; font: 500 13px var(--ft-sans);
-  color: var(--ft-text); background: none; border: none;
-  border-bottom: 1px solid var(--ft-border4);
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  padding: 16px 20px; font: 500 14px var(--ft-sans);
+  color: rgba(220,210,240,.8); background: none; border: none;
+  border-bottom: 1px solid rgba(160,140,200,.1);
   cursor: pointer; text-align: left;
+  transition: background .15s, color .15s;
 }
 .ft-more-item:last-child { border-bottom: none; }
-.ft-more-item:active { background: var(--ft-accent-soft); }
+.ft-more-item:active { background: rgba(160,110,224,.15); color: #e8d8ff; }
 
 /* ── Confirm overlay (modals) ── */
 .ft-confirm-overlay {
