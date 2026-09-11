@@ -120,6 +120,9 @@ const ShieldIcon = () => (
 const PinPad = ({onUnlock}) => {
   const [digits, setDigits] = React.useState([]);
   const [error, setError] = React.useState(false);
+  const pinRef = React.useRef(null);
+
+  React.useEffect(() => { if (pinRef.current) pinRef.current.focus(); }, []);
 
   const addDigit = (d) => {
     if (digits.length >= 4) return;
@@ -141,8 +144,13 @@ const PinPad = ({onUnlock}) => {
     setError(false);
   };
 
+  const handleKeyDown = (e) => {
+    if (e.key >= "0" && e.key <= "9") addDigit(parseInt(e.key));
+    else if (e.key === "Backspace") removeLast();
+  };
+
   return (
-    <div className="ft-pin-overlay">
+    <div className="ft-pin-overlay" onKeyDown={handleKeyDown} tabIndex={-1} ref={pinRef}>
       <div className="ft-pin-sheet">
         <div className="ft-pin-shield">
           <svg width="32" height="32" viewBox="0 0 20 20" fill="none" stroke="#6d3f9c" strokeWidth="1.4">
@@ -154,7 +162,9 @@ const PinPad = ({onUnlock}) => {
         <div className="ft-pin-sub">Enter 4-digit PIN</div>
         <div className={`ft-pin-dots${error?" ft-pin-error":""}`}>
           {[0,1,2,3].map(i => (
-            <div key={i} className={`ft-pin-dot${i < digits.length ? " ft-pin-dot--filled" : ""}`} />
+            <div key={i} className={`ft-pin-dot${i < digits.length ? " ft-pin-dot--filled" : ""}`}>
+              {i < digits.length && <span className="ft-pin-star">*</span>}
+            </div>
           ))}
         </div>
         <div className="ft-pin-grid">
@@ -180,6 +190,9 @@ const PasswordGate = ({onUnlock}) => <PinPad onUnlock={onUnlock} />;
 const ConfirmDialog = ({message, needsPassword, confirmLabel, onConfirm, onCancel}) => {
   const [pin, setPin] = React.useState([]);
   const [pinError, setPinError] = React.useState(false);
+  const dlgRef = React.useRef(null);
+
+  React.useEffect(() => { if (needsPassword && dlgRef.current) dlgRef.current.focus(); }, [needsPassword]);
 
   const handleConfirm = () => {
     if (needsPassword) {
@@ -194,8 +207,15 @@ const ConfirmDialog = ({message, needsPassword, confirmLabel, onConfirm, onCance
     setPin([...pin, d]);
   };
 
+  const handleKeyDown = (e) => {
+    if (!needsPassword) return;
+    if (e.key >= "0" && e.key <= "9") addDigit(parseInt(e.key));
+    else if (e.key === "Backspace") setPin(p=>p.slice(0,-1));
+    else if (e.key === "Enter") handleConfirm();
+  };
+
   return (
-    <div className="ft-confirm-overlay" onClick={onCancel}>
+    <div className="ft-confirm-overlay" onClick={onCancel} onKeyDown={handleKeyDown} tabIndex={-1} ref={dlgRef}>
       <div className="ft-confirm-dialog" onClick={e => e.stopPropagation()}>
         <div className="ft-confirm-msg">{message}</div>
         {needsPassword && (
@@ -203,7 +223,9 @@ const ConfirmDialog = ({message, needsPassword, confirmLabel, onConfirm, onCance
             <div style={{fontSize:12,color:C.textMid,fontWeight:600,marginBottom:8,textAlign:"center"}}>Enter admin PIN</div>
             <div className={`ft-pin-dots${pinError?" ft-pin-error":""}`} style={{marginBottom:12}}>
               {[0,1,2,3].map(i => (
-                <div key={i} className={`ft-pin-dot${i < pin.length ? " ft-pin-dot--filled" : ""}`} />
+                <div key={i} className={`ft-pin-dot${i < pin.length ? " ft-pin-dot--filled" : ""}`}>
+                  {i < pin.length && <span className="ft-pin-star">*</span>}
+                </div>
               ))}
             </div>
             <div className="ft-pin-grid ft-pin-grid--sm">

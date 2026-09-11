@@ -2314,6 +2314,11 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
   border: 1.5px solid var(--ft-accent-hover);
   background: var(--ft-accent-soft);
 }
+.ft-pin-star {
+  font: 700 28px var(--ft-sans);
+  color: var(--ft-primary);
+  line-height: 1;
+}
 .ft-pin-key--empty { border: none; background: none; cursor: default; }
 .ft-pin-key--del { font: 500 13px var(--ft-sans); color: var(--ft-muted2); }
 .ft-quick-card--primary {
@@ -2553,7 +2558,7 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
 .ft-mop-chips { display: flex; gap: 5px; margin-left: auto; }
 .ft-pin-overlay {
   position: fixed; inset: 0; z-index: 500;
-  background: rgba(0,0,0,.45); display: grid; place-items: center;
+  background: rgba(0,0,0,.45); display: grid; place-items: center; outline: none;
 }
 .ft-pin-modal {
   background: #fff; border-radius: 14px; padding: 32px 28px;
@@ -2780,7 +2785,7 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
 .ft-confirm-overlay {
   position: fixed; inset: 0; z-index: 500;
   background: rgba(0,0,0,.35); display: grid; place-items: center;
-  animation: fadeIn .15s;
+  animation: fadeIn .15s; outline: none;
 }
 .ft-confirm-dialog {
   background: #fff; border-radius: var(--ft-radius-lg);
