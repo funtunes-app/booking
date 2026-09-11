@@ -834,7 +834,10 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
   width: 100%;
   height: 42px;
   font-size: 13px;
-  color: var(--ft-muted);
+  color: transparent;
+}
+.ft-kid-row .ft-dob-wrap .fld-date.has-value {
+  color: var(--ft-text);
 }
 .ft-kid-row .ft-dob-wrap .fld-date::-webkit-calendar-picker-indicator {
   position: absolute;

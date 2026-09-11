@@ -1715,7 +1715,7 @@ function App() {
                     <div className="ft-dob-wrap">
                       {!(i===0?form.dob:((form.dobs&&form.dobs[i])||"")) && <span className="ft-dob-placeholder">DOB</span>}
                       <svg className="ft-dob-icon" width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="var(--ft-muted2)" strokeWidth="1.5"><rect x="3" y="4" width="14" height="13" rx="2"/><path d="M3 8h14M7 2v4M13 2v4"/></svg>
-                      <input className="fld fld-date"
+                      <input className={`fld fld-date${(i===0?form.dob:((form.dobs&&form.dobs[i])||""))?" has-value":""}`}
                         value={i===0?form.dob:((form.dobs&&form.dobs[i])||"")}
                         type="date"
                         onChange={e=>{
