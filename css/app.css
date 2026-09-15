@@ -871,17 +871,9 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
   left: 12px;
   top: 50%;
   transform: translateY(-50%);
-  font: 400 12px var(--ft-sans);
+  font: 400 13px var(--ft-sans);
   color: var(--ft-muted2);
   pointer-events: none;
-}
-.ft-dob-icon {
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  pointer-events: none;
-  z-index: 1;
 }
 .ft-kid-remove {
   width: 28px; height: 28px; border-radius: 7px;
