@@ -2699,10 +2699,21 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
   .ft-entry-act-btn { width: 26px; height: 26px; border-radius: 5px; }
   .ft-entry-act-btn svg { width: 12px; height: 12px; }
 
+  /* Header buttons compact */
+  .ft-header { padding: 10px 16px; gap: 8px; }
+  .ft-header-title { font-size: 16px; }
+  .ft-header .ft-btn-primary {
+    height: 36px; padding: 0 14px; font-size: 12.5px;
+    border-radius: 9px; gap: 5px; flex-shrink: 0;
+  }
+  .ft-header .ft-btn-primary svg { width: 14px; height: 14px; }
+  .ft-header-shield { width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0; }
+  .ft-header-shield svg { width: 16px; height: 16px; }
+
   /* Filters */
   .ft-filters { padding: 0 16px; }
-  .ft-filters-top { gap: 6px; }
-  .ft-filters-bottom { gap: 6px; }
+  .ft-filters-top { gap: 8px; padding: 12px 0 8px; }
+  .ft-filters-bottom { gap: 8px; padding: 4px 0 10px; }
   .ft-search-box { max-width: 100%; margin-left: 0; flex-basis: 100%; }
   .ft-stat-boxes { flex-basis: 100%; order: 10; margin-left: 0; }
   .ft-stat-box { padding: 4px 10px; }
@@ -2710,6 +2721,10 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
   .ft-stat-lbl { font-size: 9px; }
   .ft-export-pill { padding: 4px 10px; font-size: 10px; }
   .ft-mop-chips { margin-left: 0; }
+
+  /* Entry list padding */
+  .ft-entry-list { padding: 0 16px; }
+  .ft-egroup-header { padding: 18px 0 8px; }
 
   /* Birthday */
   .ft-bday-action-row { padding: 0 16px; margin: 8px 0; gap: 6px; flex-wrap: wrap; }

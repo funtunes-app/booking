@@ -115,7 +115,7 @@ function App() {
   const lastLookedUpPhone = useRef("");
 
   useEffect(() => {
-    const timer = setTimeout(() => setSplash(false), 2400);
+    const timer = setTimeout(() => setSplash(false), 1200);
     return () => clearTimeout(timer);
   }, []);
 
