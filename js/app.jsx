@@ -572,7 +572,6 @@ function App() {
     const usePass = usingPass;
     const isBuyingPass = !!buyPassType && isPlayArea && !editTarget;
     const totalAmt = usePass ? 0 : (parseInt(form.amount)||0);
-    const perKidAmt = usePass ? 0 : isBuyingPass ? totalAmt : (form.numKids>1 ? Math.round(totalAmt/form.numKids) : totalAmt);
     const kidNames = form.kidNames || [];
     const playMopStr = usePass ? "Pass" : getPlayMopString();
     const socksMopStr = getSocksMopString();
@@ -610,7 +609,7 @@ function App() {
       }
 
       const entryMop = isBuyingPass ? `Pass (${playMopStr})` : playMopStr;
-      const entryAmt = isBuyingPass ? totalAmt : (usePass ? 0 : perKidAmt);
+      const entryAmt = totalAmt;
 
       if (form.numKids <= 1) {
         const entry = {...form, mop:entryMop, socksMop:socksMopStr, entryType, timeIn:form.timeIn, timeOut:timeOut,
