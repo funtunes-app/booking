@@ -1256,7 +1256,7 @@ function App() {
               <div style={{display:"flex",alignItems:"center",gap:8,marginLeft:"auto"}}>
                 <button className="ft-btn-primary" onClick={()=>startNewEntry("funzone",filterDate)}>
                   <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="#fff" strokeWidth="2.5"><path d="M10 4v12M4 10h12"/></svg>
-                  New entry
+                  New
                 </button>
                 <button className="ft-header-shield" onClick={() => switchSection("cash-register")}>
                   <ShieldIcon />
