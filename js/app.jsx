@@ -1452,6 +1452,16 @@ function App() {
               </div>
             </div>
 
+            <div className="ft-bday-month-bar">
+              <button className="ft-date-nav-btn" onClick={bdayPrevMonth}>
+                <svg width="6" height="10" viewBox="0 0 7 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 1L1 6l5 5"/></svg>
+              </button>
+              <span className="ft-bday-month-label">{MONTH_NAMES[birthdayMonth-1]} {birthdayYear}</span>
+              <button className="ft-date-nav-btn" onClick={bdayNextMonth}>
+                <svg width="6" height="10" viewBox="0 0 7 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M1 1l5 5-5 5"/></svg>
+              </button>
+            </div>
+
             <div className="ft-bday-layout">
               <div className="ft-bday-cal-sidebar">
                 <div className="ft-bday-minical">

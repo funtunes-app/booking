@@ -1426,6 +1426,9 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
 .ft-bday-search-box { min-width: 220px; }
 
 /* ── Birthday layout ── */
+.ft-bday-month-bar {
+  display: none;
+}
 .ft-bday-layout {
   display: flex; gap: 24px; padding: 0 22px;
 }
@@ -2713,6 +2716,13 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
   .ft-bday-mobile-filters { display: flex; align-items: center; gap: 6px; }
   .ft-bday-search-row { flex-basis: 100%; order: 10; margin-left: 0; }
   .ft-bday-search-box { min-width: 0; width: 100%; }
+  .ft-bday-month-bar {
+    display: flex; align-items: center; justify-content: center; gap: 16px;
+    position: sticky; top: 0; z-index: 20;
+    background: var(--ft-bg); border-bottom: 1px solid var(--ft-border4);
+    padding: 10px 16px; margin: 0 -16px;
+  }
+  .ft-bday-month-label { font: 600 14px var(--ft-sans); color: var(--ft-text); min-width: 120px; text-align: center; }
   .ft-bday-layout { flex-direction: column; padding: 0 16px; }
   .ft-bday-cal-sidebar { display: none; }
   .ft-kb-board { grid-template-columns: 1fr; min-height: auto; gap: 12px; }
