@@ -510,6 +510,23 @@ const EntryRow = ({entry, onEdit, onDelete, onCheckout}) => {
   const amt = parseInt(entry.amount) || parseInt(entry["Amount"]) || 0;
   const socksAmt = parseInt(entry.socks) || parseInt(entry["Socks"]) || 0;
   const mop = entry.mop || entry["MOP"] || "";
+  const socksMop = entry.socksMop || "";
+  const combinedMop = (() => {
+    const playMethods = new Set();
+    const sockMethods = new Set();
+    if (mop.toLowerCase().includes("upi")) playMethods.add("upi");
+    if (mop.toLowerCase().includes("cash")) playMethods.add("cash");
+    if (mop.toLowerCase().includes("pass")) playMethods.add("pass");
+    if (!playMethods.size && mop) playMethods.add(mop.toLowerCase());
+    if (socksMop.toLowerCase().includes("upi")) sockMethods.add("upi");
+    if (socksMop.toLowerCase().includes("cash")) sockMethods.add("cash");
+    const all = new Set([...playMethods, ...sockMethods]);
+    if (all.has("pass")) return "Pass";
+    if (all.has("upi") && all.has("cash")) return "UPI + Cash";
+    if (all.has("upi")) return "UPI";
+    if (all.has("cash")) return "Cash";
+    return mop || "—";
+  })();
   const kids = parseInt(entry.numKids || entry["No of kids"] || 1);
   const phone = entry.phone || entry["Phone number"] || "";
   const timeIn = entry.timeIn || "";
@@ -531,11 +548,8 @@ const EntryRow = ({entry, onEdit, onDelete, onCheckout}) => {
 
   const durLabel = hours ? (hours >= 1 ? `${hours}h` : `${Math.round(hours*60)}m`) : "—";
 
-  const isPass = mop.toLowerCase().includes("pass");
-  const mopLabel = isPass ? "Pass"
-    : mop.toLowerCase().includes("upi") && mop.toLowerCase().includes("cash") ? "UPI + Cash"
-    : mop.toLowerCase().includes("upi") ? "UPI"
-    : mop.toLowerCase().includes("cash") ? "Cash" : mop || "—";
+  const isPass = combinedMop === "Pass";
+  const mopLabel = combinedMop;
 
   const mopClass = isPass ? "pass" : mopLabel.includes("UPI") ? "upi" : mopLabel.includes("Cash") ? "cash" : "";
 
