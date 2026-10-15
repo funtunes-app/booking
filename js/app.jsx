@@ -1730,8 +1730,11 @@ function App() {
                         value={i===0?form.dob:((form.dobs&&form.dobs[i])||"")}
                         type="date"
                         onChange={e=>{
-                          if(i===0) set("dob",e.target.value);
-                          else { const d2=[...(form.dobs||[])]; d2[i]=e.target.value; set("dobs",d2); }
+                          const v = e.target.value;
+                          const prev = i===0 ? form.dob : ((form.dobs&&form.dobs[i])||"");
+                          if(!v && prev) return;
+                          if(i===0) set("dob",v);
+                          else { const d2=[...(form.dobs||[])]; d2[i]=v; set("dobs",d2); }
                         }} />
                     </div>
                     {i > 0 ? <button type="button" className="ft-kid-remove" onClick={()=>{
