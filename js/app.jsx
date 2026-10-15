@@ -525,7 +525,7 @@ function App() {
     if (!form.phone || form.phone.length !== 10) errs.phone = "10 digits required";
     if (!form.customerName.trim()) errs.customerName = "Required";
     if (!usingPass && !buyPassType) {
-      if (!form.amount || parseInt(form.amount) <= 0) errs.amount = "Enter amount";
+      if (form.amount === "" || form.amount == null || isNaN(parseInt(form.amount)) || parseInt(form.amount) < 0) errs.amount = "Enter amount";
     }
     if (!usingPass && !buyPassType && (parseInt(form.amount)||0) > 0 && !form.playMop) errs.playMop = "Select payment mode";
     if (buyPassType && (parseInt(form.amount)||0) > 0 && !form.playMop) errs.playMop = "Select payment mode";
@@ -672,7 +672,8 @@ function App() {
     const hours = String(entry.hours||entry["Hours"]||CONFIG.DEFAULT_HOURS);
     const socksTotal = parseInt(entry.socks||entry["Socks"]||0)||0;
     const sockCount = socksTotal>0?Math.max(1,Math.round(socksTotal/CONFIG.SOCKS_RATE)):0;
-    const amt = String(entry.amount||entry["Amount"]||300);
+    const rawAmt = entry.amount ?? entry["Amount"];
+    const amt = String(rawAmt != null && rawAmt !== "" ? rawAmt : 300);
 
     let editPlayMop=CONFIG.DEFAULT_MOP, editPlayUpi="", editPlayCash="";
     const pu=parseInt(entry.playUpi)||0, pc=parseInt(entry.playCash)||0;
