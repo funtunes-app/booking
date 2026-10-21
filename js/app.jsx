@@ -84,6 +84,7 @@ function App() {
   const [returningCustomer, setReturningCustomer] = useState(false);
   const [enquiry, setEnquiry] = useState(null);
   const [enquirySaving, setEnquirySaving] = useState(false);
+  const [bdayEnquiries, setBdayEnquiries] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [expensePopup, setExpensePopup] = useState(null);
   const [expenseSaving, setExpenseSaving] = useState(false);
@@ -213,7 +214,7 @@ function App() {
     const m = month || birthdayMonth, y = year || birthdayYear;
     setBirthdaysLoading(true);
     try {
-      const res = await api.getBirthdays(m, y);
+      const [res, enqRes] = await Promise.all([api.getBirthdays(m, y), api.listEnquiries(m, y)]);
       if (res.success) {
         setBirthdays(res.data || []);
         const nowMonth = new Date().getMonth()+1, nowYear = new Date().getFullYear();
@@ -222,6 +223,7 @@ function App() {
           localStorage.setItem(BIRTHDAY_CACHE_KEY, JSON.stringify({date:todayStr, month:m, year:y, data:res.data||[]}));
         }
       } else showToastMsg("Error: "+(res.error||"unknown"),"error");
+      setBdayEnquiries(enqRes.success ? (enqRes.data||[]) : []);
     } catch(e) { console.error("Birthdays fetch:",e); showToastMsg("Could not load birthdays","error"); }
     finally { setBirthdaysLoading(false); }
   }
@@ -816,7 +818,7 @@ function App() {
     setEnquirySaving(true);
     try {
       const res = await api.addEnquiry({...enquiry, date:new Date().toISOString().slice(0,10)});
-      if (res.success) { showToastMsg("Enquiry saved","success"); setEnquiry(null); }
+      if (res.success) { showToastMsg("Enquiry saved","success"); setEnquiry(null); fetchBirthdays(); }
       else showToastMsg("Save failed: "+(res.error||"unknown"),"error");
     } catch(e) { console.error("Enquiry:",e); showToastMsg("Could not save — check internet","error"); }
     finally { setEnquirySaving(false); }
@@ -1497,7 +1499,8 @@ function App() {
                 <BirthdayKanban birthdays={filteredBdays} month={birthdayMonth} year={birthdayYear}
                   loading={birthdaysLoading} onSave={saveBirthdayCall} isSearching={isSearching}
                   mobileFilter={bdayStatusFilter!=="all"?bdayStatusFilter:null}
-                  showBooked={showBooked} bookedList={bookedList} />
+                  showBooked={showBooked} bookedList={bookedList}
+                  enquiries={bdayEnquiries} />
               </div>
             </div>
           </div>

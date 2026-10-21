@@ -320,6 +320,34 @@ const BirthdayCard = ({record, onSave, onMove}) => {
   );
 };
 
+const EnquiryCard = ({enq}) => {
+  const day = enq.preferred_date ? parseInt(enq.preferred_date.split("-")[2]) : "?";
+  return (
+    <div className="ft-kb-card ft-kb-card--enquiry">
+      <div className="ft-kb-card-top">
+        <div className="ft-kb-card-day">{day}</div>
+        <div className="ft-kb-card-info">
+          <div className="ft-kb-card-name">{enq.kid_name || enq.parent_name || "—"}<span className="ft-kb-card-age"> · enquiry</span></div>
+          {enq.phone && <div className="ft-kb-card-phone">{enq.phone}</div>}
+        </div>
+      </div>
+      {(enq.num_kids > 0 || enq.notes) && <div className="ft-kb-card-notes">
+        <div className="ft-kb-card-note-text">
+          {enq.num_kids > 0 && <span>{enq.num_kids} kids expected</span>}
+          {enq.num_kids > 0 && enq.notes && <span> · </span>}
+          {enq.notes && <span>{enq.notes}</span>}
+        </div>
+      </div>}
+      <div className="ft-kb-card-actions">
+        {enq.phone && <a href={`https://wa.me/${enq.phone.replace(/\D/g,"")}`} target="_blank" rel="noopener" className="ft-kb-act" title="WhatsApp">
+          <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M2 18l1.3-4.7a7.5 7.5 0 1110.4 0L18 18l-4.7-1.3"/></svg>
+        </a>}
+        {enq.parent_name && enq.kid_name && <span className="ft-kb-enq-parent" title={`Parent: ${enq.parent_name}`}>{enq.parent_name}</span>}
+      </div>
+    </div>
+  );
+};
+
 const KANBAN_COLS = [
   {key:"not_contacted", label:"New", color:"#7c3fc4"},
   {key:"na", label:"NA", color:"#a099b5"},
@@ -405,7 +433,7 @@ const BookedCard = ({record, onSave}) => {
   );
 };
 
-const BirthdayKanban = ({birthdays, month, year, loading, onSave, isSearching, mobileFilter, showBooked, bookedList}) => {
+const BirthdayKanban = ({birthdays, month, year, loading, onSave, isSearching, mobileFilter, showBooked, bookedList, enquiries}) => {
   if (loading) return <div className="ft-empty"><Spinner size={24} /><div style={{marginTop:10}}>Loading birthdays...</div></div>;
 
   if (showBooked) {
@@ -437,10 +465,13 @@ const BirthdayKanban = ({birthdays, month, year, loading, onSave, isSearching, m
           <div className="ft-kb-col-header">
             <span className="ft-kb-col-dot" style={{background:col.color}} />
             <span className="ft-kb-col-title">{col.label}</span>
-            <span className="ft-kb-col-count">{(cols[col.key]||[]).length}</span>
+            <span className="ft-kb-col-count">{(cols[col.key]||[]).length + (col.key==="warm" ? (enquiries||[]).length : 0)}</span>
           </div>
           <div className="ft-kb-col-body">
-            {(cols[col.key]||[]).length === 0 && <div className="ft-kb-col-empty">No entries</div>}
+            {col.key === "warm" && (enquiries||[]).length > 0 && (enquiries||[]).map((enq,i) => (
+              <EnquiryCard key={"enq-"+enq.id||i} enq={enq} />
+            ))}
+            {(cols[col.key]||[]).length === 0 && !(col.key==="warm" && (enquiries||[]).length > 0) && <div className="ft-kb-col-empty">No entries</div>}
             {(cols[col.key]||[]).map((b,i) => (
               <BirthdayCard key={b.key||i} record={b} onSave={onSave} />
             ))}

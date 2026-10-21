@@ -1469,6 +1469,9 @@ a { color: var(--ft-purple-pill); text-decoration: none; }
   padding: 10px 12px; transition: box-shadow .15s ease;
 }
 .ft-kb-card:hover { box-shadow: 0 2px 8px rgba(93,42,153,.08); }
+.ft-kb-card--enquiry { border-left: 3px solid #e6a817; background: #fffdf5; }
+.ft-kb-card--enquiry .ft-kb-card-day { background: #fef3cd; color: #b8860b; }
+.ft-kb-enq-parent { font: 400 10px var(--ft-sans); color: var(--ft-muted2); margin-left: auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px; }
 .ft-kb-card-top { display: flex; align-items: center; gap: 10px; }
 .ft-kb-card-day {
   width: 32px; height: 32px; border-radius: 8px;

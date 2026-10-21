@@ -431,8 +431,19 @@ var api = {
     return { success: true, data: data && data[0] ? data[0] : null };
   },
 
-  listEnquiries: async function () {
-    return { success: true, data: [] };
+  listEnquiries: async function (month, year) {
+    var mm = String(month).padStart(2, "0");
+    var startDate = year + "-" + mm + "-01";
+    var lastDay = new Date(year, month, 0).getDate();
+    var endDate = year + "-" + mm + "-" + String(lastDay).padStart(2, "0");
+    var { data, error } = await supabaseClient
+      .from("enquiries")
+      .select("*")
+      .gte("preferred_date", startDate)
+      .lte("preferred_date", endDate)
+      .order("preferred_date", { ascending: true });
+    if (error) return { success: false, error: error.message };
+    return { success: true, data: data || [] };
   },
 
   // ── Passes ──
