@@ -439,11 +439,13 @@ var api = {
     var { data, error } = await supabaseClient
       .from("enquiries")
       .select("*")
-      .gte("preferred_date", startDate)
-      .lte("preferred_date", endDate)
-      .order("preferred_date", { ascending: true });
+      .order("created_at", { ascending: false });
     if (error) return { success: false, error: error.message };
-    return { success: true, data: data || [] };
+    var filtered = (data || []).filter(function(row) {
+      var d = row.preferred_date || row.date;
+      return d && d >= startDate && d <= endDate;
+    });
+    return { success: true, data: filtered };
   },
 
   // ── Passes ──
