@@ -412,8 +412,23 @@ var api = {
     return { success: true };
   },
 
-  addEnquiry: async function () {
-    return { success: false, error: "Not yet migrated to Supabase" };
+  addEnquiry: async function (enq) {
+    var row = {
+      parent_name: enq.parentName || "",
+      kid_name: enq.kidName || "",
+      phone: enq.phone || "",
+      dob: enq.dob || null,
+      preferred_date: enq.preferredDate || null,
+      num_kids: parseInt(enq.numKids) || 0,
+      notes: enq.notes || "",
+      date: enq.date || new Date().toISOString().slice(0, 10),
+    };
+    var { data, error } = await supabaseClient
+      .from("enquiries")
+      .insert(row)
+      .select();
+    if (error) return { success: false, error: error.message };
+    return { success: true, data: data && data[0] ? data[0] : null };
   },
 
   listEnquiries: async function () {

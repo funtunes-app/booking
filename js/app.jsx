@@ -2121,7 +2121,19 @@ function App() {
                 onChange={e=>setEnquiry({...enquiry,kidName:e.target.value})} />
             </InputField>
             <InputField label="Kid's DOB" icon="🎂">
-              <input className="fld" value={enquiry.dob} type="date" onChange={e=>setEnquiry({...enquiry,dob:e.target.value})} />
+              <input className="fld" value={enquiry.dob} type="date" onChange={e=>{
+                const dob = e.target.value;
+                const upd = {...enquiry, dob};
+                if(dob && !enquiry.preferredDate) {
+                  const parts = dob.split("-");
+                  if(parts.length===3) {
+                    const thisYear = new Date().getFullYear();
+                    const bdayThisYear = thisYear+"-"+parts[1]+"-"+parts[2];
+                    upd.preferredDate = bdayThisYear < new Date().toISOString().slice(0,10) ? (thisYear+1)+"-"+parts[1]+"-"+parts[2] : bdayThisYear;
+                  }
+                }
+                setEnquiry(upd);
+              }} />
             </InputField>
             <InputField label="Preferred Party Date" icon="📅">
               <input className="fld" value={enquiry.preferredDate} type="date" onChange={e=>setEnquiry({...enquiry,preferredDate:e.target.value})} />
