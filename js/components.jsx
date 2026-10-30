@@ -863,6 +863,8 @@ const StatsDashboard = ({entries, expenses, onDeleteExpense}) => {
   const totalSocksCash = entries.reduce((a,e) => a + (parseInt(e.socksCash)||0), 0);
   const totalUpi = totalPlayUpi + totalSocksUpi;
   const totalCash = totalPlayCash + totalSocksCash;
+  const totalSocks = entries.reduce((a,e) => a + (parseInt(e.socks)||0), 0);
+  const totalBday = entries.filter(e => (e.entryType || "funzone") === "birthday").reduce((a,e) => a + (parseInt(e.amount)||0), 0);
   const allExpenses = expenses || [];
   const f = (v) => `₹${v.toLocaleString("en-IN")}`;
 
@@ -899,6 +901,14 @@ const StatsDashboard = ({entries, expenses, onDeleteExpense}) => {
           <div className="ft-stat-label">Revenue</div>
           <div className="ft-stat-value" style={{color:C.deepest}}>{f(totalRevenue)}</div>
           <div className="ft-stat-sub">UPI {f(totalUpi)} · Cash {f(totalCash)}</div>
+        </div>
+        <div className="ft-stat-card">
+          <div className="ft-stat-label">Socks</div>
+          <div className="ft-stat-value" style={{color:C.accent}}>{f(totalSocks)}</div>
+        </div>
+        <div className="ft-stat-card">
+          <div className="ft-stat-label">Birthday</div>
+          <div className="ft-stat-value" style={{color:"#e67e22"}}>{f(totalBday)}</div>
         </div>
       </div>
 
