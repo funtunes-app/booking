@@ -300,7 +300,7 @@ const BirthdayCard = ({record, onSave, onMove}) => {
         </button>
         <div className="ft-kb-card-move">
           {status === "not_contacted" && <>
-            <button className="ft-kb-move-btn ft-kb-move-btn--na" onClick={()=>{save("na","");onMove&&onMove();}}>NA</button>
+            <button className="ft-kb-move-btn ft-kb-move-btn--na" onClick={()=>{save("na",notes);onMove&&onMove();}}>NA</button>
             <button className="ft-kb-move-btn ft-kb-move-btn--follow" onClick={()=>{save("warm",notes);onMove&&onMove();}}>Follow</button>
           </>}
           {status === "na" && <>
