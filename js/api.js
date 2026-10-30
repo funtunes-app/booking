@@ -173,20 +173,25 @@ var api = {
     results.sort(function(a, b) { return a.day - b.day; });
 
     try {
-      var crm = JSON.parse(localStorage.getItem("funtunes_bday_crm") || "{}");
-      results.forEach(function(r) {
-        var saved = crm[r.key];
-        if (saved) {
-          r.status = saved.status || "not_contacted";
-          r.notes = saved.notes || "";
-          if (saved.phone) r.phone = saved.phone;
-          if (saved.package) r.package = saved.package;
-          if (saved.numKids) r.numKids = saved.numKids;
-          if (saved.numAdults) r.numAdults = saved.numAdults;
-          if (saved.services) r.services = saved.services;
-          if (saved.inclusions) r.inclusions = saved.inclusions;
-        }
-      });
+      var keys = results.map(function(r) { return r.key; });
+      if (keys.length > 0) {
+        var crmRes = await supabaseClient.from("birthday_crm").select("*").in("crm_key", keys);
+        var crmMap = {};
+        (crmRes.data || []).forEach(function(row) { crmMap[row.crm_key] = row; });
+        results.forEach(function(r) {
+          var saved = crmMap[r.key];
+          if (saved) {
+            r.status = saved.status || "not_contacted";
+            r.notes = saved.notes || "";
+            if (saved.phone) r.phone = saved.phone;
+            if (saved.package) r.package = saved.package;
+            if (saved.num_kids) r.numKids = saved.num_kids;
+            if (saved.num_adults) r.numAdults = saved.num_adults;
+            if (saved.services) r.services = saved.services;
+            if (saved.inclusions) r.inclusions = saved.inclusions;
+          }
+        });
+      }
     } catch(e) {}
 
     return { success: true, data: results };
@@ -225,20 +230,25 @@ var api = {
     results.sort(function(a, b) { return a.month === b.month ? a.day - b.day : a.month - b.month; });
 
     try {
-      var crm = JSON.parse(localStorage.getItem("funtunes_bday_crm") || "{}");
-      results.forEach(function(r) {
-        var saved = crm[r.key];
-        if (saved) {
-          r.status = saved.status || "not_contacted";
-          r.notes = saved.notes || "";
-          if (saved.phone) r.phone = saved.phone;
-          if (saved.package) r.package = saved.package;
-          if (saved.numKids) r.numKids = saved.numKids;
-          if (saved.numAdults) r.numAdults = saved.numAdults;
-          if (saved.services) r.services = saved.services;
-          if (saved.inclusions) r.inclusions = saved.inclusions;
-        }
-      });
+      var keys = results.map(function(r) { return r.key; });
+      if (keys.length > 0) {
+        var crmRes = await supabaseClient.from("birthday_crm").select("*").in("crm_key", keys);
+        var crmMap = {};
+        (crmRes.data || []).forEach(function(row) { crmMap[row.crm_key] = row; });
+        results.forEach(function(r) {
+          var saved = crmMap[r.key];
+          if (saved) {
+            r.status = saved.status || "not_contacted";
+            r.notes = saved.notes || "";
+            if (saved.phone) r.phone = saved.phone;
+            if (saved.package) r.package = saved.package;
+            if (saved.num_kids) r.numKids = saved.num_kids;
+            if (saved.num_adults) r.numAdults = saved.num_adults;
+            if (saved.services) r.services = saved.services;
+            if (saved.inclusions) r.inclusions = saved.inclusions;
+          }
+        });
+      }
     } catch(e) {}
 
     return { success: true, data: results };
@@ -246,19 +256,21 @@ var api = {
 
   updateBirthdayCall: async function (record) {
     try {
-      var crm = JSON.parse(localStorage.getItem("funtunes_bday_crm") || "{}");
-      var prev = crm[record.key] || {};
-      crm[record.key] = {
-        status: record.status || prev.status || "not_contacted",
-        notes: record.notes != null ? record.notes : (prev.notes || ""),
-        phone: record.phone || prev.phone || "",
-        package: record.package != null ? record.package : (prev.package || ""),
-        numKids: record.numKids != null ? record.numKids : (prev.numKids || ""),
-        numAdults: record.numAdults != null ? record.numAdults : (prev.numAdults || ""),
-        services: record.services != null ? record.services : (prev.services || ""),
-        inclusions: record.inclusions != null ? record.inclusions : (prev.inclusions || ""),
+      var row = {
+        crm_key: record.key,
+        status: record.status || "not_contacted",
+        notes: record.notes != null ? record.notes : "",
+        phone: record.phone || "",
+        package: record.package != null ? record.package : "",
+        num_kids: record.numKids != null ? String(record.numKids) : "",
+        num_adults: record.numAdults != null ? String(record.numAdults) : "",
+        services: record.services != null ? record.services : "",
+        inclusions: record.inclusions != null ? record.inclusions : "",
       };
-      localStorage.setItem("funtunes_bday_crm", JSON.stringify(crm));
+      var { error } = await supabaseClient
+        .from("birthday_crm")
+        .upsert(row, { onConflict: "crm_key" });
+      if (error) return { success: false, error: error.message };
       return { success: true };
     } catch(e) {
       return { success: false, error: e.message };
