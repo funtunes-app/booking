@@ -636,7 +636,7 @@ function App() {
         const entry = {...form, mop:entryMop, socksMop:socksMopStr, entryType,
           timeIn: isBirthday ? "" : form.timeIn, timeOut: isBirthday ? "" : timeOut,
           hours: isBirthday ? "0" : form.hours,
-          date: isBirthday && form.eventDate ? form.eventDate : form.date,
+          date: form.date,
           amount:entryAmt, numKids:1, socks: isBirthday ? 0 : socksCharge,
           playUpi:pay.playUpi, playCash:pay.playCash, socksUpi: isBirthday ? 0 : pay.socksUpi, socksCash: isBirthday ? 0 : pay.socksCash};
         const res = await api.addEntry(entry);
@@ -1211,6 +1211,7 @@ function App() {
               if (entryMopFilter === "upi" && !mop.includes("upi")) return false;
               if (entryMopFilter === "cash" && !mop.includes("cash")) return false;
               if (entryMopFilter === "pass" && !mop.includes("pass")) return false;
+              if (entryMopFilter === "bday" && (e.entryType||e["Entry Type"]||"funzone") !== "birthday") return false;
               if (entryMopFilter === "unpaid") {
                 const paid = e.paid !== false && e.paid !== "false";
                 if (paid && mop) return false;
@@ -1426,7 +1427,7 @@ function App() {
                 </div>
 
                 <div className="ft-mop-chips">
-                  {[{v:"all",l:"All"},{v:"upi",l:"UPI"},{v:"cash",l:"Cash"},{v:"pass",l:"Pass"},{v:"unpaid",l:"Unpaid"}].map(f => (
+                  {[{v:"all",l:"All"},{v:"upi",l:"UPI"},{v:"cash",l:"Cash"},{v:"pass",l:"Pass"},{v:"bday",l:"Bday"},{v:"unpaid",l:"Unpaid"}].map(f => (
                     <button key={f.v} className={`ft-chip${entryMopFilter===f.v?" ft-chip--active":""}`}
                       onClick={()=>setEntryMopFilter(f.v)}>{f.l}</button>
                   ))}

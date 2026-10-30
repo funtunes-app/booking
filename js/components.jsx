@@ -558,6 +558,7 @@ const EntryRow = ({entry, onEdit, onDelete, onCheckout}) => {
     if (all.has("cash")) return "Cash";
     return mop || "—";
   })();
+  const isBday = (entry.entryType || entry["Entry Type"] || "funzone") === "birthday";
   const kids = parseInt(entry.numKids || entry["No of kids"] || 1);
   const phone = entry.phone || entry["Phone number"] || "";
   const timeIn = entry.timeIn || "";
@@ -598,10 +599,11 @@ const EntryRow = ({entry, onEdit, onDelete, onCheckout}) => {
         {subInfo && <div className="ft-erow-name-sub">{subInfo}</div>}
       </div>
       <div className="ft-erow-time">
-        {timeLabel ? <span>{timeLabel}</span>
+        {isBday ? <span>—</span>
+          : timeLabel ? <span>{timeLabel}</span>
           : <span className="ft-erow-missing">— set time</span>}
       </div>
-      <div className="ft-erow-dur">{durLabel}</div>
+      <div className="ft-erow-dur">{isBday ? "—" : durLabel}</div>
       <div className="ft-erow-mop">
         <span className={`ft-entry-mop${mopClass?` ft-entry-mop--${mopClass}`:""}`}>{mopLabel}</span>
       </div>
