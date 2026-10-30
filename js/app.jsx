@@ -143,7 +143,7 @@ function App() {
       if (key === "numKids" && entryType === "funzone" && !activePass) {
         next.amount = String(computeAmountForHours(next.hours) * val);
       }
-      if (key === "dob" && val && entryType === "birthday" && !next.eventDate) {
+      if (key === "dob" && val && entryType === "birthday") {
         const parts = val.split("-");
         if (parts.length === 3) {
           const y = new Date().getFullYear();
@@ -1789,7 +1789,7 @@ function App() {
                     </button> : <div className="ft-kid-remove-spacer"/>}
                   </div>
                 ))}
-                {form.numKids < 10 && <button type="button" className="ft-add-kid-btn" onClick={()=>set("numKids",form.numKids+1)}>
+                {entryType!=="birthday" && form.numKids < 10 && <button type="button" className="ft-add-kid-btn" onClick={()=>set("numKids",form.numKids+1)}>
                   <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M10 4v12M4 10h12"/></svg>
                   Add kid
                 </button>}
@@ -1868,7 +1868,7 @@ function App() {
                 {/* Birthday: Event date */}
                 {entryType==="birthday" && <div className="ft-inline-row">
                   <span className="ft-inline-label">Event date</span>
-                  <input className="fld" value={form.eventDate||""} type="date" style={{flex:1,fontSize:14,fontWeight:600,height:38}}
+                  <input className="fld" value={form.eventDate||""} type="date" style={{flex:1,fontSize:14,height:38}}
                     onChange={e=>set("eventDate",e.target.value)} />
                 </div>}
 
@@ -1906,7 +1906,7 @@ function App() {
                 {/* Start time — play area only */}
                 {isPlayArea && <div className="ft-inline-row" style={{marginTop:10}}>
                   <span className="ft-inline-label">Start</span>
-                  <input className="fld" value={form.timeIn} onChange={e=>set("timeIn",e.target.value)} type="time" style={{flex:1,fontSize:14,fontWeight:600,height:38}} />
+                  <input className="fld" value={form.timeIn} onChange={e=>set("timeIn",e.target.value)} type="time" style={{flex:1,fontSize:14,height:38}} />
                   <span className="ft-inline-muted">ends {computeTimeOut(form.timeIn,form.hours)||"--:--"}</span>
                 </div>}
 
@@ -1919,7 +1919,7 @@ function App() {
                       <input className={`fld${errors.amount?" is-error":""}`}
                         value={form.amount}
                         type="tel" inputMode="numeric" placeholder="300"
-                        style={{paddingLeft:24,fontSize:14,fontWeight:600,height:38}}
+                        style={{paddingLeft:24,fontSize:14,height:38}}
                         onChange={e=>set("amount",e.target.value.replace(/\D/g,""))} />
                     </div>
                     {errors.amount && <span className="err-msg">{errors.amount}</span>}
@@ -1949,7 +1949,7 @@ function App() {
                         <div style={{position:"relative"}}>
                           <span className="ft-rupee-prefix">₹</span>
                           <input className="fld" value={form.playUpiAmount} type="tel" inputMode="numeric" placeholder="0"
-                            style={{paddingLeft:24,fontSize:14,fontWeight:600,height:38}}
+                            style={{paddingLeft:24,fontSize:14,height:38}}
                             onChange={e=>{
                               const v=e.target.value.replace(/\D/g,"");
                               const playAmt=parseInt(form.amount)||0;
@@ -1963,7 +1963,7 @@ function App() {
                         <div style={{position:"relative"}}>
                           <span className="ft-rupee-prefix">₹</span>
                           <input className="fld" value={form.playCashAmount} type="tel" inputMode="numeric" placeholder="0"
-                            style={{paddingLeft:24,fontSize:14,fontWeight:600,height:38}}
+                            style={{paddingLeft:24,fontSize:14,height:38}}
                             onChange={e=>{
                               const v=e.target.value.replace(/\D/g,"");
                               const playAmt=parseInt(form.amount)||0;
@@ -1994,7 +1994,7 @@ function App() {
                       <div style={{position:"relative",flex:1}}>
                         <span className="ft-rupee-prefix">₹</span>
                         <input className="fld" type="tel" inputMode="numeric" value={form.socks||""} placeholder="0"
-                          style={{paddingLeft:24,fontSize:14,fontWeight:600,height:38}}
+                          style={{paddingLeft:24,fontSize:14,height:38}}
                           onChange={e=>{
                             const v=e.target.value.replace(/\D/g,"");
                             setFormState(f=>({...f, socks:parseInt(v)||0, sockMode:"custom"}));
@@ -2020,7 +2020,7 @@ function App() {
                         <div style={{position:"relative"}}>
                           <span className="ft-rupee-prefix">₹</span>
                           <input className="fld" value={form.socksUpiAmount} type="tel" inputMode="numeric" placeholder="0"
-                            style={{paddingLeft:24,fontSize:14,fontWeight:600,height:38}}
+                            style={{paddingLeft:24,fontSize:14,height:38}}
                             onChange={e=>{
                               const v=e.target.value.replace(/\D/g,"");
                               set("socksUpiAmount",v);
@@ -2033,7 +2033,7 @@ function App() {
                         <div style={{position:"relative"}}>
                           <span className="ft-rupee-prefix">₹</span>
                           <input className="fld" value={form.socksCashAmount} type="tel" inputMode="numeric" placeholder="0"
-                            style={{paddingLeft:24,fontSize:14,fontWeight:600,height:38}}
+                            style={{paddingLeft:24,fontSize:14,height:38}}
                             onChange={e=>{
                               const v=e.target.value.replace(/\D/g,"");
                               set("socksCashAmount",v);
