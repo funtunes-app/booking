@@ -132,7 +132,8 @@ function App() {
       phone:"", dob:"", date:date||localToday,
       kidNames:[], dobs:[],
       playMop:CONFIG.DEFAULT_MOP, playUpiAmount:"", playCashAmount:"",
-      socksMop:CONFIG.DEFAULT_MOP, socksUpiAmount:"", socksCashAmount:""
+      socksMop:CONFIG.DEFAULT_MOP, socksUpiAmount:"", socksCashAmount:"",
+      eventDate:""
     };
   }
 
@@ -141,6 +142,14 @@ function App() {
       const next = {...f, [key]:val};
       if (key === "numKids" && entryType === "funzone" && !activePass) {
         next.amount = String(computeAmountForHours(next.hours) * val);
+      }
+      if (key === "dob" && val && entryType === "birthday" && !next.eventDate) {
+        const parts = val.split("-");
+        if (parts.length === 3) {
+          const y = new Date().getFullYear();
+          const bd = y+"-"+parts[1]+"-"+parts[2];
+          next.eventDate = bd < new Date().toISOString().slice(0,10) ? (y+1)+"-"+parts[1]+"-"+parts[2] : bd;
+        }
       }
       return next;
     });
@@ -614,12 +623,23 @@ function App() {
       const entryMop = isBuyingPass ? `Pass (${playMopStr})` : playMopStr;
       const entryAmt = totalAmt;
 
+      const isBirthday = entryType === "birthday";
       if (form.numKids <= 1) {
-        const entry = {...form, mop:entryMop, socksMop:socksMopStr, entryType, timeIn:form.timeIn, timeOut:timeOut,
-          amount:entryAmt, numKids:1, socks:socksCharge,
-          playUpi:pay.playUpi, playCash:pay.playCash, socksUpi:pay.socksUpi, socksCash:pay.socksCash};
+        const entry = {...form, mop:entryMop, socksMop:socksMopStr, entryType,
+          timeIn: isBirthday ? "" : form.timeIn, timeOut: isBirthday ? "" : timeOut,
+          hours: isBirthday ? "0" : form.hours,
+          date: isBirthday && form.eventDate ? form.eventDate : form.date,
+          amount:entryAmt, numKids:1, socks: isBirthday ? 0 : socksCharge,
+          playUpi:pay.playUpi, playCash:pay.playCash, socksUpi: isBirthday ? 0 : pay.socksUpi, socksCash: isBirthday ? 0 : pay.socksCash};
         const res = await api.addEntry(entry);
-        if(res.success) { showToastMsg(isBuyingPass ? `Pass created + entry saved!` : "Entry saved!","success"); fetchEntries(); resetForm(); switchTab("entries"); }
+        if(res.success) {
+          if (isBirthday && form.dob) {
+            const key = (form.customerName||"").trim().toLowerCase()+"|"+form.dob;
+            await api.updateBirthdayCall({key, status:"booking", notes:form.notes||"", phone:form.phone});
+          }
+          showToastMsg(isBirthday ? "Birthday booked!" : isBuyingPass ? `Pass created + entry saved!` : "Entry saved!","success");
+          fetchEntries(); if(isBirthday) fetchBirthdays(); resetForm(); switchTab("entries");
+        }
         else { showToastMsg("Error: "+(res.error||"unknown"),"error"); setSaving(false); return; }
       } else {
         let ok = 0;
@@ -1838,15 +1858,22 @@ function App() {
                 </div>
               </>}
 
-              {/* ── 4. Playtime ── */}
+              {/* ── 4. Playtime / Birthday Booking ── */}
               <div className="ft-section-title">
                 <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="var(--ft-primary)" strokeWidth="1.8"><circle cx="10" cy="10" r="7.5"/><path d="M10 5.5V10l3 2"/></svg>
                 {isPlayArea?"Playtime":`${typeMeta.label} Booking`}
               </div>
               <div className="ft-section-card">
 
-                {/* Duration slider chips */}
-                <div className="ft-dur-slider">
+                {/* Birthday: Event date */}
+                {entryType==="birthday" && <div className="ft-inline-row">
+                  <span className="ft-inline-label">Event date</span>
+                  <input className="fld" value={form.eventDate||""} type="date" style={{flex:1,fontSize:14,fontWeight:600,height:38}}
+                    onChange={e=>set("eventDate",e.target.value)} />
+                </div>}
+
+                {/* Duration slider chips — play area only */}
+                {isPlayArea && <div className="ft-dur-slider">
                   {CONFIG.HOUR_OPTIONS.filter(o=>["0.5","1","2"].includes(o.value)).map(o=>{
                     const isActive = form.hoursMode!=="custom" && String(form.hours)===o.value;
                     return <button key={o.value} type="button" className={`ft-dur-chip${isActive?" is-active":""}`}
@@ -1854,10 +1881,10 @@ function App() {
                   })}
                   <button type="button" className={`ft-dur-chip${form.hoursMode==="custom"?" is-active":""}`}
                     onClick={()=>set("hoursMode","custom")}>Custom</button>
-                </div>
+                </div>}
 
-                {/* Custom duration inputs */}
-                {form.hoursMode==="custom" && (
+                {/* Custom duration inputs — play area only */}
+                {isPlayArea && form.hoursMode==="custom" && (
                   <div className="ft-custom-dur">
                     <input className="fld" value={Math.floor(parseFloat(form.hours)||0)} type="tel" inputMode="numeric" placeholder="0"
                       onChange={e=>{
@@ -1876,12 +1903,12 @@ function App() {
                   </div>
                 )}
 
-                {/* Start time */}
-                <div className="ft-inline-row" style={{marginTop:10}}>
+                {/* Start time — play area only */}
+                {isPlayArea && <div className="ft-inline-row" style={{marginTop:10}}>
                   <span className="ft-inline-label">Start</span>
                   <input className="fld" value={form.timeIn} onChange={e=>set("timeIn",e.target.value)} type="time" style={{flex:1,fontSize:14,fontWeight:600,height:38}} />
                   <span className="ft-inline-muted">ends {computeTimeOut(form.timeIn,form.hours)||"--:--"}</span>
-                </div>
+                </div>}
 
                 {/* Amount */}
                 {!usingPass && <>
@@ -2048,7 +2075,7 @@ function App() {
                     <span>{Math.max(0,parseFloat((buyPassMeta.hours - (parseFloat(form.hours)||1)*form.numKids).toFixed(1)))}h</span>
                   </div>}
                 </> : <div className="ft-bill-line">
-                  <span>Playtime · {formatHoursLabel(form.hours)}{form.numKids>1?` × ${form.numKids} kids`:""}</span>
+                  <span>{entryType==="birthday" ? "Birthday Booking" : `Playtime · ${formatHoursLabel(form.hours)}${form.numKids>1?` × ${form.numKids} kids`:""}`}</span>
                   <span>₹{(parseInt(form.amount)||0).toLocaleString("en-IN")}</span>
                 </div>}
                 {socksCharge > 0 && <div className="ft-bill-line">
@@ -2072,7 +2099,7 @@ function App() {
               </div>
               <button className="ft-btn-start" disabled={saving}
                 onClick={editTarget ? handleUpdateSubmit : submitEntry}>
-                {editTarget ? "Update" : "Start"}
+                {editTarget ? "Update" : entryType==="birthday" ? "Book" : "Start"}
               </button>
             </div>
           </div>
