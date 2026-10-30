@@ -500,11 +500,19 @@ function App() {
       ]);
       if (res.success && res.found) {
         setReturningCustomer(true);
-        setFormState(f => ({
-          ...f,
-          customerName: f.customerName || res.customerName || "",
-          dob: res.dob || f.dob || "",
-        }));
+        setFormState(f => {
+          const dob = res.dob || f.dob || "";
+          const next = {...f, customerName: f.customerName || res.customerName || "", dob};
+          if (dob && entryType === "birthday") {
+            const parts = dob.split("-");
+            if (parts.length === 3) {
+              const y = new Date().getFullYear();
+              const bd = y+"-"+parts[1]+"-"+parts[2];
+              next.eventDate = bd < new Date().toISOString().slice(0,10) ? (y+1)+"-"+parts[1]+"-"+parts[2] : bd;
+            }
+          }
+          return next;
+        });
         if (res.customerName || res.dob) showToastMsg("Found previous entry — autofilled","success");
       }
       if (passRes.success && passRes.found) {
