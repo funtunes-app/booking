@@ -405,7 +405,7 @@ const BookedCard = ({record, onSave}) => {
     onSave({...record, status:"booking", notes, package:pkg, numKids, numAdults, services, inclusions});
     setEditing(false);
   };
-  const moveBack = () => { onSave({...record, status:"warm", notes}); };
+  const doDelete = () => { onSave({...record, status:"na", notes}); };
 
   const fmtDate = (d) => { if (!d) return "—"; const p = d.split("-"); return p[2]+"/"+p[1]+"/"+p[0]; };
 
@@ -421,7 +421,7 @@ const BookedCard = ({record, onSave}) => {
           {record.phone && <a href={`https://wa.me/${record.phone.replace(/\D/g,"")}`} target="_blank" rel="noopener" className="ft-kb-act" title="WhatsApp">
             <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M2 18l1.3-4.7a7.5 7.5 0 1110.4 0L18 18l-4.7-1.3"/></svg>
           </a>}
-          <button className="ft-kb-move-btn" onClick={moveBack}>Move to Follow</button>
+          <button className="ft-kb-move-btn ft-kb-move-btn--del" onClick={doDelete}>Delete</button>
           <button className="ft-kb-act" onClick={()=>setEditing(!editing)} title={editing?"Cancel":"Edit"}>
             <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2"><path d="M13.5 3.5l3 3L7 16H4v-3L13.5 3.5z"/></svg>
           </button>

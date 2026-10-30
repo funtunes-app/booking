@@ -180,6 +180,11 @@ var api = {
           r.status = saved.status || "not_contacted";
           r.notes = saved.notes || "";
           if (saved.phone) r.phone = saved.phone;
+          if (saved.package) r.package = saved.package;
+          if (saved.numKids) r.numKids = saved.numKids;
+          if (saved.numAdults) r.numAdults = saved.numAdults;
+          if (saved.services) r.services = saved.services;
+          if (saved.inclusions) r.inclusions = saved.inclusions;
         }
       });
     } catch(e) {}
@@ -227,6 +232,11 @@ var api = {
           r.status = saved.status || "not_contacted";
           r.notes = saved.notes || "";
           if (saved.phone) r.phone = saved.phone;
+          if (saved.package) r.package = saved.package;
+          if (saved.numKids) r.numKids = saved.numKids;
+          if (saved.numAdults) r.numAdults = saved.numAdults;
+          if (saved.services) r.services = saved.services;
+          if (saved.inclusions) r.inclusions = saved.inclusions;
         }
       });
     } catch(e) {}
@@ -237,10 +247,16 @@ var api = {
   updateBirthdayCall: async function (record) {
     try {
       var crm = JSON.parse(localStorage.getItem("funtunes_bday_crm") || "{}");
+      var prev = crm[record.key] || {};
       crm[record.key] = {
-        status: record.status || "not_contacted",
-        notes: record.notes || "",
-        phone: record.phone || "",
+        status: record.status || prev.status || "not_contacted",
+        notes: record.notes != null ? record.notes : (prev.notes || ""),
+        phone: record.phone || prev.phone || "",
+        package: record.package != null ? record.package : (prev.package || ""),
+        numKids: record.numKids != null ? record.numKids : (prev.numKids || ""),
+        numAdults: record.numAdults != null ? record.numAdults : (prev.numAdults || ""),
+        services: record.services != null ? record.services : (prev.services || ""),
+        inclusions: record.inclusions != null ? record.inclusions : (prev.inclusions || ""),
       };
       localStorage.setItem("funtunes_bday_crm", JSON.stringify(crm));
       return { success: true };

@@ -273,6 +273,8 @@ function App() {
         key: record.key, year: record.year, month: record.month, day: record.day,
         kidName: record.kidName, parentName: record.parentName, phone: record.phone,
         status: record.status, notes: record.notes,
+        package: record.package, numKids: record.numKids, numAdults: record.numAdults,
+        services: record.services, inclusions: record.inclusions,
       });
       if (res.success) {
         setBirthdays(prev => prev.map(b => b.key === record.key ? {...b, ...record} : b));
