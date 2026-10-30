@@ -878,6 +878,7 @@ function App() {
         const n = f.sockCount || CONFIG.DEFAULT_SOCK_COUNT;
         return {...f, sockCount:n, socks:n*CONFIG.SOCKS_RATE};
       }
+      if (type === "birthday") return {...f, sockCount:0, socks:0, amount:"2000"};
       return {...f, sockCount:0, socks:0};
     });
   }
