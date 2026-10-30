@@ -308,11 +308,11 @@ const BirthdayCard = ({record, onSave, onMove}) => {
             <button className="ft-kb-move-btn ft-kb-move-btn--follow" onClick={()=>{save("warm",notes);onMove&&onMove();}}>Follow</button>
           </>}
           {status === "warm" && <>
-            <button className="ft-kb-move-btn" onClick={()=>{save("not_contacted",notes);onMove&&onMove();}}>New</button>
+            <button className="ft-kb-move-btn ft-kb-move-btn--del" onClick={()=>{save("deleted","");onMove&&onMove();}}>Delete</button>
             <button className="ft-kb-move-btn ft-kb-move-btn--book" onClick={()=>{save("booking",notes);onMove&&onMove();}}>Book</button>
           </>}
           {status === "booking" && <>
-            <button className="ft-kb-move-btn" onClick={()=>{save("warm",notes);onMove&&onMove();}}>Follow</button>
+            <button className="ft-kb-move-btn ft-kb-move-btn--del" onClick={()=>{save("warm",notes);onMove&&onMove();}}>Delete</button>
           </>}
         </div>
       </div>
@@ -452,7 +452,7 @@ const BirthdayKanban = ({birthdays, month, year, loading, onSave, isSearching, m
   KANBAN_COLS.forEach(c => { cols[c.key] = []; });
   birthdays.forEach(b => {
     const s = b.status || "not_contacted";
-    if (s === "booking") return;
+    if (s === "booking" || s === "deleted") return;
     if (!cols[s]) cols[s] = [];
     cols[s].push(b);
   });

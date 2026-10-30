@@ -816,11 +816,29 @@ function App() {
     if (!enquiry.parentName.trim() && !enquiry.kidName.trim() && !enquiry.phone.trim()) {
       showToastMsg("Add a name or phone number first","error"); return;
     }
+    if (!enquiry.dob) { showToastMsg("DOB is required for birthday tracking","error"); return; }
     setEnquirySaving(true);
     try {
       const res = await api.addEnquiry({...enquiry, date:new Date().toISOString().slice(0,10)});
-      if (res.success) { showToastMsg("Enquiry saved","success"); setEnquiry(null); fetchBirthdays(); }
-      else showToastMsg("Save failed: "+(res.error||"unknown"),"error");
+      if (!res.success) { showToastMsg("Save failed: "+(res.error||"unknown"),"error"); return; }
+      const entryRes = await api.addEntry({
+        customerName: enquiry.kidName || enquiry.parentName,
+        phone: enquiry.phone, dob: enquiry.dob,
+        amount: 0, mop: "", socks: 0, socksMop: "",
+        playUpi: 0, playCash: 0, socksUpi: 0, socksCash: 0,
+        numKids: 1, hours: "0", timeIn: "", timeOut: "",
+        entryType: "birthday",
+        date: enquiry.preferredDate || new Date().toISOString().slice(0,10),
+      });
+      if (entryRes.success) {
+        const key = (enquiry.kidName||enquiry.parentName).trim().toLowerCase()+"|"+enquiry.dob;
+        const enqNotes = [];
+        if (enquiry.parentName) enqNotes.push("Parent: "+enquiry.parentName);
+        if (enquiry.numKids) enqNotes.push(enquiry.numKids+" kids expected");
+        if (enquiry.notes) enqNotes.push(enquiry.notes);
+        await api.updateBirthdayCall({key, status:"warm", notes:enqNotes.join(" · "), phone:enquiry.phone});
+      }
+      showToastMsg("Enquiry saved","success"); setEnquiry(null); fetchBirthdays();
     } catch(e) { console.error("Enquiry:",e); showToastMsg("Could not save — check internet","error"); }
     finally { setEnquirySaving(false); }
   }
