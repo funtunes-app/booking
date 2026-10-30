@@ -308,11 +308,11 @@ const BirthdayCard = ({record, onSave, onMove}) => {
             <button className="ft-kb-move-btn ft-kb-move-btn--follow" onClick={()=>{save("warm",notes);onMove&&onMove();}}>Follow</button>
           </>}
           {status === "warm" && <>
-            <button className="ft-kb-move-btn ft-kb-move-btn--del" onClick={()=>{save("deleted","");onMove&&onMove();}}>Delete</button>
+            <button className="ft-kb-move-btn ft-kb-move-btn--del" onClick={()=>{save("not_contacted",notes);onMove&&onMove();}}>Delete</button>
             <button className="ft-kb-move-btn ft-kb-move-btn--book" onClick={()=>{save("booking",notes);onMove&&onMove();}}>Book</button>
           </>}
           {status === "booking" && <>
-            <button className="ft-kb-move-btn ft-kb-move-btn--del" onClick={()=>{save("warm",notes);onMove&&onMove();}}>Delete</button>
+            <button className="ft-kb-move-btn ft-kb-move-btn--del" onClick={()=>{save("not_contacted",notes);onMove&&onMove();}}>Delete</button>
           </>}
         </div>
       </div>
