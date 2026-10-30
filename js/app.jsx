@@ -644,6 +644,9 @@ function App() {
           if (isBirthday && form.dob) {
             const key = (form.customerName||"").trim().toLowerCase()+"|"+form.dob;
             await api.updateBirthdayCall({key, status:"booking", notes:form.notes||"", phone:form.phone});
+            if (entryAmt > 0) {
+              await api.addBirthdayPayment({customerName:form.customerName, dob:form.dob, detail:"Advance", paymentDate:form.date, amount:entryAmt, mop:playMopStr||"UPI"});
+            }
           }
           showToastMsg(isBirthday ? "Birthday booked!" : isBuyingPass ? `Pass created + entry saved!` : "Entry saved!","success");
           fetchEntries(); if(isBirthday) fetchBirthdays(); resetForm(); switchTab("entries");

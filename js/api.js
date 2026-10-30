@@ -448,6 +448,44 @@ var api = {
     return { success: true, data: filtered };
   },
 
+  // ── Birthday Payments ──
+
+  listBirthdayPayments: async function (customerName, dob) {
+    var { data, error } = await supabaseClient
+      .from("birthday_payments")
+      .select("*")
+      .eq("customer_name", customerName)
+      .eq("dob", dob)
+      .order("payment_date", { ascending: true });
+    if (error) return { success: false, error: error.message };
+    return { success: true, data: data || [] };
+  },
+
+  addBirthdayPayment: async function (payment) {
+    var { data, error } = await supabaseClient
+      .from("birthday_payments")
+      .insert({
+        customer_name: payment.customerName || "",
+        dob: payment.dob || "",
+        detail: payment.detail || "",
+        payment_date: payment.paymentDate || new Date().toISOString().slice(0, 10),
+        amount: parseInt(payment.amount) || 0,
+        mop: payment.mop || "",
+      })
+      .select();
+    if (error) return { success: false, error: error.message };
+    return { success: true, data: data && data[0] };
+  },
+
+  deleteBirthdayPayment: async function (id) {
+    var { error } = await supabaseClient
+      .from("birthday_payments")
+      .delete()
+      .eq("id", id);
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  },
+
   // ── Passes ──
 
   getActivePass: async function (phone) {

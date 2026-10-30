@@ -363,15 +363,51 @@ const BookedCard = ({record, onSave}) => {
   const [inclusions, setInclusions] = React.useState(record.inclusions || "");
   const [editing, setEditing] = React.useState(false);
 
+  const [payments, setPayments] = React.useState([]);
+  const [paymentsLoaded, setPaymentsLoaded] = React.useState(false);
+  const [showAddPay, setShowAddPay] = React.useState(false);
+  const [payForm, setPayForm] = React.useState({detail:"", paymentDate:new Date().toISOString().slice(0,10), amount:"", mop:"UPI"});
+  const [paySaving, setPaySaving] = React.useState(false);
+
   const thisYear = new Date().getFullYear();
   const age = record.year ? thisYear - record.year : null;
   const turnsLabel = age ? `turns ${age}` : "";
+
+  React.useEffect(() => {
+    if (record.kidName && record.dob) {
+      api.listBirthdayPayments(record.kidName, record.dob).then(res => {
+        if (res.success) setPayments(res.data || []);
+        setPaymentsLoaded(true);
+      });
+    }
+  }, [record.kidName, record.dob]);
+
+  const paymentTotal = payments.reduce((s,p) => s + (parseInt(p.amount)||0), 0);
+
+  const addPayment = async () => {
+    if (!payForm.amount) return;
+    setPaySaving(true);
+    const res = await api.addBirthdayPayment({customerName:record.kidName, dob:record.dob, ...payForm});
+    if (res.success) {
+      setPayments(prev => [...prev, res.data]);
+      setPayForm({detail:"", paymentDate:new Date().toISOString().slice(0,10), amount:"", mop:"UPI"});
+      setShowAddPay(false);
+    }
+    setPaySaving(false);
+  };
+
+  const deletePayment = async (id) => {
+    const res = await api.deleteBirthdayPayment(id);
+    if (res.success) setPayments(prev => prev.filter(p => p.id !== id));
+  };
 
   const doSave = () => {
     onSave({...record, status:"booking", notes, package:pkg, numKids, numAdults, services, inclusions});
     setEditing(false);
   };
   const moveBack = () => { onSave({...record, status:"warm", notes}); };
+
+  const fmtDate = (d) => { if (!d) return "—"; const p = d.split("-"); return p[2]+"/"+p[1]+"/"+p[0]; };
 
   return (
     <div className="ft-booked-card">
@@ -428,6 +464,70 @@ const BookedCard = ({record, onSave}) => {
           <button className="ft-kb-move-btn" onClick={()=>setEditing(false)}>Cancel</button>
           <button className="ft-kb-move-btn ft-kb-move-btn--book" onClick={doSave}>Save</button>
         </div>}
+      </div>
+
+      {/* ── Payments subform ── */}
+      <div className="ft-booked-payments">
+        <div className="ft-booked-payments-header">
+          <span>Payments</span>
+          <button className="ft-kb-act" onClick={()=>setShowAddPay(!showAddPay)} title="Add payment">
+            {showAddPay
+              ? <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M5 5l10 10M15 5L5 15"/></svg>
+              : <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M10 4v12M4 10h12"/></svg>}
+          </button>
+        </div>
+
+        {paymentsLoaded && payments.length > 0 && (
+          <div className="ft-pay-table-wrap">
+            <table className="ft-pay-table">
+              <thead><tr><th>Detail</th><th>Date</th><th>Amount</th><th>Mode</th><th></th></tr></thead>
+              <tbody>
+                {payments.map(p => (
+                  <tr key={p.id}>
+                    <td>{p.detail || "—"}</td>
+                    <td>{fmtDate(p.payment_date)}</td>
+                    <td style={{fontWeight:600}}>₹{(parseInt(p.amount)||0).toLocaleString("en-IN")}</td>
+                    <td><span className={`ft-pay-badge ft-pay-badge--${(p.mop||"").toLowerCase().includes("upi")?"upi":"cash"}`}>{p.mop||"—"}</span></td>
+                    <td><button className="ft-pay-del" onClick={()=>deletePayment(p.id)} title="Remove">×</button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div className="ft-pay-total">
+              <span>Total</span>
+              <span style={{fontWeight:700}}>₹{paymentTotal.toLocaleString("en-IN")}</span>
+            </div>
+          </div>
+        )}
+
+        {paymentsLoaded && payments.length === 0 && !showAddPay && (
+          <div style={{fontSize:12,color:C.textLight,padding:"8px 0"}}>No payments recorded yet.</div>
+        )}
+
+        {showAddPay && (
+          <div className="ft-pay-add-form">
+            <div className="ft-pay-add-row">
+              <input className="fld" placeholder="Detail (e.g. Advance 2)" value={payForm.detail} onChange={e=>setPayForm(f=>({...f,detail:e.target.value}))} style={{flex:2}} />
+              <input className="fld" type="date" value={payForm.paymentDate} onChange={e=>setPayForm(f=>({...f,paymentDate:e.target.value}))} style={{flex:1.2}} />
+            </div>
+            <div className="ft-pay-add-row">
+              <div style={{position:"relative",flex:1}}>
+                <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",fontSize:13,color:C.textLight}}>₹</span>
+                <input className="fld" type="tel" inputMode="numeric" placeholder="Amount" value={payForm.amount}
+                  onChange={e=>setPayForm(f=>({...f,amount:e.target.value.replace(/\D/g,"")}))} style={{paddingLeft:24}} />
+              </div>
+              <div className="ft-pay-chips ft-pay-chips--inline" style={{flex:1}}>
+                {["UPI","Cash"].map(m => (
+                  <button key={m} type="button" className={`ft-pay-chip${payForm.mop===m?" is-active":""}`}
+                    onClick={()=>setPayForm(f=>({...f,mop:m}))}>{m}</button>
+                ))}
+              </div>
+              <button className="ft-kb-move-btn ft-kb-move-btn--book" onClick={addPayment} disabled={paySaving || !payForm.amount}>
+                {paySaving ? "..." : "Add"}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
