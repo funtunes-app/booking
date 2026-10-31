@@ -1554,7 +1554,7 @@ function App() {
                   loading={birthdaysLoading} onSave={saveBirthdayCall} isSearching={isSearching}
                   mobileFilter={bdayStatusFilter!=="all"?bdayStatusFilter:null}
                   showBooked={showBooked} bookedList={bookedList}
-                  enquiries={bdayEnquiries} />
+                  enquiries={bdayEnquiries} onPaymentAdded={()=>fetchEntries()} />
               </div>
             </div>
           </div>

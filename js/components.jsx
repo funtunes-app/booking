@@ -354,7 +354,7 @@ const KANBAN_COLS = [
   {key:"warm", label:"Follow", color:"#e6a817"},
 ];
 
-const BookedCard = ({record, onSave}) => {
+const BookedCard = ({record, onSave, onPaymentAdded}) => {
   const [notes, setNotes] = React.useState(record.notes || "");
   const [pkg, setPkg] = React.useState(record.package || "");
   const [numKids, setNumKids] = React.useState(record.numKids || "");
@@ -390,8 +390,18 @@ const BookedCard = ({record, onSave}) => {
     const res = await api.addBirthdayPayment({customerName:record.kidName, dob:record.dob, ...payForm});
     if (res.success) {
       setPayments(prev => [...prev, res.data]);
+      await api.addEntry({
+        customerName: record.kidName, phone: record.phone || "", dob: record.dob,
+        date: payForm.paymentDate, amount: parseInt(payForm.amount)||0,
+        mop: payForm.mop || "UPI", entryType: "birthday",
+        numKids: 1, hours: "0", timeIn: "", timeOut: "",
+        socks: 0, socksMop: "", playUpi: payForm.mop === "UPI" ? (parseInt(payForm.amount)||0) : 0,
+        playCash: payForm.mop === "Cash" ? (parseInt(payForm.amount)||0) : 0,
+        socksUpi: 0, socksCash: 0,
+      });
       setPayForm({detail:"", paymentDate:new Date().toISOString().slice(0,10), amount:"", mop:"UPI"});
       setShowAddPay(false);
+      if (onPaymentAdded) onPaymentAdded();
     }
     setPaySaving(false);
   };
@@ -533,7 +543,7 @@ const BookedCard = ({record, onSave}) => {
   );
 };
 
-const BirthdayKanban = ({birthdays, month, year, loading, onSave, isSearching, mobileFilter, showBooked, bookedList, enquiries}) => {
+const BirthdayKanban = ({birthdays, month, year, loading, onSave, isSearching, mobileFilter, showBooked, bookedList, enquiries, onPaymentAdded}) => {
   if (loading) return <div className="ft-empty"><Spinner size={24} /><div style={{marginTop:10}}>Loading birthdays...</div></div>;
 
   if (showBooked) {
@@ -541,7 +551,7 @@ const BirthdayKanban = ({birthdays, month, year, loading, onSave, isSearching, m
     if (!booked.length) return <div className="ft-empty">No booked birthdays for {MONTH_NAMES[(month||1)-1]}.</div>;
     return (
       <div className="ft-booked-list">
-        {booked.map((b,i) => <BookedCard key={b.key||i} record={b} onSave={onSave} />)}
+        {booked.map((b,i) => <BookedCard key={b.key||i} record={b} onSave={onSave} onPaymentAdded={onPaymentAdded} />)}
       </div>
     );
   }
