@@ -256,16 +256,20 @@ var api = {
 
   updateBirthdayCall: async function (record) {
     try {
+      var existing = {};
+      var { data: prev } = await supabaseClient.from("birthday_crm").select("*").eq("crm_key", record.key).limit(1);
+      if (prev && prev.length > 0) existing = prev[0];
+
       var row = {
         crm_key: record.key,
-        status: record.status || "not_contacted",
-        notes: record.notes != null ? record.notes : "",
-        phone: record.phone || "",
-        package: record.package != null ? record.package : "",
-        num_kids: record.numKids != null ? String(record.numKids) : "",
-        num_adults: record.numAdults != null ? String(record.numAdults) : "",
-        services: record.services != null ? record.services : "",
-        inclusions: record.inclusions != null ? record.inclusions : "",
+        status: record.status || existing.status || "not_contacted",
+        notes: record.notes != null ? record.notes : (existing.notes || ""),
+        phone: record.phone || existing.phone || "",
+        package: record.package != null ? record.package : (existing.package || ""),
+        num_kids: record.numKids != null ? String(record.numKids) : (existing.num_kids || ""),
+        num_adults: record.numAdults != null ? String(record.numAdults) : (existing.num_adults || ""),
+        services: record.services != null ? record.services : (existing.services || ""),
+        inclusions: record.inclusions != null ? record.inclusions : (existing.inclusions || ""),
       };
       var { error } = await supabaseClient
         .from("birthday_crm")
