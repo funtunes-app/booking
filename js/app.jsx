@@ -212,11 +212,9 @@ function App() {
         const cached = JSON.parse(raw);
         if (cached.date === todayStr && cached.month === nowMonth && cached.year === nowYear) {
           setBirthdays(cached.data || []);
-          api.listEnquiries(nowMonth, nowYear).then(r => setBdayEnquiries(r.success ? (r.data||[]) : []));
-          return;
         }
       }
-    } catch(e) { console.error("Birthday cache read error:", e); }
+    } catch(e) {}
     fetchBirthdays(nowMonth, nowYear);
   }
 
